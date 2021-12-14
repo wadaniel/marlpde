@@ -160,10 +160,9 @@ class KS:
         self.stepnum = 0
         self.ioutnum = 0 # [0] is the initial condition
         
-    def setGroundTruth(self, uu):
+    def setGroundTruth(self, t, x, uu):
         self.uu_truth = uu
-        t = np.arange(0, uu.shape[0])*self.dt
-        self.f_truth = interpolate.interp2d(self.x, t, self.uu_truth, kind='cubic')
+        self.f_truth = interpolate.interp2d(x, t, self.uu_truth, kind='cubic')
  
     def mapGroundTruth(self):
         t = np.arange(0, self.uu.shape[0])*self.dt

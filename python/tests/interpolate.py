@@ -25,9 +25,11 @@ dns.simulate()
 # convert to physical space
 dns.fou2real()
 
-## plot result
+## for plotting
 uTruth = dns.uu
-s, n = np.meshgrid(np.arange(uTruth.shape[0])*dt, 2*np.pi*L/N*(np.array(range(N))+1))
+tTruth = np.arange(uTruth.shape[0])*dt
+xTruth = 2*np.pi*L/N*(np.array(range(N))+1)
+sTruth, nTruth = np.meshgrid(np.arange(uTruth.shape[0])*dt, 2*np.pi*L/N*(np.array(range(N))+1))
 
 #------------------------------------------------------------------------------
 ## restart
@@ -36,10 +38,10 @@ u_restart = dns.uu[0,:].copy()
 f_restart = interpolate.interp1d(x_truth, u_restart)
 
 # restart from coarse physical space
-N = 512
+N = 64
 subgrid = KS(L=L, N=N, dt=dt, nu=1.0, tend=tEnd)
 
-subgrid.setGroundTruth(uTruth)
+subgrid.setGroundTruth(tTruth, xTruth, uTruth)
 
 #
 x_coarse = subgrid.x
@@ -63,10 +65,10 @@ uFine = subgrid.mapGroundTruth()
 fig, axs = plt.subplots(1,3)
 s, n = np.meshgrid(np.arange(tEnd/dt+1)*dt, 2*np.pi*L/N*(np.array(range(N))+1))
 
-cs0 = axs[0].contourf(s, n, uTruth.T, 50, cmap=plt.get_cmap("seismic"))
+cs0 = axs[0].contourf(sTruth, nTruth, uTruth.T, 50, cmap=plt.get_cmap("seismic"))
 cs1 = axs[1].contourf(s, n, uCoarse.T, 50, cmap=plt.get_cmap("seismic"))
 #diff = np.abs(uCoarse-uFine)
-diff = np.abs(uTruth-uFine)
+diff = np.abs(uCoarse-uFine)
 cs2 = axs[2].contourf(s, n, diff.T, 50, cmap=plt.get_cmap("seismic"))
 
 # plt.colorbar(cs0, ax=axs[0])
@@ -75,4 +77,6 @@ plt.colorbar(cs2, ax=axs[2])
 plt.setp(axs[:], xlabel='$t$')
 plt.setp(axs[0], ylabel='$x$')
 # for c in cs.collections: c.set_rasterized(True)
+axs[1].set_yticklabels([])
+axs[2].set_yticklabels([])
 fig.savefig('interpolate.png')
