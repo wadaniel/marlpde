@@ -33,7 +33,15 @@
 
 # Misc
 .DS_Store
+__pycache__
 
 # VIM
 .swp
 .swo
+
+# Hidden files
+._*a
+.*
+
+# Figures
+*.png

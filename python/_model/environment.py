@@ -1,42 +1,62 @@
 from KS import *
 
-def environment( args, s ):
-    L    = 22/(2*np.pi)
-    N    = 64
-    dt   = 0.25
-    tEnd = 50 #50000
-    case = args["case"]
-    sim  = KS(L=L, N=N, dt=dt, tend=tEnd, RL=True, case=case)
+def environment( s , nagents ):
 
-    # simulate up to T=20
-    tInit = 20
-    nInitialSteps = int(tInit/dt)
-    sim.simulate( nsteps=nInitialSteps )
+    # defaults
+    L    = 22/(2*np.pi)
+    dt   = 0.1
+    tEnd = 50 #50000
+
+    # DNS baseline
+    dns = KS(L=L, N=512, dt=dt, nu=1.0, tend=tEnd)
+    dns.simulate()
+    dns.fou2real()
+    
+    uTruth = dns.uu
+    tTruth = dns.tt
+    xTruth = dns.x
+
+    sgs = KS(L=L, N=nagents, dt=dt, nu=1.0, tend=tEnd)
+    sgs.setGroundTruth(tTruth, xTruth, uTruth)
+
+    ## create interpolated IC
+    u_restart = dns.uu[0,:].copy()
+    f_restart = interpolate.interp1d(xTruth, u_restart)
+
+    xCoarse = sgs.x
+    uRestartCoarse = f_restart(xCoarse)
+    sgs.IC( u0 = uRestartCoarse )
 
     ## get initial state
-    s["State"] = sim.state().tolist()
+    s["State"] = sgs.getState().tolist()
     # print("state:", sim.state())
 
     ## run controlled simulation
-    nContolledSteps = int((tEnd-tInit)/dt)
+    error = 0
     step = 0
-    while step < nContolledSteps:
+    while step < int(tEnd/dt) and error == 0:
+        
         # Getting new action
         s.update()
 
         # apply action and advance environment
-        sim.step( s["Action"] )
-        # print("action:", s["Action"])
-
-        # get reward
-        s["Reward"] = sim.reward()
-        # print("state:", sim.reward())
-
+        actions = s["Action"]
+        actions = [ a[0] for a in actions ]
+        sgs.updateField( actions )
+        sgs.step()
+        
         # get new state
-        s["State"] = sim.state().tolist()
-        # print("state:", sim.state())
+        s["State"] = sgs.getState().tolist()
+
+        if error == 0:
+            # get reward
+            s["Reward"] = sgs.getReward().tolist()
+            # print("state:", sim.reward())
+        else:
+            s["Reward"] = -1000
             
         step += 1
 
-    # TODO?: Termination in case of divergence
     s["Termination"] = "Truncated"
+
+

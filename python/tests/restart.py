@@ -28,17 +28,6 @@ dns.fou2real()
 #------------------------------------------------------------------------------
 ## plot result
 u = dns.uu
-s, n = np.meshgrid(np.arange(u.shape[0])*dt, 2*np.pi*L/N*(np.array(range(N))+1))
-print(u.shape)
-#print(s.shape)
-print(n)
-cs = plt.contourf(s, n, u.T, 50, cmap=plt.get_cmap("seismic"), levels=np.linspace(-10,10,21))
-plt.colorbar()
-plt.ylabel(r"$x$")
-plt.xlabel(r"$t$")
-#for c in cs.collections: c.set_rasterized(True)
-# plt.show()
-
 #------------------------------------------------------------------------------
 ## restart
 v_restart = dns.vv[-1,:].copy()
@@ -82,9 +71,12 @@ diff = np.abs(u1-u2)
 cs2 = axs[3].contourf(s, n, diff.T, 50, cmap=plt.get_cmap("seismic"))
 
 # plt.colorbar(cs0, ax=axs[0])
-plt.colorbar(cs1, ax=axs[1])
-plt.colorbar(cs2, ax=axs[2])
+plt.colorbar(cs1, ax=axs[0])
+plt.colorbar(cs2, ax=axs[3])
 plt.setp(axs[:], xlabel='$t$')
 plt.setp(axs[0], ylabel='$x$')
+axs[1].set_yticklabels([])
+axs[2].set_yticklabels([])
+axs[3].set_yticklabels([])
 # for c in cs.collections: c.set_rasterized(True)
 fig.savefig('restart.png')

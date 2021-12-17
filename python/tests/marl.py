@@ -15,7 +15,7 @@ from KS import *
 ## set parameters and initialize simulation
 L    = 22/(2*np.pi)
 N    = 512
-dt   = 0.25
+dt   = 0.1
 tEnd = 50
 dns = KS(L=L, N=N, dt=dt, nu=1.0, tend=tEnd)
 
@@ -47,8 +47,19 @@ uRestartCoarse = f_restart(xCoarse)
 print(uRestartCoarse)
 subgrid.IC( u0 = uRestartCoarse)
 
-# continue simulation
-subgrid.simulate( nsteps=int(tEnd/dt), restart=True )
+# MARL LOOP
+rewardHist = np.zeros((int(tEnd/dt)))
+actions = np.ones(N)
+for i in range(int(tEnd/dt)):
+    state = subgrid.getState()
+    #print("State")
+    #print(state)
+    subgrid.step()
+    subgrid.updateField(actions)
+    rewards = subgrid.getReward()
+    rewardHist[i] = sum(rewards)
+    #print("Reward")
+    #print(rewards)
 
 # convert to physical space
 subgrid.fou2real()
@@ -58,6 +69,10 @@ uCoarse = subgrid.uu
 
 # eval truth on coarse Grid
 uTruthToCoarse = subgrid.mapGroundTruth()
+
+cumRewardHist = np.cumsum(rewardHist)
+print("Cum Total Reward")
+print(cumRewardHist)
 
 #------------------------------------------------------------------------------
 ## plot comparison
@@ -78,4 +93,4 @@ plt.setp(axs[0], ylabel='$x$')
 # for c in cs.collections: c.set_rasterized(True)
 axs[1].set_yticklabels([])
 axs[2].set_yticklabels([])
-fig.savefig('interpolate.png')
+fig.savefig('marl.png')

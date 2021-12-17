@@ -21,7 +21,7 @@ class KS:
     # Temporal discretization: exponential time differencing fourth-order Runge-Kutta
     # see AK Kassam and LN Trefethen, SISC 2005
 
-    def __init__(self, L=16, N=128, dt=0.25, nu=1.0, nsteps=None, tend=150, iout=1, u0=None, v0=None, RL=False, case=None, coeffs=None):
+    def __init__(self, L=16, N=128, dt=0.25, nu=1.0, nsteps=None, tend=150, u0=None, v0=None, RL=False, case=None, coeffs=None, noisy = False):
         
         # Initialize
         L  = float(L); 
@@ -35,6 +35,8 @@ class KS:
             # override tend
             tend = dt*nsteps
         
+        self.noisy = noisy
+
         # save to self
         self.L      = L
         self.N      = N
@@ -43,11 +45,12 @@ class KS:
         self.dt     = dt
         self.nu     = nu
         self.nsteps = nsteps
-        self.iout   = iout
-        self.nout   = int(nsteps/iout)
+        self.nout   = nsteps
         self.RL     = RL
         self.coeffs = coeffs
         
+        # time when field space transofrmed
+        self.uut = -1
         # field in real space
         self.uu = None
         # ground truth in real space
@@ -90,9 +93,6 @@ class KS:
         if (coeffs is None):
             # normal-form equation
             self.l = self.k**2 - self.k**4 #(KS)
-            #print(self.l.shape)
-            #self.l = self.k**2
-            #print(self.l.shape)
         else:
             # altered-coefficients 
             self.l = -      coeffs[0]*np.ones(self.k.shape) \
@@ -120,7 +120,8 @@ class KS:
         # Set initial condition
         if (v0 is None):
             if (u0 is None):
-                    print("Using Gaussian initial condition...")
+                    if self.noisy:
+                        print("[KS] Using Gaussian initial condition...")
                     # uniform noise
                     # u0 = (np.random.rand(self.N) -0.5)*0.01
                     # Gaussian noise (according to https://arxiv.org/pdf/1906.07672.pdf)
@@ -131,10 +132,12 @@ class KS:
             else:
                 # check the input size
                 if (np.size(u0,0) != self.N):
-                    print('Error: wrong IC array size')
+                    if self.noisy:
+                        print("[KS] Error: wrong IC array size")
                     return -1
                 else:
-                    print("Using given (real) flow field...")
+                    if self.noisy:
+                        print("[KS] Using given (real) flow field...")
                     # if ok cast to np.array
                     u0 = np.array(u0)
             # in any case, set v0:
@@ -143,10 +146,12 @@ class KS:
             # the initial condition is provided in v0
             # check the input size
             if (np.size(v0,0) != self.N):
-                print('Error: wrong IC array size')
-                return -1
+                if self.noisy:
+                    print("[KS] Error: wrong IC array size")
+                    return -1
             else:
-                print("Using given (Fourier) flow field...")
+                if self.noisy:
+                    print("[KS] Using given (Fourier) flow field...")
                 # if ok cast to np.array
                 v0 = np.array(v0)
                 # and transform to physical space
@@ -172,13 +177,6 @@ class KS:
     def step( self, action=None ):
         forcing  = np.zeros(self.N)
         Fforcing = np.zeros(self.N)
-        """
-        if (action is not None):
-            assert len(action) == self.nActions, print("Wrong number of actions. provided {}/{}".format(len(action), self.nActions))
-            for i, a in enumerate(action):
-                forcing += a*self.gaussians[i,:]
-            Fforcing = fft( forcing )
-        """
         #
         # Computation is based on v = fft(u), so linear term is diagonal.
         # The time-discretization is done via ETDRK4
@@ -193,17 +191,16 @@ class KS:
         c = self.E2*a + self.Q*(2.*Nb - Nv);  
         Nc = self.g*fft(np.real(ifft(c))**2)
         
-        #
-        """
-        if (action is not None):
-            self.v = self.E*v + (Nv + Fforcing)*self.f1 + 2.*(Na + Nb + 2*Fforcing)*self.f2 + (Nc + Fforcing)*self.f3
-        else:
-        """
         self.v = self.E*v + Nv*self.f1 + 2.*(Na + Nb)*self.f2 + Nc*self.f3
         self.stepnum += 1
         self.t       += self.dt
+ 
+        self.ioutnum += 1
+        self.vv[self.ioutnum,:] = self.v
+        self.tt[self.ioutnum]   = self.t
 
-    def simulate(self, nsteps=None, iout=None, restart=False, correction=[]):
+
+    def simulate(self, nsteps=None, restart=False, correction=[]):
         #
         # If not provided explicitly, get internal values
         if (nsteps is None):
@@ -212,62 +209,37 @@ class KS:
             nsteps = int(nsteps)
             self.nsteps = nsteps
         
-        if (iout is None):
-            iout = self.iout
-            nout = self.nout
-        else:
-            self.iout = iout
-        
         if restart:
             # update nout in case nsteps or iout were changed
-            nout      = int(nsteps/iout)
+            nout      = nsteps
             self.nout = nout
             # reset simulation arrays with possibly updated size
             self.setup_timeseries(nout=self.nout)
         
         # advance in time for nsteps steps
-        if (correction==[]):
-            for n in range(1,self.nsteps+1):
-                try:
+        try:
+            if (correction==[]):
+                for n in range(1,self.nsteps+1):
                     self.step()
-                except FloatingPointError:
-                    print("Floating point exception occured", flush=True)
-                    #
-                    # something exploded
-                    # cut time series to last saved solution and return
-                    self.nout = self.ioutnum
-                    self.vv.resize((self.nout+1,self.N)) # nout+1 because the IC is in [0]
-                    self.tt.resize(self.nout+1)          # nout+1 because the IC is in [0]
-                    return -1
-                if ( (self.iout>0) and (n%self.iout==0) ):
-                    self.ioutnum += 1
-                    self.vv[self.ioutnum,:] = self.v
-                    self.tt[self.ioutnum]   = self.t
-        else:
-            # lots of code duplication here, but should improve speed instead of having the 'if correction' at every time step
-            for n in range(1,self.nsteps+1):
-                try:
+            else:
+                for n in range(1,self.nsteps+1):
                     self.step()
                     self.v += correction
-                except FloatingPointError:
-                    print("Floating point exception occured", flush=True)
-                    #
-                    # something exploded
-                    # cut time series to last saved solution and return
-                    self.nout = self.ioutnum
-                    self.vv.resize((self.nout+1,self.N)) # nout+1 because the IC is in [0]
-                    self.tt.resize(self.nout+1)          # nout+1 because the IC is in [0]
-                    return -1
-                if ( (self.iout>0) and (n%self.iout==0) ):
-                    self.ioutnum += 1
-                    self.vv[self.ioutnum,:] = self.v
-                    self.tt[self.ioutnum]   = self.t
-
+                
+        except FloatingPointError:
+            print("[KS] Floating point exception occured", flush=True)
+            # something exploded
+            # cut time series to last saved solution and return
+            self.nout = self.ioutnum
+            self.vv.resize((self.nout+1,self.N)) # nout+1 because the IC is in [0]
+            self.tt.resize(self.nout+1)          # nout+1 because the IC is in [0]
+            return -1
 
     def fou2real(self):
-        #
         # Convert from spectral to physical space
-        self.uu = np.real(ifft(self.vv))
+        if(self.uut < self.stepnum):
+            self.uut = self.stepnum
+            self.uu = np.real(ifft(self.vv))
 
     def compute_Ek(self):
         #
@@ -331,3 +303,33 @@ class KS:
         #
         # compute u_resid
         self.uu_resid = self.uu - self.uu_filt
+
+    def getReward(self):
+        # Convert from spectral to physical space
+        self.fou2real()
+        
+        u = self.uu[self.ioutnum,:]
+        t = [self.t]
+        uMap = self.f_truth(self.x, t)
+        return -np.abs(u-uMap)
+
+
+
+    def getState(self, nAgents = None):
+        # Convert from spectral to physical space
+        self.fou2real()
+
+        # Extract state
+        u = self.uu[self.ioutnum,:]
+        dudu = np.zeros(self.N)
+        dudu[:-1] = (u[1:]-u[:-1])/self.dx
+        dudu[-1] = dudu[-2]
+        dudt = (self.uu[self.ioutnum,:]-self.uu[self.ioutnum-1,:])/self.dt
+        state = np.column_stack( (u, dudu, dudt) )
+        return state
+
+    def updateField(self, factors):
+        # elementwise multiplication
+        self.v = self.v * factors
+
+
