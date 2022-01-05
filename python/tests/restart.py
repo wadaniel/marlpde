@@ -17,7 +17,7 @@ N    = 512
 dt   = 0.25
 tTransient = 10
 tEnd       = 40 + tTransient  #50000
-dns = KS(L=L, N=N, dt=dt, nu=1.0, tend=tEnd)
+dns = KS(L=L, N=N, dt=dt, nu=1.0, tend=tTransient)
 
 #------------------------------------------------------------------------------
 ## simulate
@@ -38,7 +38,7 @@ u_restart = dns.uu[-1,:].copy()
 dns.IC( u0 = u_restart )
 
 # continue simulation
-dns.simulate( nsteps=int(tEnd/dt), restart=True )
+dns.simulate( nsteps=int( (tEnd-tTransient)/dt), restart=True )
 
 # convert to physical space
 dns.fou2real()
@@ -51,7 +51,7 @@ u1 = dns.uu
 dns.IC( v0 = v_restart )
 
 # continue simulation
-dns.simulate( nsteps=int(tEnd/dt), restart=True )
+dns.simulate( nsteps=int( (tEnd-tTransient)/dt), restart=True )
 
 # convert to physical space
 dns.fou2real()
@@ -62,15 +62,16 @@ u2 = dns.uu
 #------------------------------------------------------------------------------
 ## plot comparison
 fig, axs = plt.subplots(1,4)
-s, n = np.meshgrid(np.arange(tEnd/dt+1)*dt, 2*np.pi*L/N*(np.array(range(N))+1))
+
+s, n = np.meshgrid(np.arange(tTransient/dt+1)*dt, 2*np.pi*L/N*(np.array(range(N))+1))
+sre, nre = np.meshgrid( tTransient+np.arange((tEnd-tTransient)/dt+1)*dt, 2*np.pi*L/N*(np.array(range(N))+1))
 
 cs0 = axs[0].contourf(s, n, u.T, 50, cmap=plt.get_cmap("seismic"))
-cs0 = axs[1].contourf(s, n, u1.T, 50, cmap=plt.get_cmap("seismic"))
-cs1 = axs[2].contourf(s, n, u2.T, 50, cmap=plt.get_cmap("seismic"))
+cs0 = axs[1].contourf(sre, nre, u1.T, 50, cmap=plt.get_cmap("seismic"))
+cs1 = axs[2].contourf(sre, nre, u2.T, 50, cmap=plt.get_cmap("seismic"))
 diff = np.abs(u1-u2)
-cs2 = axs[3].contourf(s, n, diff.T, 50, cmap=plt.get_cmap("seismic"))
+cs2 = axs[3].contourf(sre, nre, diff.T, 50, cmap=plt.get_cmap("seismic"))
 
-# plt.colorbar(cs0, ax=axs[0])
 plt.colorbar(cs1, ax=axs[0])
 plt.colorbar(cs2, ax=axs[3])
 plt.setp(axs[:], xlabel='$t$')

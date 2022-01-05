@@ -8,6 +8,8 @@ import math
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--run', help='Run tag', required=False, type=int, default=0)
+parser.add_argument('--mar', help='Multi Agent Relationship', required=False, type=str, default="Individual")
+parser.add_argument('--mac', help='Multi Agent Correlation', required=False, type=bool, default=False)
 
 args = parser.parse_args()
 
@@ -19,7 +21,7 @@ e = korali.Experiment()
 
 ### Defining results folder and loading previous results, if any
 
-resultFolder = '_result_vracer_{}/'.format(args.run)
+resultFolder = '_result_vracer_{}_{}_{}/'.format(args.mar, args.mac, args.run)
 #found = e.loadState(resultFolder + '/latest')
 #if found == True:
 #	print("[Korali] Continuing execution from previous run...\n");
@@ -35,7 +37,7 @@ e["Problem"]["Policy Testing Episodes"] = 10;
 
 #Defining MARL setup
 e["Solver"]["Multi Agent Relationship"] = "Individual"
-e["Solver"]["Multi Agent Correlation"] = False
+e["Solver"]["Multi Agent Correlation"] = args.mac
 e["Solver"]["Strong Truncation Variant"] = False
 
 
@@ -60,7 +62,7 @@ e["Variables"][3]["Name"] = "Factor"
 e["Variables"][3]["Type"] = "Action"
 e["Variables"][3]["Lower Bound"] = 0.99
 e["Variables"][3]["Upper Bound"] = 1.01
-e["Variables"][3]["Initial Exploration Noise"] = 0.001
+e["Variables"][3]["Initial Exploration Noise"] = 0.0001
 
 ### Setting Experience Replay and REFER settings
 
@@ -71,7 +73,7 @@ e["Solver"]["Experience Replay"]["Off Policy"]["Target"] = 0.1
 e["Solver"]["Experience Replay"]["Start Size"] = 131072
 e["Solver"]["Experience Replay"]["Maximum Size"] = 262144
 
-e["Solver"]["Policy"]["Distribution"] = "Clipped Normal"
+e["Solver"]["Policy"]["Distribution"] = "Squashed Normal"
 e["Solver"]["State Rescaling"]["Enabled"] = True
 e["Solver"]["Reward"]["Rescaling"]["Enabled"] = True
   
