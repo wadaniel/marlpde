@@ -7,9 +7,9 @@ np.seterr(over='raise', invalid='raise')
 
 class KS:
     #
-    # Solution of the 1D Burger equation
+    # Solution of the  KS equation
     #
-    # u_t + u*u_x + nu*u_xx = 0,
+    # u_t + u_xx + u_xxxx + 0.5u_x*u_x= 0,
     # with periodic BCs on x \in [0, 2*pi*L]: u(x+2*pi*L,t) = u(x,t).
     #
     # The nature of the solution depends on the system size L and on the initial
@@ -122,13 +122,15 @@ class KS:
             if (u0 is None):
                     if self.noisy:
                         print("[KS] Using Gaussian initial condition...")
+                    
                     # uniform noise
-                    # u0 = (np.random.rand(self.N) -0.5)*0.01
                     # Gaussian noise (according to https://arxiv.org/pdf/1906.07672.pdf)
-                    #np.random.seed( seed )
-                    #u0 = np.random.normal(0., 1e-4, self.N)
-                    sigma = 1/(2*np.pi)
-                    u0 = np.exp(-0.5/(sigma*sigma)*(np.linspace(0, self.L, self.N) - 0.5*self.L)**2)*1/np.sqrt(2*np.pi*sigma*sigma)
+                    np.random.seed( seed )
+                    u0 = np.random.normal(0., 1e-4, self.N)
+                    
+                    # Gaussian initialization
+                    #sigma = 1/(2*np.pi)
+                    #u0 = np.exp(-0.5/(sigma*sigma)*(np.linspace(0, self.L, self.N) - 0.5*self.L)**2)*1/np.sqrt(2*np.pi*sigma*sigma)
             else:
                 # check the input size
                 if (np.size(u0,0) != self.N):
@@ -247,13 +249,17 @@ class KS:
         #
         # Kinetic energy as a function of wavenumber and time
         self.compute_Ek_kt()
+        
         # Time-averaged energy spectrum as a function of wavenumber
         self.Ek_k = np.sum(self.Ek_kt, 0)/(self.ioutnum+1) # not self.nout because we might not be at the end; ioutnum+1 because the IC is in [0]
+        
         # Total kinetic energy as a function of time
         self.Ek_t = np.sum(self.Ek_kt, 1)
-		# Time-cumulative average as a function of wavenumber and time
+		
+        # Time-cumulative average as a function of wavenumber and time
         self.Ek_ktt = np.cumsum(self.Ek_kt, 0) / np.arange(1,self.ioutnum+2)[:,None] # not self.nout because we might not be at the end; ioutnum+1 because the IC is in [0] +1 more because we divide starting from 1, not zero
-		# Time-cumulative average as a function of time
+		
+        # Time-cumulative average as a function of time
         self.Ek_tt = np.cumsum(self.Ek_t, 0) / np.arange(1,self.ioutnum+2)[:,None] # not self.nout because we might not be at the end; ioutnum+1 because the IC is in [0] +1 more because we divide starting from 1, not zero
 
     def compute_Ek_kt(self):
@@ -313,8 +319,6 @@ class KS:
         uMap = self.f_truth(self.x, t)
         return -np.abs(u-uMap)
 
-
-
     def getState(self, nAgents = None):
         # Convert from spectral to physical space
         self.fou2real()
@@ -331,5 +335,3 @@ class KS:
     def updateField(self, factors):
         # elementwise multiplication
         self.v = self.v * factors
-
-

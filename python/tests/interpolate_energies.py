@@ -73,7 +73,7 @@ subgrid.compute_Ek()
 eCoarse = subgrid.Ek_t
 eCoarseU = 0.5*np.sum(uCoarse**2,axis=1)*subgrid.dx
 
-# compute energy spectrum of interpoalted truth
+# compute energy of interpolated truth
 uTruthInterp = f_interpolate(xCoarse, tTruth)
 eTruthInterp = 0.5*np.sum(uTruthInterp**2,axis=1)*subgrid.dx
 
@@ -81,6 +81,11 @@ eTruthInterp = 0.5*np.sum(uTruthInterp**2,axis=1)*subgrid.dx
 diffTruth = eTruth-eCoarse
 diffInterpTruth = eTruthInterp-eCoarse
 diffTruths = eTruth-eTruthInterp
+
+
+# energy spectrum at aend
+ekTruth = dns.Ek_kt[-1,:]
+ekCoarse = subgrid.Ek_kt[-1,:]
 
 #------------------------------------------------------------------------------
 
@@ -102,3 +107,10 @@ plt.setp(axs[0], ylabel='$e$')
 # for c in cs.collections: c.set_rasterized(True)
 axs[1].set_yticklabels([])
 fig.savefig('interpolate_energies.png')
+
+fig, axs = plt.subplots(1,3)
+axs[0].plot(ekTruth)
+axs[0].set_yscale('log')
+axs[1].plot(ekCoarse)
+axs[1].set_yscale('log')
+fig.savefig('interpolate_spectrum.png')

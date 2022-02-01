@@ -1,4 +1,15 @@
 #!/bin/python3
+
+"""
+This scripts simulates the KS on a grid (N) until t=tTransient. The solution 
+from the ast time-step is extracted and then taken as the initial condidtion for
+two more runs (i) in real space and ind (ii) fourier space with simulation length
+tEnd (until t=tEnd+tTransient). The transient phase and both results and the difference is plotted.
+"""
+
+# Discretization grid
+N = 512
+
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
@@ -13,8 +24,7 @@ from KS import *
 #------------------------------------------------------------------------------
 ## set parameters and initialize simulation
 L    = 22/(2*np.pi)
-N    = 512
-dt   = 0.25
+dt   = 0.05
 tTransient = 10
 tEnd       = 40 + tTransient  #50000
 dns = KS(L=L, N=N, dt=dt, nu=1.0, tend=tTransient)
