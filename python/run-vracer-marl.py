@@ -1,14 +1,15 @@
 import argparse
 import sys
 sys.path.append('_model')
-from environment import *
+from marl_environment import *
 import math
 
 ### Parsing arguments
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--N', help='Discretization / number of grid points', required=False, type=int, default=8)
 parser.add_argument('--run', help='Run tag', required=False, type=int, default=0)
+parser.add_argument('--mar', help='Multi Agent Relationship', required=False, type=str, default="Individual")
+parser.add_argument('--mac', help='Multi Agent Correlation', required=False, type=bool, default=False)
 
 args = parser.parse_args()
 
@@ -20,16 +21,25 @@ e = korali.Experiment()
 
 ### Defining results folder and loading previous results, if any
 
-resultFolder = '_result_vracer_{}_{}/'.format(args.N, args.run)
+resultFolder = '_result_vracer_{}_{}_{}/'.format(args.mar, args.mac, args.run)
 #found = e.loadState(resultFolder + '/latest')
 #if found == True:
 #	print("[Korali] Continuing execution from previous run...\n");
 
 ### Defining Problem Configuration
 e["Problem"]["Type"] = "Reinforcement Learning / Continuous"
-e["Problem"]["Environment Function"] = lambda s : environment( s, args.N )
-#e["Problem"]["Testing Frequency"] = 100;
-#e["Problem"]["Policy Testing Episodes"] = 10;
+e["Problem"]["Environment Function"] = lambda s : environment( s, nagents = 16 )
+e["Problem"]["Testing Frequency"] = 100;
+e["Problem"]["Policy Testing Episodes"] = 10;
+
+#Defining MARL setup
+e["Problem"]["Agents Per Environment"] = 16
+e["Problem"]["Policies Per Environment"] = 1;
+ 
+e["Solver"]["Multi Agent Relationship"] = "Individual"
+e["Solver"]["Multi Agent Correlation"] = args.mac
+e["Solver"]["Strong Truncation Variant"] = False
+
 
 ### Defining Agent Configuration 
 
@@ -37,36 +47,33 @@ e["Solver"]["Type"] = "Agent / Continuous / VRACER"
 e["Solver"]["Mode"] = "Training"
 e["Solver"]["Episodes Per Generation"] = 10
 e["Solver"]["Experiences Between Policy Updates"] = 1
-e["Solver"]["Learning Rate"] = 0.00005
+e["Solver"]["Learning Rate"] = 0.0001
 e["Solver"]["Discount Factor"] = 0.995
 e["Solver"]["Mini Batch"]["Size"] = 256
 
 ### Defining Variables
 
-nState  = args.N*3
-nActions = args.N
 # States (flow at sensor locations)
-for i in range(nState):
+for i in range(3):
 	e["Variables"][i]["Name"] = "Field Information " + str(i)
 	e["Variables"][i]["Type"] = "State"
 
-for i in range(nActions):
-    e["Variables"][nState+i]["Name"] = "Forcing " + str(i)
-    e["Variables"][nState+i]["Type"] = "Action"
-    e["Variables"][nState+i]["Lower Bound"] = -0.01
-    e["Variables"][nState+i]["Upper Bound"] = 0.01
-    e["Variables"][nState+i]["Initial Exploration Noise"] = 0.0005
+e["Variables"][3]["Name"] = "Factor"
+e["Variables"][3]["Type"] = "Action"
+e["Variables"][3]["Lower Bound"] = 0.99
+e["Variables"][3]["Upper Bound"] = 1.01
+e["Variables"][3]["Initial Exploration Noise"] = 0.0001
 
 ### Setting Experience Replay and REFER settings
 
-e["Solver"]["Experience Replay"]["Off Policy"]["Annealing Rate"] = 1.0e-8
-e["Solver"]["Experience Replay"]["Off Policy"]["Cutoff Scale"] = 4.0
+e["Solver"]["Experience Replay"]["Off Policy"]["Annealing Rate"] = 5.0e-8
+e["Solver"]["Experience Replay"]["Off Policy"]["Cutoff Scale"] = 5.0
 e["Solver"]["Experience Replay"]["Off Policy"]["REFER Beta"] = 0.3
 e["Solver"]["Experience Replay"]["Off Policy"]["Target"] = 0.1
 e["Solver"]["Experience Replay"]["Start Size"] = 131072
 e["Solver"]["Experience Replay"]["Maximum Size"] = 262144
 
-e["Solver"]["Policy"]["Distribution"] = "Clipped Normal"
+e["Solver"]["Policy"]["Distribution"] = "Squashed Normal"
 e["Solver"]["State Rescaling"]["Enabled"] = True
 e["Solver"]["Reward"]["Rescaling"]["Enabled"] = True
   
@@ -78,20 +85,20 @@ e["Solver"]["L2 Regularization"]["Enabled"] = False
 e["Solver"]["L2 Regularization"]["Importance"] = 0.0
 
 e["Solver"]["Neural Network"]["Hidden Layers"][0]["Type"] = "Layer/Linear"
-e["Solver"]["Neural Network"]["Hidden Layers"][0]["Output Channels"] = 256
+e["Solver"]["Neural Network"]["Hidden Layers"][0]["Output Channels"] = 128
 
 e["Solver"]["Neural Network"]["Hidden Layers"][1]["Type"] = "Layer/Activation"
 e["Solver"]["Neural Network"]["Hidden Layers"][1]["Function"] = "Elementwise/Tanh"
 
 e["Solver"]["Neural Network"]["Hidden Layers"][2]["Type"] = "Layer/Linear"
-e["Solver"]["Neural Network"]["Hidden Layers"][2]["Output Channels"] = 256
+e["Solver"]["Neural Network"]["Hidden Layers"][2]["Output Channels"] = 128
 
 e["Solver"]["Neural Network"]["Hidden Layers"][3]["Type"] = "Layer/Activation"
 e["Solver"]["Neural Network"]["Hidden Layers"][3]["Function"] = "Elementwise/Tanh"
 
 ### Setting file output configuration
 
-e["Solver"]["Termination Criteria"]["Max Experiences"] = 10e6
+e["Solver"]["Termination Criteria"]["Max Experiences"] = 1e6
 e["Solver"]["Experience Replay"]["Serialize"] = True
 e["Console Output"]["Verbosity"] = "Detailed"
 e["File Output"]["Enabled"] = True

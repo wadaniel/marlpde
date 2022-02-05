@@ -26,7 +26,7 @@ from KS import *
 ## set parameters and initialize simulation
 L    = 22/(2*np.pi)
 dt   = 0.05
-tEnd = 3000
+tEnd = 1000
 dns  = KS(L=L, N=N, dt=dt, nu=1.0, tend=tEnd)
 
 #------------------------------------------------------------------------------
@@ -44,9 +44,8 @@ e_t = dns.Ek_t
 e_tt = dns.Ek_tt
 e_ktt = dns.Ek_ktt
 
-xf = fftfreq(N, L)[:N//2]
+k = dns.k[:N//2]
 
-k = np.arange(N)/L
 time = np.arange(tEnd/dt+1)*dt
 
 fig, axs = plt.subplots(1,3)
@@ -55,9 +54,9 @@ s, n = np.meshgrid(2*np.pi*L/N*(np.array(range(N))+1), time)
 axs[0].contourf(s, n, u, 50)
 axs[1].plot(time, e_t)
 axs[1].plot(time, e_tt)
-axs[2].plot(xf, 2.0/N * np.abs(e_ktt[0,0:N//2]),'b--')
-axs[2].plot(xf, 2.0/N * np.abs(e_ktt[tEnd//2,0:N//2]),'b:')
-axs[2].plot(xf, 2.0/N * np.abs(e_ktt[-1,0:N//2]),'b')
+axs[2].plot(k, 2.0/N * np.abs(e_ktt[0,0:N//2]),'b--')
+axs[2].plot(k, 2.0/N * np.abs(e_ktt[tEnd//2,0:N//2]),'b:')
+axs[2].plot(k, 2.0/N * np.abs(e_ktt[-1,0:N//2]),'b')
 axs[2].set_xscale('log')
 axs[2].set_yscale('log')
 

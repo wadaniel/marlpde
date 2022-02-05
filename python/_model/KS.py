@@ -5,6 +5,9 @@ import numpy as np
 
 np.seterr(over='raise', invalid='raise')
 
+def gaussian( x, mean, sigma ):
+    return 1/np.sqrt(2*np.pi*sigma**2)*np.exp(-1/2*( (x-mean)/sigma )**2)
+
 class KS:
     #
     # Solution of the  KS equation
@@ -21,7 +24,7 @@ class KS:
     # Temporal discretization: exponential time differencing fourth-order Runge-Kutta
     # see AK Kassam and LN Trefethen, SISC 2005
 
-    def __init__(self, L=16, N=128, dt=0.25, nu=1.0, nsteps=None, tend=150, u0=None, v0=None, RL=False, case=None, coeffs=None, noisy = False):
+    def __init__(self, L=16, N=128, dt=0.25, nu=1.0, nsteps=None, tend=150, u0=None, v0=None, case=None, coeffs=None, noisy = False):
         
         # Initialize
         L  = float(L); 
@@ -46,10 +49,10 @@ class KS:
         self.nu     = nu
         self.nsteps = nsteps
         self.nout   = nsteps
-        self.RL     = RL
+        self.sigma  = 2*pi*L/(2*N)
         self.coeffs = coeffs
         
-        # time when field space transofrmed
+        # time when field space transformed
         self.uut = -1
         # field in real space
         self.uu = None
@@ -67,15 +70,19 @@ class KS:
             self.IC(v0 = v0)
         
         # initialize simulation arrays
-        self.setup_timeseries()
+        self.__setup_timeseries()
         
         # precompute Fourier-related quantities
-        self.setup_fourier(self.coeffs)
+        self.__setup_fourier(self.coeffs)
         
         # precompute ETDRK4 scalar quantities:
-        self.setup_etdrk4()
+        self.__setup_etdrk4()
 
-    def setup_timeseries(self, nout=None):
+        # Gaussians for forcing terms
+        self.__setup_gaussians()
+
+
+    def __setup_timeseries(self, nout=None):
         if (nout != None):
             self.nout = int(nout)
         
@@ -87,7 +94,7 @@ class KS:
         self.vv[0,:] = self.v0
         self.tt[0]   = 0.
 
-    def setup_fourier(self, coeffs=None):
+    def __setup_fourier(self, coeffs=None):
         self.k  = np.r_[0:self.N/2, 0, -self.N/2+1:0]/self.L # Wave numbers
         # Fourier multipliers for the linear term Lu
         if (coeffs is None):
@@ -102,7 +109,7 @@ class KS:
                      - (1 + coeffs[4])  *self.k**4
 
 
-    def setup_etdrk4(self):
+    def __setup_etdrk4(self):
         self.E  = np.exp(self.dt*self.l)
         self.E2 = np.exp(self.dt*self.l/2.)
         self.M  = 62                                           # no. of points for complex means
@@ -113,7 +120,12 @@ class KS:
         self.f2 = self.dt*np.real( np.mean( ( 2. +    self.LR              + np.exp(self.LR)*(-2. +    self.LR             ) )/(self.LR**3) , 1) )
         self.f3 = self.dt*np.real( np.mean( (-4. - 3.*self.LR - self.LR**2 + np.exp(self.LR)*( 4. -    self.LR             ) )/(self.LR**3) , 1) )
         self.g  = -0.5j*self.k
-
+ 
+    def __setup_gaussians(self):
+        self.gaussians = np.zeros(self.N)
+        for i in range(self.N):
+            mean = i*self.L/4
+            self.gaussians[i] = gaussian( mean, mean, self.sigma)
 
     def IC(self, u0=None, v0=None, seed=42):
         
@@ -179,6 +191,13 @@ class KS:
     def step( self, action=None ):
         forcing  = np.zeros(self.N)
         Fforcing = np.zeros(self.N)
+ 
+        if (action is not None):
+            #assert len(action) == self.nActions, print("Wrong number of actions. provided {}/{}".format(len(action), self.nActions))
+            forcing += action*self.gaussians[:]
+            Fforcing = fft( forcing )
+
+
         #
         # Computation is based on v = fft(u), so linear term is diagonal.
         # The time-discretization is done via ETDRK4
@@ -193,7 +212,11 @@ class KS:
         c = self.E2*a + self.Q*(2.*Nb - Nv);  
         Nc = self.g*fft(np.real(ifft(c))**2)
         
-        self.v = self.E*v + Nv*self.f1 + 2.*(Na + Nb)*self.f2 + Nc*self.f3
+        if (action is not None):
+            self.v = self.E*v + (Nv + Fforcing)*self.f1 + 2.*(Na + Nb + 2*Fforcing)*self.f2 + (Nc + Fforcing)*self.f3
+        else:
+            self.v = self.E*v + Nv*self.f1 + 2.*(Na + Nb)*self.f2 + Nc*self.f3
+
         self.stepnum += 1
         self.t       += self.dt
  
@@ -216,7 +239,7 @@ class KS:
             nout      = nsteps
             self.nout = nout
             # reset simulation arrays with possibly updated size
-            self.setup_timeseries(nout=self.nout)
+            self.__setup_timeseries(nout=self.nout)
         
         # advance in time for nsteps steps
         try:
@@ -239,16 +262,15 @@ class KS:
 
     def fou2real(self):
         # Convert from spectral to physical space
-        if(self.uut < self.stepnum):
-            self.uut = self.stepnum
-            self.uu = np.real(ifft(self.vv))
+        #self.uut = self.stepnum
+        self.uu = np.real(ifft(self.vv))
 
     def compute_Ek(self):
         #
         # compute all forms of kinetic energy
         #
         # Kinetic energy as a function of wavenumber and time
-        self.compute_Ek_kt()
+        self.__compute_Ek_kt()
         
         # Time-averaged energy spectrum as a function of wavenumber
         self.Ek_k = np.sum(self.Ek_kt, 0)/(self.ioutnum+1) # not self.nout because we might not be at the end; ioutnum+1 because the IC is in [0]
@@ -257,12 +279,12 @@ class KS:
         self.Ek_t = np.sum(self.Ek_kt, 1)
 		
         # Time-cumulative average as a function of wavenumber and time
-        self.Ek_ktt = np.cumsum(self.Ek_kt, 0) / np.arange(1,self.ioutnum+2)[:,None] # not self.nout because we might not be at the end; ioutnum+1 because the IC is in [0] +1 more because we divide starting from 1, not zero
+        self.Ek_ktt = np.cumsum(self.Ek_kt, 0)[:self.ioutnum+1,:] / np.arange(1,self.ioutnum+2)[:,None] # not self.nout because we might not be at the end; ioutnum+1 because the IC is in [0] +1 more because we divide starting from 1, not zero
 		
         # Time-cumulative average as a function of time
-        self.Ek_tt = np.cumsum(self.Ek_t, 0) / np.arange(1,self.ioutnum+2) # not self.nout because we might not be at the end; ioutnum+1 because the IC is in [0] +1 more because we divide starting from 1, not zero
+        self.Ek_tt = np.cumsum(self.Ek_t, 0)[:self.ioutnum+1] / np.arange(1,self.ioutnum+2) # not self.nout because we might not be at the end; ioutnum+1 because the IC is in [0] +1 more because we divide starting from 1, not zero
 
-    def compute_Ek_kt(self):
+    def __compute_Ek_kt(self):
         try:
             self.Ek_kt = 1./2.*np.real( self.vv.conj()*self.vv / self.N ) * self.dx
         except FloatingPointError:
