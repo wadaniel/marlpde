@@ -86,7 +86,7 @@ def environment( s , numGridPoints ):
         
     if error == 1:
         s["Termination"] = "Truncated"
-        s["Reward"] = -1000
+        s["Reward"] = -5000
     
     else:
         s["Termination"] = "Terminal"

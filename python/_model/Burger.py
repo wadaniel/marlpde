@@ -8,23 +8,16 @@ np.seterr(over='raise', invalid='raise')
 def gaussian( x, mean, sigma ):
     return 1/np.sqrt(2*np.pi*sigma**2)*np.exp(-1/2*( (x-mean)/sigma )**2)
 
-class KS:
+class Burger:
     #
-    # Solution of the  KS equation
+    # Solution of the Burgers equation
     #
-    # u_t + u_xx + u_xxxx + 0.5u_x*u_x= 0,
-    # with periodic BCs on x \in [0, 2*pi*L]: u(x+2*pi*L,t) = u(x,t).
+    # u_t + nu*u*u_x = 0
+    # with periodic BCs on x \in [0, L]: u(0,t) = u(L,t).
     #
-    # The nature of the solution depends on the system size L and on the initial
-    # condition u(x,0). 
-    #
-    # see P Cvitanović, RL Davidchack, and E Siminos, SIAM Journal on Applied Dynamical Systems 2010
-    #
-    # Spatial  discretization: spectral (Fourier)
-    # Temporal discretization: exponential time differencing fourth-order Runge-Kutta
-    # see AK Kassam and LN Trefethen, SISC 2005
+    # Finite Volume solver with Egquist-Osher scheme
 
-    def __init__(self, L=16, N=128, dt=0.25, nu=1.0, nsteps=None, tend=150, u0=None, v0=None, case=None, coeffs=None, noisy = False):
+    def __init__(self, L=1./(2.*np.pi), N=128, dt=0.25, nu=1.0, nsteps=None, tend=150, u0=None, v0=None, case=None, coeffs=None, noisy = False):
         
         # Initialize
         L  = float(L); 
@@ -43,8 +36,8 @@ class KS:
         # save to self
         self.L      = L
         self.N      = N
-        self.dx     = 2*pi*L/N
-        self.x      = 2*pi*self.L*np.r_[0:self.N]/self.N
+        self.dx     = L/N
+        self.x      = self.L*np.r_[0:self.N]/self.N
         self.dt     = dt
         self.nu     = nu
         self.nsteps = nsteps
@@ -99,7 +92,7 @@ class KS:
         # Fourier multipliers for the linear term Lu
         if (coeffs is None):
             # normal-form equation
-            self.l = self.k**2 - self.k**4 #(KS)
+            self.l = -self.k*1j - self.k**2
         else:
             # altered-coefficients 
             self.l = -      coeffs[0]*np.ones(self.k.shape) \
@@ -137,12 +130,15 @@ class KS:
                     
                     # uniform noise
                     # Gaussian noise (according to https://arxiv.org/pdf/1906.07672.pdf)
-                    np.random.seed( seed )
-                    u0 = np.random.normal(0., 1e-4, self.N)
+                    #np.random.seed( seed )
+                    #u0 = np.random.normal(0., 1e-4, self.N)
                     
                     # Gaussian initialization
-                    #sigma = 1/(2*np.pi)
+                    #sigma = self.L/4
                     #u0 = np.exp(-0.5/(sigma*sigma)*(np.linspace(0, self.L, self.N) - 0.5*self.L)**2)*1/np.sqrt(2*np.pi*sigma*sigma)
+                    
+                    # Box initialization
+                    u0 = np.abs(np.linspace(0, self.L, self.N)-self.L/2)<self.L/4
             else:
                 # check the input size
                 if (np.size(u0,0) != self.N):

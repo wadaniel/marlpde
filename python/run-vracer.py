@@ -55,7 +55,7 @@ for i in range(nActions):
     e["Variables"][nState+i]["Type"] = "Action"
     e["Variables"][nState+i]["Lower Bound"] = -0.01
     e["Variables"][nState+i]["Upper Bound"] = 0.01
-    e["Variables"][nState+i]["Initial Exploration Noise"] = 0.0005
+    e["Variables"][nState+i]["Initial Exploration Noise"] = 0.0001
 
 ### Setting Experience Replay and REFER settings
 
@@ -63,8 +63,8 @@ e["Solver"]["Experience Replay"]["Off Policy"]["Annealing Rate"] = 1.0e-8
 e["Solver"]["Experience Replay"]["Off Policy"]["Cutoff Scale"] = 4.0
 e["Solver"]["Experience Replay"]["Off Policy"]["REFER Beta"] = 0.3
 e["Solver"]["Experience Replay"]["Off Policy"]["Target"] = 0.1
-e["Solver"]["Experience Replay"]["Start Size"] = 131072
-e["Solver"]["Experience Replay"]["Maximum Size"] = 262144
+e["Solver"]["Experience Replay"]["Start Size"] = 262144
+e["Solver"]["Experience Replay"]["Maximum Size"] = 524288
 
 e["Solver"]["Policy"]["Distribution"] = "Clipped Normal"
 e["Solver"]["State Rescaling"]["Enabled"] = True
@@ -78,13 +78,13 @@ e["Solver"]["L2 Regularization"]["Enabled"] = False
 e["Solver"]["L2 Regularization"]["Importance"] = 0.0
 
 e["Solver"]["Neural Network"]["Hidden Layers"][0]["Type"] = "Layer/Linear"
-e["Solver"]["Neural Network"]["Hidden Layers"][0]["Output Channels"] = 256
+e["Solver"]["Neural Network"]["Hidden Layers"][0]["Output Channels"] = 512
 
 e["Solver"]["Neural Network"]["Hidden Layers"][1]["Type"] = "Layer/Activation"
 e["Solver"]["Neural Network"]["Hidden Layers"][1]["Function"] = "Elementwise/Tanh"
 
 e["Solver"]["Neural Network"]["Hidden Layers"][2]["Type"] = "Layer/Linear"
-e["Solver"]["Neural Network"]["Hidden Layers"][2]["Output Channels"] = 256
+e["Solver"]["Neural Network"]["Hidden Layers"][2]["Output Channels"] = 512
 
 e["Solver"]["Neural Network"]["Hidden Layers"][3]["Type"] = "Layer/Activation"
 e["Solver"]["Neural Network"]["Hidden Layers"][3]["Function"] = "Elementwise/Tanh"
