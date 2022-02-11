@@ -1,3 +1,4 @@
+import sys
 from numpy import pi
 from scipy import interpolate
 from scipy.fftpack import fft, ifft
@@ -12,12 +13,10 @@ class Burger:
     #
     # Solution of the Burgers equation
     #
-    # u_t + nu*u*u_x = 0
+    # u_t + u*u_x = nu*u_xx0
     # with periodic BCs on x \in [0, L]: u(0,t) = u(L,t).
-    #
-    # Finite Volume solver with Egquist-Osher scheme
 
-    def __init__(self, L=1./(2.*np.pi), N=128, dt=0.25, nu=1.0, nsteps=None, tend=150, u0=None, v0=None, case=None, coeffs=None, noisy = False):
+    def __init__(self, L=1./(2.*np.pi), N=128, dt=0.25, nu=0.0, nsteps=None, tend=150, u0=None, v0=None, case=None, coeffs=None, noisy = False):
         
         # Initialize
         L  = float(L); 
@@ -55,12 +54,15 @@ class Burger:
         self.f_truth = None
 
         # set initial condition
-        if (u0 is None) or (v0 is None):
+        if (u0 is None) and (v0 is None):
             self.IC()
         elif (u0 is not None):
             self.IC(u0 = u0)
         elif (v0 is not None):
             self.IC(v0 = v0)
+        else:
+            print("[Burger] IC ambigous")
+            sys.exit()
         
         # initialize simulation arrays
         self.__setup_timeseries()
@@ -80,15 +82,21 @@ class Burger:
             self.nout = int(nout)
         
         # nout+1 because we store the IC as well
+        self.uu = np.zeros([self.nout+1, self.N], dtype=np.complex64)
         self.vv = np.zeros([self.nout+1, self.N], dtype=np.complex64)
         self.tt = np.zeros(self.nout+1)
         
         # store the IC in [0]
+        self.uu[0,:] = self.u0
         self.vv[0,:] = self.v0
         self.tt[0]   = 0.
 
     def __setup_fourier(self, coeffs=None):
-        self.k  = np.r_[0:self.N/2, 0, -self.N/2+1:0]/self.L # Wave numbers
+        self.k  = np.r_[0:self.N/2, 0, -self.N/2+1:0]*2*pi/self.L # Wave numbers
+        self.k1  = 1j * self.k
+        self.k2  = self.k1**2
+        
+        """
         # Fourier multipliers for the linear term Lu
         if (coeffs is None):
             # normal-form equation
@@ -100,9 +108,12 @@ class Burger:
                      + (1 + coeffs[2])  *self.k**2          \
                      +      coeffs[3]*1j*self.k**3          \
                      - (1 + coeffs[4])  *self.k**4
-
+        """
 
     def __setup_etdrk4(self):
+        return
+
+        """
         self.E  = np.exp(self.dt*self.l)
         self.E2 = np.exp(self.dt*self.l/2.)
         self.M  = 62                                           # no. of points for complex means
@@ -113,6 +124,7 @@ class Burger:
         self.f2 = self.dt*np.real( np.mean( ( 2. +    self.LR              + np.exp(self.LR)*(-2. +    self.LR             ) )/(self.LR**3) , 1) )
         self.f3 = self.dt*np.real( np.mean( (-4. - 3.*self.LR - self.LR**2 + np.exp(self.LR)*( 4. -    self.LR             ) )/(self.LR**3) , 1) )
         self.g  = -0.5j*self.k
+        """
  
     def __setup_gaussians(self):
         self.gaussians = np.zeros(self.N)
@@ -125,8 +137,6 @@ class Burger:
         # Set initial condition
         if (v0 is None):
             if (u0 is None):
-                    if self.noisy:
-                        print("[KS] Using Gaussian initial condition...")
                     
                     # uniform noise
                     # Gaussian noise (according to https://arxiv.org/pdf/1906.07672.pdf)
@@ -136,18 +146,20 @@ class Burger:
                     # Gaussian initialization
                     #sigma = self.L/4
                     #u0 = np.exp(-0.5/(sigma*sigma)*(np.linspace(0, self.L, self.N) - 0.5*self.L)**2)*1/np.sqrt(2*np.pi*sigma*sigma)
-                    
                     # Box initialization
-                    u0 = np.abs(np.linspace(0, self.L, self.N)-self.L/2)<self.L/4
+                    #u0 = np.abs(np.linspace(0, self.L, self.N)-self.L/2)<self.L/4
+                    
+                    # Negative sinus
+                    u0 = np.sin(np.linspace(0, self.L, self.N))
             else:
                 # check the input size
                 if (np.size(u0,0) != self.N):
                     if self.noisy:
-                        print("[KS] Error: wrong IC array size")
+                        print("[Burger] Error: wrong IC array size")
                     return -1
                 else:
                     if self.noisy:
-                        print("[KS] Using given (real) flow field...")
+                        print("[Burger] Using given (real) flow field...")
                     # if ok cast to np.array
                     u0 = np.array(u0)
             # in any case, set v0:
@@ -157,11 +169,11 @@ class Burger:
             # check the input size
             if (np.size(v0,0) != self.N):
                 if self.noisy:
-                    print("[KS] Error: wrong IC array size")
+                    print("[Burger] Error: wrong IC array size")
                     return -1
             else:
                 if self.noisy:
-                    print("[KS] Using given (Fourier) flow field...")
+                    print("[Burger] Using given (Fourier) flow field...")
                 # if ok cast to np.array
                 v0 = np.array(v0)
                 # and transform to physical space
@@ -169,6 +181,7 @@ class Burger:
         #
         # and save to self
         self.u0  = u0
+        self.u   = u0
         self.v0  = v0
         self.v   = v0
         self.t   = 0.
@@ -189,11 +202,15 @@ class Burger:
         Fforcing = np.zeros(self.N)
  
         if (action is not None):
+            printf("exit.. todo")
             #assert len(action) == self.nActions, print("Wrong number of actions. provided {}/{}".format(len(action), self.nActions))
             forcing += action*self.gaussians[:]
             Fforcing = fft( forcing )
 
+        self.v = self.v - self.dt*self.k1*fft(0.5*self.u**2) + self.dt*self.nu*self.k2*self.v
+        self.u = ifft(self.v)
 
+        """
         #
         # Computation is based on v = fft(u), so linear term is diagonal.
         # The time-discretization is done via ETDRK4
@@ -212,14 +229,16 @@ class Burger:
             self.v = self.E*v + (Nv + Fforcing)*self.f1 + 2.*(Na + Nb + 2*Fforcing)*self.f2 + (Nc + Fforcing)*self.f3
         else:
             self.v = self.E*v + Nv*self.f1 + 2.*(Na + Nb)*self.f2 + Nc*self.f3
+        """
 
         self.stepnum += 1
         self.t       += self.dt
  
         self.ioutnum += 1
+        self.uu[self.ioutnum,:] = self.u
         self.vv[self.ioutnum,:] = self.v
         self.tt[self.ioutnum]   = self.t
-
+        
 
     def simulate(self, nsteps=None, restart=False, correction=[]):
         #
@@ -248,7 +267,7 @@ class Burger:
                     self.v += correction
                 
         except FloatingPointError:
-            print("[KS] Floating point exception occured", flush=True)
+            print("[Burger] Floating point exception occured", flush=True)
             # something exploded
             # cut time series to last saved solution and return
             self.nout = self.ioutnum

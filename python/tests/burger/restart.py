@@ -8,7 +8,7 @@ tEnd (until t=tEnd+tTransient). The transient phase and both results and the dif
 """
 
 # Discretization grid
-N = 512
+N = 2048
 
 import matplotlib
 matplotlib.use('Agg')
@@ -23,10 +23,11 @@ from Burger import *
 
 #------------------------------------------------------------------------------
 ## set parameters and initialize simulation
-L    = 1./(2.*np.pi)
-dt   = 0.0001
-tEnd = 0.1
-dns = Burger(L=L, N=N, dt=dt, nu=1.0, tend=tEnd)
+L    = 2*np.pi
+dt   = 0.01
+tEnd = 7
+nu   = 0.01
+dns = Burger(L=L, N=N, dt=dt, nu=nu, tend=tEnd)
 
 #------------------------------------------------------------------------------
 ## simulate

@@ -1,3 +1,4 @@
+import sys
 from numpy import pi
 from scipy import interpolate
 from scipy.fftpack import fft, ifft
@@ -62,13 +63,16 @@ class KS:
         self.f_truth = None
 
         # set initial condition
-        if (u0 is None) or (v0 is None):
+        if (u0 is None) and (v0 is None):
             self.IC()
         elif (u0 is not None):
             self.IC(u0 = u0)
         elif (v0 is not None):
             self.IC(v0 = v0)
-        
+        else:
+            print("[KS] IC ambigous")
+            sys.exit()
+ 
         # initialize simulation arrays
         self.__setup_timeseries()
         
