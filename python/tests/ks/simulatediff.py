@@ -16,7 +16,7 @@ import matplotlib.pyplot as plt
 
 import sys
 import argparse
-sys.path.append('./../_model/')
+sys.path.append('./../../_model/')
 
 import numpy as np
 from scipy import interpolate

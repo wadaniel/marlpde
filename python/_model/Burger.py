@@ -92,7 +92,7 @@ class Burger:
         self.tt[0]   = 0.
 
     def __setup_fourier(self, coeffs=None):
-        self.k  = np.r_[0:self.N/2, 0, -self.N/2+1:0]*2*pi/self.L # Wave numbers
+        self.k  = np.r_[0:self.N/2, 0, -self.N/2+1:0]*2*np.pi/self.L # Wave numbers
         self.k1  = 1j * self.k
         self.k2  = self.k1**2
         
@@ -149,8 +149,8 @@ class Burger:
                     # Box initialization
                     #u0 = np.abs(np.linspace(0, self.L, self.N)-self.L/2)<self.L/4
                     
-                    # Negative sinus
-                    u0 = np.sin(np.linspace(0, self.L, self.N))
+                    # Sinus
+                    u0 = np.sin(self.x)
             else:
                 # check the input size
                 if (np.size(u0,0) != self.N):
@@ -207,8 +207,8 @@ class Burger:
             forcing += action*self.gaussians[:]
             Fforcing = fft( forcing )
 
-        self.v = self.v - self.dt*self.k1*fft(0.5*self.u**2) + self.dt*self.nu*self.k2*self.v
-        self.u = ifft(self.v)
+        self.v = self.v - self.dt*0.5*self.k1*fft(self.u**2) + self.dt*self.nu*self.k2*self.v
+        self.u = np.real(ifft(self.v))
 
         """
         #

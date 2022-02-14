@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 
 import numpy as np
 from scipy.fftpack import fft, ifft
+from scipy.signal import convolve
 import py
 
 N = 2048
@@ -21,13 +22,13 @@ uinit = np.sin(x)
 u = uinit
 v = fft(u)
 
-
 uu = np.zeros((N, int(T/dt)+1))
 uu[:, 0] = u
 
 
 for t in range(int(T/dt)):
-    v = v - dt*k1*fft(0.5*u**2) + dt*D*k2*v
+    v = v - dt*k1*0.5*fft(u**2) + dt*D*k2*v
+    #v = v - dt*k1*0.5*convolve(v,v, 'same') + dt*D*k2*v ## SLOW
     u = np.real(ifft(v))
     uu[:, t+1] = u
 

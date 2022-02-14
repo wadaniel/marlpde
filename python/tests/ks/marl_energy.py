@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 
 import sys
 import argparse
-sys.path.append('./../_model/')
+sys.path.append('./../../_model/')
 
 from scipy import interpolate
 import numpy as np

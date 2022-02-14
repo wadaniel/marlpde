@@ -1,6 +1,6 @@
 #!/bin/python3
 import sys
-sys.path.append('./../_model/')
+sys.path.append('./../../_model/')
 from KS import *
  
 import matplotlib.pyplot as plt

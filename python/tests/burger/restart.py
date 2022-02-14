@@ -4,11 +4,11 @@
 This scripts simulates the Burger equation on a grid (N) until t=tTransient. The solution 
 from the ast time-step is extracted and then taken as the initial condidtion for
 two more runs (i) in real space and ind (ii) fourier space with simulation length
-tEnd (until t=tEnd+tTransient). The transient phase and both results and the difference is plotted.
+tEnd. 
 """
 
 # Discretization grid
-N = 2048
+N = 1024
 
 import matplotlib
 matplotlib.use('Agg')
@@ -24,8 +24,8 @@ from Burger import *
 #------------------------------------------------------------------------------
 ## set parameters and initialize simulation
 L    = 2*np.pi
-dt   = 0.01
-tEnd = 7
+dt   = 0.0005
+tEnd = 5
 nu   = 0.01
 dns = Burger(L=L, N=N, dt=dt, nu=nu, tend=tEnd)
 
@@ -44,6 +44,7 @@ v_restart = dns.vv[0,:].copy()
 u_restart = dns.uu[0,:].copy()
 
 #------------------------------------------------------------------------------
+print("Simulate..")
 #############################
 # restart from physical space
 dns.IC( u0 = u_restart )
@@ -72,6 +73,7 @@ u2 = dns.uu
 
 #------------------------------------------------------------------------------
 ## plot comparison
+print("Plotting restart.png ...")
 sre, nre = np.meshgrid( np.arange(tEnd/dt+1)*dt, 2*np.pi*L/N*(np.array(range(N))+1))
 fig, axs = plt.subplots(1,3)
 
@@ -90,6 +92,7 @@ axs[2].set_yticklabels([])
 fig.savefig('restart.png')
 plt.close()
 
+print("Plotting burger.png ...")
 fig, axs = plt.subplots(4,4, sharex=True, sharey=True, figsize=(15,15))
 for i in range(16):
     t = int(i * tEnd / dt / 16)
