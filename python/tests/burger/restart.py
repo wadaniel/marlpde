@@ -1,7 +1,7 @@
 #!/bin/python3
 
 """
-This scripts simulates the Burger equation on a grid (N) until t=tTransient. The solution 
+This scripts simulates the Burger equation on a grid (N) until t=tEnd. The solution 
 from the ast time-step is extracted and then taken as the initial condidtion for
 two more runs (i) in real space and ind (ii) fourier space with simulation length
 tEnd. 

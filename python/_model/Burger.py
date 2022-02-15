@@ -1,7 +1,7 @@
 import sys
 from numpy import pi
 from scipy import interpolate
-from scipy.fftpack import fft, ifft
+from scipy.fftpack import fft, ifft, fftfreq
 import numpy as np
 
 np.seterr(over='raise', invalid='raise')
@@ -92,7 +92,7 @@ class Burger:
         self.tt[0]   = 0.
 
     def __setup_fourier(self, coeffs=None):
-        self.k  = np.r_[0:self.N/2, 0, -self.N/2+1:0]*2*np.pi/self.L # Wave numbers
+        self.k   = fftfreq(self.N, self.L / (2*np.pi*self.N))
         self.k1  = 1j * self.k
         self.k2  = self.k1**2
         
@@ -177,7 +177,7 @@ class Burger:
                 # if ok cast to np.array
                 v0 = np.array(v0)
                 # and transform to physical space
-                u0 = ifft(v0)
+                u0 = np.real(ifft(v0))
         #
         # and save to self
         self.u0  = u0
