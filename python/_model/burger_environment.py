@@ -37,6 +37,7 @@ def environment( s , gridSize, episodeLength ):
     error = 0
     step = 0
     nIntermediate = int(tEnd / dt / episodeLength)
+    cumreward = 0.
     while step < episodeLength and error == 0:
         
         # Getting new action
@@ -44,7 +45,6 @@ def environment( s , gridSize, episodeLength ):
 
         # apply action and advance environment
         actions = s["Action"]
-        print(actions)
         try:
             for _ in range(nIntermediate):
                 les.step(actions)
@@ -63,25 +63,24 @@ def environment( s , gridSize, episodeLength ):
             error = 1
             break
 
-        print(state)
         s["State"] = state
 
         # calculate reward from energy
         tAvgEnergyLES = les.Ek_tt
-
-        reward = -rewardFactor*(np.abs(tAvgEnergyLES[step]-tAvgEnergy[step]))
+        reward = -rewardFactor*(np.abs(tAvgEnergyLES[step*nIntermediate]-tAvgEnergy[step*nIntermediate]))
+        cumreward += reward
 
         if (np.isnan(reward)):
             print("Nan reward detected")
             error = 1
             break
 
-        print(reward)
         s["Reward"] = reward
         step += 1
 
-        
+    print(cumreward)
     if error == 1:
+        s["State"] = state
         s["Termination"] = "Truncated"
         s["Reward"] = -100
     

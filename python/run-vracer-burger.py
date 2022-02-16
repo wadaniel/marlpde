@@ -29,8 +29,8 @@ resultFolder = '_result_burger_{}_{}/'.format(args.N, args.run)
 ### Defining Problem Configuration
 e["Problem"]["Type"] = "Reinforcement Learning / Continuous"
 e["Problem"]["Environment Function"] = lambda s : environment( s, args.N, args.episodelength )
-e["Problem"]["Testing Frequency"] = 100;
-e["Problem"]["Policy Testing Episodes"] = 10;
+#e["Problem"]["Testing Frequency"] = 100;
+#e["Problem"]["Policy Testing Episodes"] = 10;
 
 ### Defining Agent Configuration 
 
@@ -44,8 +44,8 @@ e["Solver"]["Mini Batch"]["Size"] = 256
 
 ### Defining Variables
 
-nState  = args.N*3
-nActions = args.N
+nState  = args.N*2
+nActions = 1
 # States (flow at sensor locations)
 for i in range(nState):
 	e["Variables"][i]["Name"] = "Field Information " + str(i)
@@ -54,17 +54,17 @@ for i in range(nState):
 for i in range(nActions):
     e["Variables"][nState+i]["Name"] = "Forcing " + str(i)
     e["Variables"][nState+i]["Type"] = "Action"
-    e["Variables"][nState+i]["Lower Bound"] = -0.01
-    e["Variables"][nState+i]["Upper Bound"] = 0.01
+    e["Variables"][nState+i]["Lower Bound"] = 0.
+    e["Variables"][nState+i]["Upper Bound"] = +0.01
     e["Variables"][nState+i]["Initial Exploration Noise"] = 0.0001
 
 ### Setting Experience Replay and REFER settings
 
-e["Solver"]["Experience Replay"]["Off Policy"]["Annealing Rate"] = 1.0e-8
+e["Solver"]["Experience Replay"]["Off Policy"]["Annealing Rate"] = 5.0e-8
 e["Solver"]["Experience Replay"]["Off Policy"]["Cutoff Scale"] = 4.0
 e["Solver"]["Experience Replay"]["Off Policy"]["REFER Beta"] = 0.3
 e["Solver"]["Experience Replay"]["Off Policy"]["Target"] = 0.1
-e["Solver"]["Experience Replay"]["Start Size"] = 262144
+e["Solver"]["Experience Replay"]["Start Size"] = 2000
 e["Solver"]["Experience Replay"]["Maximum Size"] = 524288
 
 e["Solver"]["Policy"]["Distribution"] = "Clipped Normal"

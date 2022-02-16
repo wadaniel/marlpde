@@ -129,8 +129,8 @@ class Burger:
     def __setup_gaussians(self):
         self.gaussians = np.zeros(self.N)
         for i in range(self.N):
-            mean = i*self.L/4
-            self.gaussians[i] = gaussian( mean, mean, self.sigma)
+            mean = i*self.L/2
+            self.gaussians[i] = gaussian( mean, mean, self.sigma) / 100.
 
     def IC(self, u0=None, v0=None, seed=42):
         
@@ -199,16 +199,15 @@ class Burger:
 
 
     def step( self, action=None ):
-        forcing  = np.zeros(self.N)
+
         Fforcing = np.zeros(self.N)
- 
         if (action is not None):
             if len(action) > 1:
                 assert len(action) == self.N, print("Wrong number of actions. provided {}/{}".format(len(action), self.N))
-            forcing += action*self.gaussians[:]
+            forcing = action*self.gaussians[:]
             Fforcing = fft( forcing )
 
-        self.v = self.v - self.dt*0.5*self.k1*fft(self.u**2) + self.dt*self.nu*self.k2*self.v
+        self.v = self.v - self.dt*0.5*self.k1*fft(self.u**2) + self.dt*self.nu*self.k2*self.v + Fforcing
         self.u = np.real(ifft(self.v))
 
         """
@@ -363,11 +362,12 @@ class Burger:
 
         # Extract state
         u = self.uu[self.ioutnum,:]
-        dudu = np.zeros(self.N)
-        dudu[:-1] = (u[1:]-u[:-1])/self.dx
-        dudu[-1] = dudu[-2]
+        #dudu = np.zeros(self.N)
+        #dudu[:-1] = (u[1:]-u[:-1])/self.dx
+        #dudu[-1] = dudu[-2]
         dudt = (self.uu[self.ioutnum,:]-self.uu[self.ioutnum-1,:])/self.dt
-        state = np.column_stack( (u, dudu, dudt) )
+        #state = np.column_stack( (u, dudu, dudt) )
+        state = np.column_stack( (u, dudt) )
         return state
 
     def updateField(self, factors):
