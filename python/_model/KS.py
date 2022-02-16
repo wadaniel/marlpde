@@ -197,7 +197,8 @@ class KS:
         Fforcing = np.zeros(self.N)
  
         if (action is not None):
-            #assert len(action) == self.nActions, print("Wrong number of actions. provided {}/{}".format(len(action), self.nActions))
+            if len(action) > 1:
+                assert len(action) == self.nActions, print("Wrong number of actions. provided {}/{}".format(len(action), self.nActions))
             forcing += action*self.gaussians[:]
             Fforcing = fft( forcing )
 

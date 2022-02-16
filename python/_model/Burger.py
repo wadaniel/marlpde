@@ -140,17 +140,17 @@ class Burger:
                     
                     # uniform noise
                     # Gaussian noise (according to https://arxiv.org/pdf/1906.07672.pdf)
-                    #np.random.seed( seed )
-                    #u0 = np.random.normal(0., 1e-4, self.N)
+                    # np.random.seed( seed )
+                    u0 = np.random.normal(0., 1, self.N)
                     
                     # Gaussian initialization
-                    #sigma = self.L/4
-                    #u0 = np.exp(-0.5/(sigma*sigma)*(np.linspace(0, self.L, self.N) - 0.5*self.L)**2)*1/np.sqrt(2*np.pi*sigma*sigma)
+                    #sigma = self.L/8
+                    #u0 = np.exp(-0.5/(sigma*sigma)*(self.x - 0.5*self.L)**2)*1/np.sqrt(2*np.pi*sigma*sigma)
                     # Box initialization
-                    #u0 = np.abs(np.linspace(0, self.L, self.N)-self.L/2)<self.L/4
+                    # u0 = np.abs(self.x-self.L/2)<self.L/4
                     
                     # Sinus
-                    u0 = np.sin(self.x)
+                    # u0 = np.sin(self.x)
             else:
                 # check the input size
                 if (np.size(u0,0) != self.N):
