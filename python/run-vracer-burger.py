@@ -1,13 +1,14 @@
 import argparse
 import sys
 sys.path.append('_model')
-from environment import *
+from burger_environment import *
 import math
 
 ### Parsing arguments
-
 parser = argparse.ArgumentParser()
-parser.add_argument('--N', help='Discretization / number of grid points', required=False, type=int, default=8)
+parser.add_argument('--N', help='Discretization / number of grid points', required=False, type=int, default=32)
+parser.add_argument('--numexp', help='Number of experiences', required=False, type=int, default=1e6)
+parser.add_argument('--episodelength', help='Actual length of episode / number of actions', required=True, type=int)
 parser.add_argument('--run', help='Run tag', required=False, type=int, default=0)
 
 args = parser.parse_args()
@@ -20,16 +21,16 @@ e = korali.Experiment()
 
 ### Defining results folder and loading previous results, if any
 
-resultFolder = '_result_vracer_{}_{}/'.format(args.N, args.run)
+resultFolder = '_result_burger_{}_{}/'.format(args.N, args.run)
 #found = e.loadState(resultFolder + '/latest')
 #if found == True:
 #	print("[Korali] Continuing execution from previous run...\n");
 
 ### Defining Problem Configuration
 e["Problem"]["Type"] = "Reinforcement Learning / Continuous"
-e["Problem"]["Environment Function"] = lambda s : environment( s, args.N )
-#e["Problem"]["Testing Frequency"] = 100;
-#e["Problem"]["Policy Testing Episodes"] = 10;
+e["Problem"]["Environment Function"] = lambda s : environment( s, args.N, args.episodelength )
+e["Problem"]["Testing Frequency"] = 100;
+e["Problem"]["Policy Testing Episodes"] = 10;
 
 ### Defining Agent Configuration 
 
@@ -37,8 +38,8 @@ e["Solver"]["Type"] = "Agent / Continuous / VRACER"
 e["Solver"]["Mode"] = "Training"
 e["Solver"]["Episodes Per Generation"] = 10
 e["Solver"]["Experiences Between Policy Updates"] = 1
-e["Solver"]["Learning Rate"] = 0.00005
-e["Solver"]["Discount Factor"] = 0.995
+e["Solver"]["Learning Rate"] = 0.0001
+e["Solver"]["Discount Factor"] = 0.997
 e["Solver"]["Mini Batch"]["Size"] = 256
 
 ### Defining Variables
@@ -78,20 +79,20 @@ e["Solver"]["L2 Regularization"]["Enabled"] = False
 e["Solver"]["L2 Regularization"]["Importance"] = 0.0
 
 e["Solver"]["Neural Network"]["Hidden Layers"][0]["Type"] = "Layer/Linear"
-e["Solver"]["Neural Network"]["Hidden Layers"][0]["Output Channels"] = 512
+e["Solver"]["Neural Network"]["Hidden Layers"][0]["Output Channels"] = 256
 
 e["Solver"]["Neural Network"]["Hidden Layers"][1]["Type"] = "Layer/Activation"
 e["Solver"]["Neural Network"]["Hidden Layers"][1]["Function"] = "Elementwise/Tanh"
 
 e["Solver"]["Neural Network"]["Hidden Layers"][2]["Type"] = "Layer/Linear"
-e["Solver"]["Neural Network"]["Hidden Layers"][2]["Output Channels"] = 512
+e["Solver"]["Neural Network"]["Hidden Layers"][2]["Output Channels"] = 256
 
 e["Solver"]["Neural Network"]["Hidden Layers"][3]["Type"] = "Layer/Activation"
 e["Solver"]["Neural Network"]["Hidden Layers"][3]["Function"] = "Elementwise/Tanh"
 
 ### Setting file output configuration
 
-e["Solver"]["Termination Criteria"]["Max Experiences"] = 10e6
+e["Solver"]["Termination Criteria"]["Max Experiences"] = args.numexp
 e["Solver"]["Experience Replay"]["Serialize"] = True
 e["Console Output"]["Verbosity"] = "Detailed"
 e["File Output"]["Enabled"] = True

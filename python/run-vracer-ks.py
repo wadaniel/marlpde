@@ -1,7 +1,7 @@
 import argparse
 import sys
 sys.path.append('_model')
-from environment import *
+from ks_environment import *
 import math
 
 ### Parsing arguments

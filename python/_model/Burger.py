@@ -141,13 +141,14 @@ class Burger:
                     # uniform noise
                     # Gaussian noise (according to https://arxiv.org/pdf/1906.07672.pdf)
                     # np.random.seed( seed )
-                    u0 = np.random.normal(0., 1, self.N)
+                    # u0 = np.random.normal(0., 1, self.N)
                     
                     # Gaussian initialization
                     #sigma = self.L/8
                     #u0 = np.exp(-0.5/(sigma*sigma)*(self.x - 0.5*self.L)**2)*1/np.sqrt(2*np.pi*sigma*sigma)
+                    
                     # Box initialization
-                    # u0 = np.abs(self.x-self.L/2)<self.L/4
+                    u0 = np.abs(self.x-self.L/2)<self.L/8
                     
                     # Sinus
                     # u0 = np.sin(self.x)
@@ -202,8 +203,8 @@ class Burger:
         Fforcing = np.zeros(self.N)
  
         if (action is not None):
-            printf("exit.. todo")
-            #assert len(action) == self.nActions, print("Wrong number of actions. provided {}/{}".format(len(action), self.nActions))
+            if len(action) > 1:
+                assert len(action) == self.N, print("Wrong number of actions. provided {}/{}".format(len(action), self.N))
             forcing += action*self.gaussians[:]
             Fforcing = fft( forcing )
 
