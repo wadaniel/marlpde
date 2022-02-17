@@ -8,8 +8,9 @@ import math
 parser = argparse.ArgumentParser()
 parser.add_argument('--N', help='Discretization / number of grid points', required=False, type=int, default=32)
 parser.add_argument('--numexp', help='Number of experiences', required=False, type=int, default=1e6)
-parser.add_argument('--episodelength', help='Actual length of episode / number of actions', required=True, type=int)
+parser.add_argument('--episodelength', help='Actual length of episode / number of actions', required=False, type=int, default=500)
 parser.add_argument('--run', help='Run tag', required=False, type=int, default=0)
+parser.add_argument('--test', action='store_true', help='Run tag', required=False)
 
 args = parser.parse_args()
 
@@ -21,25 +22,26 @@ e = korali.Experiment()
 
 ### Defining results folder and loading previous results, if any
 
-resultFolder = '_result_burger_{}_{}/'.format(args.N, args.run)
-#found = e.loadState(resultFolder + '/latest')
-#if found == True:
-#	print("[Korali] Continuing execution from previous run...\n");
+resultFolder = '_result_burger_{}_{}_{}/'.format(args.N, args.episodelength, args.run)
+found = e.loadState(resultFolder + '/latest')
+if found == True:
+	print("[Korali] Continuing execution from previous run...\n")
 
 ### Defining Problem Configuration
 e["Problem"]["Type"] = "Reinforcement Learning / Continuous"
+e["Problem"]["Custom Settings"]["Mode"] = "Testing" if args.test else "Training"
 e["Problem"]["Environment Function"] = lambda s : environment( s, args.N, args.episodelength )
-#e["Problem"]["Testing Frequency"] = 100;
-#e["Problem"]["Policy Testing Episodes"] = 10;
+e["Problem"]["Testing Frequency"] = 100
+e["Problem"]["Policy Testing Episodes"] = 1
 
 ### Defining Agent Configuration 
 
 e["Solver"]["Type"] = "Agent / Continuous / VRACER"
-e["Solver"]["Mode"] = "Training"
+e["Solver"]["Mode"] = "Testing" if args.test else "Training"
 e["Solver"]["Episodes Per Generation"] = 10
 e["Solver"]["Experiences Between Policy Updates"] = 1
 e["Solver"]["Learning Rate"] = 0.0001
-e["Solver"]["Discount Factor"] = 0.997
+e["Solver"]["Discount Factor"] = 1.
 e["Solver"]["Mini Batch"]["Size"] = 256
 
 ### Defining Variables
@@ -55,8 +57,8 @@ for i in range(nActions):
     e["Variables"][nState+i]["Name"] = "Forcing " + str(i)
     e["Variables"][nState+i]["Type"] = "Action"
     e["Variables"][nState+i]["Lower Bound"] = 0.
-    e["Variables"][nState+i]["Upper Bound"] = +0.01
-    e["Variables"][nState+i]["Initial Exploration Noise"] = 0.0001
+    e["Variables"][nState+i]["Upper Bound"] = +0.05
+    e["Variables"][nState+i]["Initial Exploration Noise"] = 0.001
 
 ### Setting Experience Replay and REFER settings
 
@@ -98,6 +100,10 @@ e["Console Output"]["Verbosity"] = "Detailed"
 e["File Output"]["Enabled"] = True
 e["File Output"]["Frequency"] = 500
 e["File Output"]["Path"] = resultFolder
+
+if args.test:
+    e["Solver"]["Testing"]["Sample Ids"] = [0]
+    e["Problem"]["Custom Settings"]["Filename"] = "les.npz"
 
 ### Running Experiment
 

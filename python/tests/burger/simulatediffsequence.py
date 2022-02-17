@@ -12,7 +12,7 @@ import numpy as np
 
 # Discretization grid
 N1 = 1024
-N2 = 128
+N2 = 32
 m = int(math.log2(N1 / N2)) + 1
 Nx = np.clip(N2*2**np.arange(0., m), a_min=0, a_max=N1).astype(int)
 
@@ -58,7 +58,7 @@ k1 = dns.k[:N1//2]
 time = np.arange(tEnd/dt+1)*dt
 s, n = np.meshgrid(2*np.pi*L/N1*(np.array(range(N1))+1), time)
 
-fig, axs = plt.subplots(m+1, 5, sharex='col', sharey='col', figsize=(15,15))
+fig, axs = plt.subplots(m+1, 5, sharex='col', sharey='col', subplot_kw=dict(box_aspect=1), figsize=(15,15))
 axs[0,0].contourf(s, n, dns.uu, 50)
 
 axs[0,2].plot(time, dns.Ek_t)

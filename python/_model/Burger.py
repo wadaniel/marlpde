@@ -5,9 +5,13 @@ from scipy.fftpack import fft, ifft, fftfreq
 import numpy as np
 
 np.seterr(over='raise', invalid='raise')
-
 def gaussian( x, mean, sigma ):
     return 1/np.sqrt(2*np.pi*sigma**2)*np.exp(-1/2*( (x-mean)/sigma )**2)
+
+def hat( x, mean, dx ):
+    left  = np.clip((x + dx - mean)/dx, a_min = 0., a_max = 1.)
+    right = np.clip(1. - (x - mean)/dx, a_min = 0., a_max = 1.)
+    return left + right - 1.
 
 class Burger:
     #
@@ -16,7 +20,7 @@ class Burger:
     # u_t + u*u_x = nu*u_xx0
     # with periodic BCs on x \in [0, L]: u(0,t) = u(L,t).
 
-    def __init__(self, L=1./(2.*np.pi), N=128, dt=0.25, nu=0.0, nsteps=None, tend=150, u0=None, v0=None, case=None, coeffs=None, noisy = False):
+    def __init__(self, L=1./(2.*np.pi), N=128, dt=0.25, nu=0.0, nsteps=None, tend=150, u0=None, v0=None, case=None, noisy = False):
         
         # Initialize
         L  = float(L); 
@@ -42,8 +46,10 @@ class Burger:
         self.nsteps = nsteps
         self.nout   = nsteps
         self.sigma  = 2*pi*L/(2*N)
-        self.coeffs = coeffs
-        
+  
+        self.M = 0
+        self.basis = None
+
         # time when field space transformed
         self.uut = -1
         # field in real space
@@ -68,14 +74,10 @@ class Burger:
         self.__setup_timeseries()
         
         # precompute Fourier-related quantities
-        self.__setup_fourier(self.coeffs)
+        self.__setup_fourier()
         
         # precompute ETDRK4 scalar quantities:
         self.__setup_etdrk4()
-
-        # Gaussians for forcing terms
-        self.__setup_gaussians()
-
 
     def __setup_timeseries(self, nout=None):
         if (nout != None):
@@ -91,25 +93,11 @@ class Burger:
         self.vv[0,:] = self.v0
         self.tt[0]   = 0.
 
-    def __setup_fourier(self, coeffs=None):
+    def __setup_fourier(self):
         self.k   = fftfreq(self.N, self.L / (2*np.pi*self.N))
         self.k1  = 1j * self.k
         self.k2  = self.k1**2
         
-        """
-        # Fourier multipliers for the linear term Lu
-        if (coeffs is None):
-            # normal-form equation
-            self.l = -self.k*1j - self.k**2
-        else:
-            # altered-coefficients 
-            self.l = -      coeffs[0]*np.ones(self.k.shape) \
-                     -      coeffs[1]*1j*self.k             \
-                     + (1 + coeffs[2])  *self.k**2          \
-                     +      coeffs[3]*1j*self.k**3          \
-                     - (1 + coeffs[4])  *self.k**4
-        """
-
     def __setup_etdrk4(self):
         return
 
@@ -126,11 +114,13 @@ class Burger:
         self.g  = -0.5j*self.k
         """
  
-    def __setup_gaussians(self):
-        self.gaussians = np.zeros(self.N)
-        for i in range(self.N):
-            mean = i*self.L/2
-            self.gaussians[i] = gaussian( mean, mean, self.sigma) / 100.
+    def setup_basis(self, M):
+        self.M = M
+        self.basis = np.zeros((self.M, self.N))
+        for i in range(self.M):
+            dx = self.L/(self.M-1)
+            mean = i*dx
+            self.basis[i,:] = hat( self.x, mean, dx )
 
     def IC(self, u0=None, v0=None, seed=42):
         
@@ -198,13 +188,17 @@ class Burger:
         return self.f_truth(self.x,t)
 
 
-    def step( self, action=None ):
+    def step( self, actions=None ):
 
         Fforcing = np.zeros(self.N)
-        if (action is not None):
-            if len(action) > 1:
-                assert len(action) == self.N, print("Wrong number of actions. provided {}/{}".format(len(action), self.N))
-            forcing = action*self.gaussians[:]
+        if (actions is not None):
+            if len(actions) > 1:
+                assert self.basis is not None, print("Basis not set up (is None).")
+                assert len(actions) == self.M, print("Wrong number of actions (provided {}/{}".format(len(action), self.M))
+                forcing = np.matmul(actions, self.basis)
+            else:
+                forcing = actions * self.ones(self.N)
+
             Fforcing = fft( forcing )
 
         self.v = self.v - self.dt*0.5*self.k1*fft(self.u**2) + self.dt*self.nu*self.k2*self.v + Fforcing

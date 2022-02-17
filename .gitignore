@@ -53,3 +53,4 @@ __pycache__
 
 # Results
 _result*
+*.npz
