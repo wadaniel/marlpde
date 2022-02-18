@@ -1,0 +1,2 @@
+# Run2:
+comparing linear basis function with hat function (run 0 and 1, numactions = 4)

@@ -114,13 +114,35 @@ class Burger:
         self.g  = -0.5j*self.k
         """
  
-    def setup_basis(self, M):
+    def setup_basis(self, M, kind = 'uniform'):
         self.M = M
-        self.basis = np.zeros((self.M, self.N))
-        for i in range(self.M):
-            dx = self.L/(self.M-1)
-            mean = i*dx
-            self.basis[i,:] = hat( self.x, mean, dx )
+        if M > 1:
+            if kind == 'uniform':
+                self.basis = np.zeros((self.M, self.N))
+                for i in range(self.M):
+                    assert self.N % self.M == 0, print("Something went wrong in basis setup")
+                    idx1 = i * int(self.N/self.M)
+                    idx2 = (i+1) * int(self.N/self.M)
+                    self.basis[i,idx1:idx2] = 1.
+            elif kind == 'hat':
+                self.basis = np.ones((self.M, self.N))
+                dx = self.L/(self.M-1)
+                for i in range(self.M):
+                    mean = i*dx
+                    self.basis[i,:] = hat( self.x, mean, dx )
+
+            else:
+                print("Basis function not known, exit..")
+                sys.exit()
+        else:
+            self.basis = np.ones((self.M, self.N))
+        
+        #np.set_printoptions(precision=6)
+        #print(self.basis)
+        #print(np.sum(self.basis,axis=0), flush=True)
+        #print(np.sum(self.basis,axis=0)==1, flush=True)
+        #print((np.sum(self.basis,axis=0)==1).all(), flush=True)
+        assert (np.sum(self.basis,axis=0)==1).all(), print("Something went wrong in basis setup")
 
     def IC(self, u0=None, v0=None, seed=42):
         
@@ -192,12 +214,9 @@ class Burger:
 
         Fforcing = np.zeros(self.N)
         if (actions is not None):
-            if len(actions) > 1:
-                assert self.basis is not None, print("Basis not set up (is None).")
-                assert len(actions) == self.M, print("Wrong number of actions (provided {}/{}".format(len(action), self.M))
-                forcing = np.matmul(actions, self.basis)
-            else:
-                forcing = actions * self.ones(self.N)
+            assert self.basis is not None, print("Basis not set up (is None).")
+            assert len(actions) == self.M, print("Wrong number of actions (provided {}/{}".format(len(action), self.M))
+            forcing = np.matmul(actions, self.basis) / 500
 
             Fforcing = fft( forcing )
 

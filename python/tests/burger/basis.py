@@ -12,7 +12,7 @@ L    = 2*np.pi
 dt   = 0.0005
 tEnd = 5
 nu   = 0.01
-
+basis = 'hat'
 gridSize = 32
 episodeLength = 500
 
@@ -39,7 +39,7 @@ print("Done!")
   
 # Initialize LES
 les = Burger(L=L, N=gridSize, dt=dt, nu=nu, tend=tEnd)
-les.setup_basis(numActions)
+les.setup_basis(numActions, basis)
 les.IC( u0 = f_restart(les.x) )
 
 ## run controlled simulation

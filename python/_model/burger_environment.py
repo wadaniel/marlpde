@@ -24,13 +24,14 @@ f_restart = interpolate.interp1d(dns.x, dns.u0, kind='cubic')
 tAvgEnergy = dns.Ek_tt
 print("Done!")
 
-def environment( s , gridSize, episodeLength ):
+def environment( s , gridSize, numActions, episodeLength ):
  
     testing = True if s["Custom Settings"]["Mode"] == "Testing" else False
 
     # Initialize LES
     les = Burger(L=L, N=gridSize, dt=dt, nu=nu, tend=tEnd)
     les.IC( u0 = f_restart(les.x) )
+    les.setup_basis(numActions)
 
     ## get initial state
     state = les.getState().flatten().tolist()
@@ -41,6 +42,10 @@ def environment( s , gridSize, episodeLength ):
     step = 0
     nIntermediate = int(tEnd / dt / episodeLength)
     cumreward = 0.
+
+    timestamps = []
+    actionHistory = []
+
     while step < episodeLength and error == 0:
         
         # Getting new action
@@ -48,6 +53,9 @@ def environment( s , gridSize, episodeLength ):
 
         # apply action and advance environment
         actions = s["Action"]
+        actionHistory.append(actions)
+        timestamps.append(les.t)
+
         try:
             for _ in range(nIntermediate):
                 les.step(actions)
@@ -94,9 +102,9 @@ def environment( s , gridSize, episodeLength ):
 
         fileName = s["Custom Settings"]["Filename"]
         print("Storing les to file {}".format(fileName))
-        np.savez(fileName, x = les.x, t = les.tt, uu = les.uu, vv = les.vv, L=L, N=gridsize, dt=dt, nu=nu, tEnd=tEnd)
+        np.savez(fileName, x = les.x, t = les.tt, uu = les.uu, vv = les.vv, L=L, N=gridSize, dt=dt, nu=nu, tEnd=tEnd)
          
-        print("Setting up DNS..")
+        print("Running uncontrolled SGS..")
         base = Burger(L=L, N=gridSize, dt=dt, nu=nu, tend=tEnd)
         base.simulate()
         base.fou2real()
@@ -108,7 +116,7 @@ def environment( s , gridSize, episodeLength ):
         time = np.arange(tEnd/dt+1)*dt
         s, n = np.meshgrid(2*np.pi*L/N*(np.array(range(N))+1), time)
 
-        fig, axs = plt.subplots(2, 5, sharex='col', sharey='col', subplot_kw=dict(box_aspect=1), figsize=(15,15))
+        fig, axs = plt.subplots(3, 6, sharex='col', sharey='col', subplot_kw=dict(box_aspect=1), figsize=(15,15))
         axs[0,0].contourf(s, n, dns.uu, 50)
 
         axs[0,2].plot(time, dns.Ek_t)
@@ -119,20 +127,51 @@ def environment( s , gridSize, episodeLength ):
         axs[0,4].plot(k1, np.abs(dns.Ek_ktt[-1,0:N//2]),'b')
         axs[0,4].set_xscale('log')
         axs[0,4].set_yscale('log')
-
+ 
 #------------------------------------------------------------------------------
-        errEk_t = dns.Ek_t - les.Ek_t
-        errEk_tt = dns.Ek_tt - les.Ek_tt
+        errBaseEk_t = dns.Ek_t - base.Ek_t
+        errBaseEk_tt = dns.Ek_tt - base.Ek_tt
 
         f_dns = interpolate.interp2d(dns.x, dns.tt, dns.uu, kind='cubic')
-        udns_int = f_dns(les.x, les.tt)
+        udns_int = f_dns(base.x, base.tt)
+        errBaseU = np.abs(base.uu-udns_int)
+
+#------------------------------------------------------------------------------
+
+        errEk_t = dns.Ek_t - les.Ek_t
+        errEk_tt = dns.Ek_tt - les.Ek_tt
         errU = np.abs(les.uu-udns_int)
+
 #------------------------------------------------------------------------------
   
         k2 = les.k[:gridSize//2]
         s, n = np.meshgrid(2*np.pi*L/gridSize*(np.array(range(gridSize))+1), time)
-
+ 
         idx = 1
+        # Plot solution
+        axs[idx,0].contourf(s, n, base.uu, 50)
+        
+        # Plot difference to dns
+        axs[idx,1].contourf(les.x, base.tt, errBaseU, 50)
+
+        # Plot instanteneous energy and time averaged energy
+        axs[idx,2].plot(time, base.Ek_t)
+        axs[idx,2].plot(time, base.Ek_tt)
+     
+        # Plot energy differences
+        axs[idx,3].plot(time, errBaseEk_t)
+        axs[idx,3].plot(time, errBaseEk_tt)
+
+        # Plot energy spectrum at start, mid and end of simulation
+        axs[idx,4].plot(k2, np.abs(base.Ek_ktt[0,0:gridSize//2]),'b:')
+        axs[idx,4].plot(k2, np.abs(base.Ek_ktt[tEnd//2,0:gridSize//2]),'b--')
+        axs[idx,4].plot(k2, np.abs(base.Ek_ktt[-1,0:gridSize//2]),'b')
+        axs[idx,4].set_xscale('log')
+        axs[idx,4].set_yscale('log')
+
+#------------------------------------------------------------------------------
+        
+        idx += 1
         # Plot solution
         axs[idx,0].contourf(s, n, les.uu, 50)
         
@@ -153,5 +192,8 @@ def environment( s , gridSize, episodeLength ):
         axs[idx,4].plot(k2, np.abs(les.Ek_ktt[-1,0:gridSize//2]),'b')
         axs[idx,4].set_xscale('log')
         axs[idx,4].set_yscale('log')
+ 
+        # Plot energy spectrum at start, mid and end of simulation
+        axs[idx,5].plot(timestamps, actionHistory,'g')
 
         fig.savefig('rl_les.png')

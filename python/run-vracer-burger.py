@@ -7,6 +7,7 @@ import math
 ### Parsing arguments
 parser = argparse.ArgumentParser()
 parser.add_argument('--N', help='Discretization / number of grid points', required=False, type=int, default=32)
+parser.add_argument('--numactions', help='Number of actions', required=False, type=int, default=1)
 parser.add_argument('--numexp', help='Number of experiences', required=False, type=int, default=1e6)
 parser.add_argument('--episodelength', help='Actual length of episode / number of actions', required=False, type=int, default=500)
 parser.add_argument('--run', help='Run tag', required=False, type=int, default=0)
@@ -22,7 +23,7 @@ e = korali.Experiment()
 
 ### Defining results folder and loading previous results, if any
 
-resultFolder = '_result_burger_{}_{}_{}/'.format(args.N, args.episodelength, args.run)
+resultFolder = '_result_burger_{}_{}_{}_{}/'.format(args.N, args.numactions, args.episodelength, args.run)
 found = e.loadState(resultFolder + '/latest')
 if found == True:
 	print("[Korali] Continuing execution from previous run...\n")
@@ -30,7 +31,7 @@ if found == True:
 ### Defining Problem Configuration
 e["Problem"]["Type"] = "Reinforcement Learning / Continuous"
 e["Problem"]["Custom Settings"]["Mode"] = "Testing" if args.test else "Training"
-e["Problem"]["Environment Function"] = lambda s : environment( s, args.N, args.episodelength )
+e["Problem"]["Environment Function"] = lambda s : environment( s, args.N, args.numactions, args.episodelength )
 e["Problem"]["Testing Frequency"] = 100
 e["Problem"]["Policy Testing Episodes"] = 1
 
@@ -47,13 +48,12 @@ e["Solver"]["Mini Batch"]["Size"] = 256
 ### Defining Variables
 
 nState  = args.N*2
-nActions = 1
 # States (flow at sensor locations)
 for i in range(nState):
 	e["Variables"][i]["Name"] = "Field Information " + str(i)
 	e["Variables"][i]["Type"] = "State"
 
-for i in range(nActions):
+for i in range(args.numactions):
     e["Variables"][nState+i]["Name"] = "Forcing " + str(i)
     e["Variables"][nState+i]["Type"] = "Action"
     e["Variables"][nState+i]["Lower Bound"] = 0.
@@ -66,7 +66,7 @@ e["Solver"]["Experience Replay"]["Off Policy"]["Annealing Rate"] = 5.0e-8
 e["Solver"]["Experience Replay"]["Off Policy"]["Cutoff Scale"] = 4.0
 e["Solver"]["Experience Replay"]["Off Policy"]["REFER Beta"] = 0.3
 e["Solver"]["Experience Replay"]["Off Policy"]["Target"] = 0.1
-e["Solver"]["Experience Replay"]["Start Size"] = 32768
+e["Solver"]["Experience Replay"]["Start Size"] = 16384
 e["Solver"]["Experience Replay"]["Maximum Size"] = 524288
 
 e["Solver"]["Policy"]["Distribution"] = "Clipped Normal"
