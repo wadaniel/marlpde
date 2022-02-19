@@ -16,7 +16,7 @@ basis = 'hat'
 gridSize = 32
 episodeLength = 500
 
-numActions = 4
+numActions = 3
 
 # reward defaults
 rewardFactor = 1.

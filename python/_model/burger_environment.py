@@ -13,6 +13,8 @@ rewardFactor = 1.
 # DNS baseline
 print("Setting up DNS..")
 dns = Burger(L=L, N=N, dt=dt, nu=nu, tend=tEnd)
+dns.IC(case='sinus')
+#dns.IC(case='box')
 dns.simulate()
 dns.fou2real()
 dns.compute_Ek()
@@ -29,7 +31,7 @@ def environment( s , gridSize, numActions, episodeLength ):
     testing = True if s["Custom Settings"]["Mode"] == "Testing" else False
 
     # Initialize LES
-    les = Burger(L=L, N=gridSize, dt=dt, nu=nu, tend=tEnd)
+    les = Burger(L=L, N=gridSize, dt=dt, nu=nu, tend=tEnd, noisy=True)
     les.IC( u0 = f_restart(les.x) )
     les.setup_basis(numActions)
 

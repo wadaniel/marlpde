@@ -4,11 +4,13 @@ sys.path.append('./../../_model/')
 
 from Burger import *
   
-N    = 1024
-L    = 2*np.pi
-dt   = 0.0005
-tEnd = 5
-nu   = 0.01
+N     = 1024
+L     = 2*np.pi
+dt    = 0.00055
+tEnd  = 5
+nu    = 0.01
+basis = 'uniform'
+numActions = 1
 
 gridSize = 32
 episodeLength = 500
@@ -19,6 +21,7 @@ rewardFactor = 1.
 # DNS baseline
 print("Setting up DNS..")
 dns = Burger(L=L, N=N, dt=dt, nu=nu, tend=tEnd)
+dns.IC(case='gaussian')
 dns.simulate()
 dns.fou2real()
 dns.compute_Ek()
@@ -33,6 +36,7 @@ print("Done!")
   
 # Initialize LES
 les = Burger(L=L, N=gridSize, dt=dt, nu=nu, tend=tEnd)
+les.setup_basis(numActions, basis)
 les.IC( u0 = f_restart(les.x) )
 
 ## run controlled simulation

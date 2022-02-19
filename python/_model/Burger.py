@@ -10,7 +10,7 @@ def gaussian( x, mean, sigma ):
 
 def hat( x, mean, dx ):
     left  = np.clip((x + dx - mean)/dx, a_min = 0., a_max = 1.)
-    right = np.clip(1. - (x - mean)/dx, a_min = 0., a_max = 1.)
+    right = np.clip((dx - x + mean)/dx, a_min = 0., a_max = 1.)
     return left + right - 1.
 
 class Burger:
@@ -20,7 +20,7 @@ class Burger:
     # u_t + u*u_x = nu*u_xx0
     # with periodic BCs on x \in [0, L]: u(0,t) = u(L,t).
 
-    def __init__(self, L=1./(2.*np.pi), N=128, dt=0.25, nu=0.0, nsteps=None, tend=150, u0=None, v0=None, case=None, noisy = False):
+    def __init__(self, L=1./(2.*np.pi), N=128, dt=0.25, nu=0.0, nsteps=None, tend=150, u0=None, v0=None, noisy = False):
         
         # Initialize
         L  = float(L); 
@@ -39,8 +39,8 @@ class Burger:
         # save to self
         self.L      = L
         self.N      = N
-        self.dx     = L/N
-        self.x      = self.L*np.r_[0:self.N]/self.N
+        self.dx     = L/(N-1)
+        self.x      = np.linspace(0, self.L, N, endpoint=True)
         self.dt     = dt
         self.nu     = nu
         self.nsteps = nsteps
@@ -144,35 +144,35 @@ class Burger:
         #print((np.sum(self.basis,axis=0)==1).all(), flush=True)
         assert (np.sum(self.basis,axis=0)==1).all(), print("Something went wrong in basis setup")
 
-    def IC(self, u0=None, v0=None, seed=42):
+    def IC(self, u0=None, v0=None, case='box', seed=42):
         
         # Set initial condition
         if (v0 is None):
             if (u0 is None):
                     
-                    # uniform noise
-                    # Gaussian noise (according to https://arxiv.org/pdf/1906.07672.pdf)
-                    # np.random.seed( seed )
-                    # u0 = np.random.normal(0., 1, self.N)
+                    np.random.seed( seed )
+                    offset = np.random.normal(loc=0., scale=self.dx) if self.noisy else 0.
                     
                     # Gaussian initialization
-                    #sigma = self.L/8
-                    #u0 = np.exp(-0.5/(sigma*sigma)*(self.x - 0.5*self.L)**2)*1/np.sqrt(2*np.pi*sigma*sigma)
-                    
+                    if case == 'gaussian':
+                        # Gaussian noise (according to https://arxiv.org/pdf/1906.07672.pdf)
+                        #u0 = np.random.normal(0., 1, self.N)
+                        sigma = self.L/8
+                        u0 = gaussian(self.x, mean=0.5*self.L+offset, sigma=sigma)
+                        
                     # Box initialization
-                    u0 = np.abs(self.x-self.L/2)<self.L/8
+                    elif case == 'box':
+                        u0 = np.abs(self.x-self.L/2-offset)<self.L/8
                     
                     # Sinus
-                    # u0 = np.sin(self.x)
+                    elif case == 'sinus':
+                        u0 = np.sin(self.x+offset)
             else:
                 # check the input size
                 if (np.size(u0,0) != self.N):
-                    if self.noisy:
-                        print("[Burger] Error: wrong IC array size")
+                    print("[Burger] Error: wrong IC array size")
                     return -1
                 else:
-                    if self.noisy:
-                        print("[Burger] Using given (real) flow field...")
                     # if ok cast to np.array
                     u0 = np.array(u0)
             # in any case, set v0:
@@ -181,9 +181,8 @@ class Burger:
             # the initial condition is provided in v0
             # check the input size
             if (np.size(v0,0) != self.N):
-                if self.noisy:
-                    print("[Burger] Error: wrong IC array size")
-                    return -1
+                print("[Burger] Error: wrong IC array size")
+                return -1
             else:
                 if self.noisy:
                     print("[Burger] Using given (Fourier) flow field...")

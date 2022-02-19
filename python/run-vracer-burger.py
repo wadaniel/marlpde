@@ -1,10 +1,6 @@
 import argparse
-import sys
-sys.path.append('_model')
-from burger_environment import *
-import math
-
 ### Parsing arguments
+
 parser = argparse.ArgumentParser()
 parser.add_argument('--N', help='Discretization / number of grid points', required=False, type=int, default=32)
 parser.add_argument('--numactions', help='Number of actions', required=False, type=int, default=1)
@@ -14,6 +10,12 @@ parser.add_argument('--run', help='Run tag', required=False, type=int, default=0
 parser.add_argument('--test', action='store_true', help='Run tag', required=False)
 
 args = parser.parse_args()
+
+### Import modules
+
+import sys
+sys.path.append('_model')
+from burger_environment import *
 
 ### Defining Korali Problem
 

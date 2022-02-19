@@ -1,2 +1,13 @@
-# Run2:
-comparing linear basis function with hat function (run 0 and 1, numactions = 4)
+# Run2 (numactions 4):
+comparing uniform basis function with hat function (run 0 and 1)
+
+
+# Run2: (numactions 1)
+randomized box IC
+
+
+# Run3: (numactions 1)
+randomized Gaussian IC
+
+# Run4: (numactions 1)
+randomized Sine IC
