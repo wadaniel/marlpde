@@ -12,7 +12,7 @@ nu    = 0.01
 basis = 'uniform'
 numActions = 1
 
-gridSize = 32
+gridSize = 64
 episodeLength = 500
 
 # reward defaults
@@ -21,7 +21,7 @@ rewardFactor = 1.
 # DNS baseline
 print("Setting up DNS..")
 dns = Burger(L=L, N=N, dt=dt, nu=nu, tend=tEnd)
-dns.IC(case='gaussian')
+dns.IC(case='sinus')
 dns.simulate()
 dns.fou2real()
 dns.compute_Ek()

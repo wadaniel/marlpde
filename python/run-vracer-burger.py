@@ -6,6 +6,7 @@ parser.add_argument('--N', help='Discretization / number of grid points', requir
 parser.add_argument('--numactions', help='Number of actions', required=False, type=int, default=1)
 parser.add_argument('--numexp', help='Number of experiences', required=False, type=int, default=1e6)
 parser.add_argument('--episodelength', help='Actual length of episode / number of actions', required=False, type=int, default=500)
+parser.add_argument('--ic', help='Initial condition', required=False, type=str, default='sinus')
 parser.add_argument('--run', help='Run tag', required=False, type=int, default=0)
 parser.add_argument('--test', action='store_true', help='Run tag', required=False)
 
@@ -15,7 +16,13 @@ args = parser.parse_args()
 
 import sys
 sys.path.append('_model')
-from burger_environment import *
+import burger_environment as be
+
+be.dns.IC(case=args.ic)
+be.dns.simulate()
+be.dns.fou2real()
+be.dns.compute_Ek()
+
 
 ### Defining Korali Problem
 
@@ -25,7 +32,7 @@ e = korali.Experiment()
 
 ### Defining results folder and loading previous results, if any
 
-resultFolder = '_result_burger_{}_{}_{}_{}/'.format(args.N, args.numactions, args.episodelength, args.run)
+resultFolder = '_result_burger_{}_{}_{}_{}_{}/'.format(args.ic, args.N, args.numactions, args.episodelength, args.run)
 found = e.loadState(resultFolder + '/latest')
 if found == True:
 	print("[Korali] Continuing execution from previous run...\n")
@@ -33,7 +40,7 @@ if found == True:
 ### Defining Problem Configuration
 e["Problem"]["Type"] = "Reinforcement Learning / Continuous"
 e["Problem"]["Custom Settings"]["Mode"] = "Testing" if args.test else "Training"
-e["Problem"]["Environment Function"] = lambda s : environment( s, args.N, args.numactions, args.episodelength )
+e["Problem"]["Environment Function"] = lambda s : be.environment( s, args.N, args.numactions, args.episodelength )
 e["Problem"]["Testing Frequency"] = 100
 e["Problem"]["Policy Testing Episodes"] = 1
 

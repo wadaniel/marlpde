@@ -9,6 +9,11 @@ np.seterr(over='raise', invalid='raise')
 def gaussian( x, mean, sigma ):
     return 1/np.sqrt(2*np.pi*sigma**2)*np.exp(-1/2*( (x-mean)/sigma )**2)
 
+def hat( x, mean, dx ):
+    left  = np.clip((x + dx - mean)/dx, a_min = 0., a_max = 1.)
+    right = np.clip((dx - x + mean)/dx, a_min = 0., a_max = 1.)
+    return left + right - 1.
+
 class KS:
     #
     # Solution of the  KS equation
@@ -52,7 +57,11 @@ class KS:
         self.nout   = nsteps
         self.sigma  = 2*pi*L/(2*N)
         self.coeffs = coeffs
-        
+  
+        # Basis
+        self.M = 0
+        self.basis = None
+       
         # time when field space transformed
         self.uut = -1
         # field in real space
@@ -83,7 +92,6 @@ class KS:
         self.__setup_etdrk4()
 
         # Gaussians for forcing terms
-        self.__setup_gaussians()
 
 
     def __setup_timeseries(self, nout=None):
@@ -91,6 +99,7 @@ class KS:
             self.nout = int(nout)
         
         # nout+1 because we store the IC as well
+        self.uu = np.zeros([self.nout+1, self.N], dtype=np.complex64)
         self.vv = np.zeros([self.nout+1, self.N], dtype=np.complex64)
         self.tt = np.zeros(self.nout+1)
         
@@ -125,28 +134,54 @@ class KS:
         self.f3 = self.dt*np.real( np.mean( (-4. - 3.*self.LR - self.LR**2 + np.exp(self.LR)*( 4. -    self.LR             ) )/(self.LR**3) , 1) )
         self.g  = -0.5j*self.k
  
-    def __setup_gaussians(self):
-        self.gaussians = np.zeros(self.N)
-        for i in range(self.N):
-            mean = i*self.L/4
-            self.gaussians[i] = gaussian( mean, mean, self.sigma)
+    def setup_basis(self, M, kind = 'uniform'):
+        self.M = M
+        if M > 1:
+            if kind == 'uniform':
+                self.basis = np.zeros((self.M, self.N))
+                for i in range(self.M):
+                    assert self.N % self.M == 0, print("[Burger] Something went wrong in basis setup")
+                    idx1 = i * int(self.N/self.M)
+                    idx2 = (i+1) * int(self.N/self.M)
+                    self.basis[i,idx1:idx2] = 1.
+            elif kind == 'hat':
+                self.basis = np.ones((self.M, self.N))
+                dx = self.L/(self.M-1)
+                for i in range(self.M):
+                    mean = i*dx
+                    self.basis[i,:] = hat( self.x, mean, dx )
 
-    def IC(self, u0=None, v0=None, seed=42):
+            else:
+                print("[Burger] Basis function not known, exit..")
+                sys.exit()
+        else:
+            self.basis = np.ones((self.M, self.N))
+        
+        assert (np.sum(self.basis,axis=0)==1).all(), print("[Burger] Something went wrong in basis setup")
+
+    def IC(self, u0=None, v0=None, case='noise', seed=42):
         
         # Set initial condition
         if (v0 is None):
             if (u0 is None):
-                    if self.noisy:
-                        print("[KS] Using Gaussian initial condition...")
                     
                     # uniform noise
-                    # Gaussian noise (according to https://arxiv.org/pdf/1906.07672.pdf)
                     np.random.seed( seed )
-                    u0 = np.random.normal(0., 1e-4, self.N)
+                    offset = np.random.normal(loc=0., scale=self.dx) if self.noisy else 0.
+                    
+                    # Gaussian noise (according to https://arxiv.org/pdf/1906.07672.pdf)
+                    if case == 'noise':
+                        u0 = np.random.normal(0., 1e-4, self.N)
                     
                     # Gaussian initialization
-                    #sigma = 1/(2*np.pi)
-                    #u0 = np.exp(-0.5/(sigma*sigma)*(np.linspace(0, self.L, self.N) - 0.5*self.L)**2)*1/np.sqrt(2*np.pi*sigma*sigma)
+                    elif case == 'gaussian':
+                        sigma = self.L/8
+                        u0 = gaussian(self.x, mean=0.5*self.L+offset, sigma=sigma)
+
+                    else:
+                        print("[KS] Error: IC case unknown")
+                        return -1
+
             else:
                 # check the input size
                 if (np.size(u0,0) != self.N):
@@ -174,9 +209,10 @@ class KS:
                 v0 = np.array(v0)
                 # and transform to physical space
                 u0 = ifft(v0)
-        #
+        
         # and save to self
         self.u0  = u0
+        self.u   = u0
         self.v0  = v0
         self.v   = v0
         self.t   = 0.
@@ -192,18 +228,16 @@ class KS:
         return self.f_truth(self.x,t)
 
 
-    def step( self, action=None ):
-        forcing  = np.zeros(self.N)
-        Fforcing = np.zeros(self.N)
+    def step( self, actions=None ):
  
-        if (action is not None):
-            if len(action) > 1:
-                assert len(action) == self.nActions, print("Wrong number of actions. provided {}/{}".format(len(action), self.nActions))
-            forcing += action*self.gaussians[:]
+        Fforcing = np.zeros(self.N)
+        if (actions is not None):
+            assert self.basis is not None, print("[KS] Basis not set up (is None).")
+            assert len(actions) == self.M, print("[KS] Wrong number of actions (provided {}/{}".format(len(actions), self.M))
+            forcing = np.matmul(actions, self.basis) / 500
+
             Fforcing = fft( forcing )
 
-
-        #
         # Computation is based on v = fft(u), so linear term is diagonal.
         # The time-discretization is done via ETDRK4
         # (exponential time differencing - 4th order Runge Kutta)
@@ -217,7 +251,7 @@ class KS:
         c = self.E2*a + self.Q*(2.*Nb - Nv);  
         Nc = self.g*fft(np.real(ifft(c))**2)
         
-        if (action is not None):
+        if (actions is not None):
             self.v = self.E*v + (Nv + Fforcing)*self.f1 + 2.*(Na + Nb + 2*Fforcing)*self.f2 + (Nc + Fforcing)*self.f3
         else:
             self.v = self.E*v + Nv*self.f1 + 2.*(Na + Nb)*self.f2 + Nc*self.f3
@@ -352,11 +386,12 @@ class KS:
 
         # Extract state
         u = self.uu[self.ioutnum,:]
-        dudu = np.zeros(self.N)
-        dudu[:-1] = (u[1:]-u[:-1])/self.dx
-        dudu[-1] = dudu[-2]
+        #dudu = np.zeros(self.N)
+        #dudu[:-1] = (u[1:]-u[:-1])/self.dx
+        #dudu[-1] = dudu[-2]
         dudt = (self.uu[self.ioutnum,:]-self.uu[self.ioutnum-1,:])/self.dt
-        state = np.column_stack( (u, dudu, dudt) )
+        #state = np.column_stack( (u, dudu, dudt) )
+        state = np.column_stack( (u, dudt) )
         return state
 
     def updateField(self, factors):

@@ -1,43 +1,46 @@
 from KS import *
   
-# defaults
+N    = 1024
 L    = 22/(2*np.pi)
-dt   = 0.1
+nu   = 1.0
+dt   = 0.01
 tTransient = 20
-tEnd = 50 #5000
+tEnd = 50
 tSim = tEnd - tTransient
+nSimSteps = tSim/dt
+
 rewardFactor = 1e4
 
 # DNS baseline
-dns = KS(L=L, N=512, dt=dt, nu=1.0, tend=tTransient)
-dns.simulate()
-dns.fou2real()
-  
-## restart
-v_restart = dns.vv[-1,:].copy()
-u_restart = dns.uu[-1,:].copy()
+dns = KS(L=L, N=N, dt=dt, nu=nu, tend=tTransient)
+#dns.simulate()
+#dns.fou2real()
  
-## create interpolated IC
-f_restart = interpolate.interp1d(dns.x, u_restart, kind='cubic')
-
+## restart
+#v_restart = dns.vv[-1,:].copy()
+#u_restart = dns.uu[-1,:].copy()
+ 
 # set IC
-dns.IC( v0 = v_restart )
+#dns.IC( v0 = v_restart )
 
 # continue simulation
-dns.simulate( nsteps=int(tSim/dt), restart = True )
+#dns.simulate( nsteps=int(tSim/dt), restart = True )
 
 # convert to physical space
-dns.fou2real()
+#dns.fou2real()
 
 # calcuate energies
-dns.compute_Ek()
-tAvgEnergy = dns.Ek_tt
+#dns.compute_Ek()
 
-def environment( s , numGridPoints ):
-  
+def environment( s , gridSize, numActions, episodeLength ):
+ 
+    ## create interpolated IC
+    f_restart = interpolate.interp1d(dns.x, dns.u0, kind='cubic')
+ 
     # Initialize LES
-    les = KS(L=L, N = numGridPoints, dt=dt, nu=1.0, tend=tEnd-tTransient)
+    les = KS(L=L, N = gridSize, dt=dt, nu=1.0, tend=tEnd-tTransient)
     les.IC( u0 = f_restart(les.x))
+    les.setup_basis(numActions)
 
     ## get initial state
     state = les.getState().flatten().tolist()
@@ -46,15 +49,25 @@ def environment( s , numGridPoints ):
     ## run controlled simulation
     error = 0
     step = 0
-    while step < int(tSim/dt) and error == 0:
+    nIntermediate = int(tSim / dt / episodeLength)
+    cumreward = 0.
+
+    timestamps = []
+    actionHistory = []
+
+    while step < episodeLength and error == 0:
         
         # Getting new action
         s.update()
 
         # apply action and advance environment
         actions = s["Action"]
+        actionHistory.append(actions)
+        timestamps.append(les.t)
+
         try:
-            les.step(actions)
+            for _ in range(nIntermediate):
+                les.step(actions)
             les.compute_Ek()
         except Exception as e:
             print("Exception occured:")
@@ -62,7 +75,6 @@ def environment( s , numGridPoints ):
             error = 1
             break
         
-
         # get new state
         state = les.getState().flatten().tolist()
         if(np.isnan(state).any() == True):
@@ -72,9 +84,9 @@ def environment( s , numGridPoints ):
         s["State"] = state
 
         # calculate reward from energy
-        tAvgEnergyLES = les.Ek_tt
-
-        reward = -rewardFactor*(np.abs(tAvgEnergyLES[step] -tAvgEnergy[step]))
+        reward = -rewardFactor*(np.abs(les.Ek_tt[step*nIntermediate]-dns.Ek_tt[step*nIntermediate]))
+        cumreward += reward
+        
         if (np.isnan(reward)):
             print("Nan reward detected")
             error = 1
@@ -83,10 +95,10 @@ def environment( s , numGridPoints ):
         s["Reward"] = reward
         step += 1
 
-        
+    print(cumreward)
     if error == 1:
         s["Termination"] = "Truncated"
-        s["Reward"] = -5000
+        s["Reward"] = -500
     
     else:
         s["Termination"] = "Terminal"

@@ -13,22 +13,19 @@ rewardFactor = 1.
 # DNS baseline
 print("Setting up DNS..")
 dns = Burger(L=L, N=N, dt=dt, nu=nu, tend=tEnd)
-dns.IC(case='sinus')
+#dns.IC(case='sinus')
 #dns.IC(case='box')
-dns.simulate()
-dns.fou2real()
-dns.compute_Ek()
-
-## create interpolated IC
-f_restart = interpolate.interp1d(dns.x, dns.u0, kind='cubic')
-
-# calcuate energies
-tAvgEnergy = dns.Ek_tt
-print("Done!")
+#dns.IC(case='gaussian')
+#dns.simulate()
+#dns.fou2real()
+#dns.compute_Ek()
 
 def environment( s , gridSize, numActions, episodeLength ):
  
     testing = True if s["Custom Settings"]["Mode"] == "Testing" else False
+
+    ## create interpolated IC
+    f_restart = interpolate.interp1d(dns.x, dns.u0, kind='cubic')
 
     # Initialize LES
     les = Burger(L=L, N=gridSize, dt=dt, nu=nu, tend=tEnd, noisy=True)
@@ -79,8 +76,7 @@ def environment( s , gridSize, numActions, episodeLength ):
         s["State"] = state
 
         # calculate reward from energy
-        tAvgEnergyLES = les.Ek_tt
-        reward = -rewardFactor*(np.abs(tAvgEnergyLES[step*nIntermediate]-tAvgEnergy[step*nIntermediate]))
+        reward = -rewardFactor*(np.abs(les.Ek_tt[step*nIntermediate]-dns.Ek_tt[step*nIntermediate]))
         cumreward += reward
 
         if (np.isnan(reward)):

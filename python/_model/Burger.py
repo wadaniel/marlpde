@@ -46,7 +46,8 @@ class Burger:
         self.nsteps = nsteps
         self.nout   = nsteps
         self.sigma  = 2*pi*L/(2*N)
-  
+ 
+        # Basis
         self.M = 0
         self.basis = None
 
@@ -120,7 +121,7 @@ class Burger:
             if kind == 'uniform':
                 self.basis = np.zeros((self.M, self.N))
                 for i in range(self.M):
-                    assert self.N % self.M == 0, print("Something went wrong in basis setup")
+                    assert self.N % self.M == 0, print("[Burger] Something went wrong in basis setup")
                     idx1 = i * int(self.N/self.M)
                     idx2 = (i+1) * int(self.N/self.M)
                     self.basis[i,idx1:idx2] = 1.
@@ -132,17 +133,12 @@ class Burger:
                     self.basis[i,:] = hat( self.x, mean, dx )
 
             else:
-                print("Basis function not known, exit..")
+                print("[Burger] Basis function not known, exit..")
                 sys.exit()
         else:
             self.basis = np.ones((self.M, self.N))
         
-        #np.set_printoptions(precision=6)
-        #print(self.basis)
-        #print(np.sum(self.basis,axis=0), flush=True)
-        #print(np.sum(self.basis,axis=0)==1, flush=True)
-        #print((np.sum(self.basis,axis=0)==1).all(), flush=True)
-        assert (np.sum(self.basis,axis=0)==1).all(), print("Something went wrong in basis setup")
+        assert (np.sum(self.basis,axis=0)==1).all(), print("[Burger] Something went wrong in basis setup")
 
     def IC(self, u0=None, v0=None, case='box', seed=42):
         
@@ -167,6 +163,11 @@ class Burger:
                     # Sinus
                     elif case == 'sinus':
                         u0 = np.sin(self.x+offset)
+
+                    else:
+                        print("[Burger] Error: IC case unknown")
+                        return -1
+
             else:
                 # check the input size
                 if (np.size(u0,0) != self.N):
@@ -190,7 +191,7 @@ class Burger:
                 v0 = np.array(v0)
                 # and transform to physical space
                 u0 = np.real(ifft(v0))
-        #
+        
         # and save to self
         self.u0  = u0
         self.u   = u0
@@ -213,8 +214,8 @@ class Burger:
 
         Fforcing = np.zeros(self.N)
         if (actions is not None):
-            assert self.basis is not None, print("Basis not set up (is None).")
-            assert len(actions) == self.M, print("Wrong number of actions (provided {}/{}".format(len(action), self.M))
+            assert self.basis is not None, print("[Burger] Basis not set up (is None).")
+            assert len(actions) == self.M, print("[Burger] Wrong number of actions (provided {}/{}".format(len(actions), self.M))
             forcing = np.matmul(actions, self.basis) / 500
 
             Fforcing = fft( forcing )
