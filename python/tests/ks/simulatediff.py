@@ -8,7 +8,7 @@ start, mid and end of the simulation.
 
 # Discretization grid
 N1 = 1024
-N2 = 16
+N2 = 32
 
 import matplotlib
 matplotlib.use('Agg')
@@ -28,10 +28,11 @@ from KS import *
 ## set parameters and initialize simulation
 L    = 22/(2*np.pi)
 dt   = 0.05
-tTransient = 40
+tTransient = 50
 tEnd = 200
+nu   = 1.0
 
-dns0 = KS(L=L, N=N1, dt=dt, nu=1.0, tend=tTransient)
+dns0 = KS(L=L, N=N1, dt=dt, nu=nu, tend=tTransient)
 
 #------------------------------------------------------------------------------
 ## simulate DNS in transient phase and produce IC
@@ -69,14 +70,12 @@ sgs.compute_Ek()
 #------------------------------------------------------------------------------
 ## compute errors
 
-#Ekt_interp = f_interpEkt(sgs.tt)
-#Ektt_interp = f_interpEktt(sgs.tt)
-
-#errEk_t = sgs.Ek_t - Ekt_interp
-#errEk_tt = sgs.Ek_tt - Ektt_interp
-
+# instantaneous energy error
 errEk_t = dns.Ek_t - sgs.Ek_t
+# time-cumulative energy average error as a function of time
 errEk_tt = dns.Ek_tt - sgs.Ek_tt
+# Time-averaged energy spectrum as a function of wavenumber
+errEk_ktt = ((dns.Ek_ktt[:, :N2] - sgs.Ek_ktt[:, :N2])**2).mean(axis=1)
 
 
 #------------------------------------------------------------------------------
@@ -114,9 +113,13 @@ axs[1,2].set_yscale('log')
 
 fig.savefig('simulatediff1.png')
 
-fig, axs = plt.subplots(1,2, sharex='col', sharey='col')
+fig, axs = plt.subplots(1,3, sharex='col', sharey='row')
 
 axs[0].plot(time, errEk_t)
+axs[0].set_yscale('log')
 axs[1].plot(time, errEk_tt)
+axs[1].set_yscale('log')
+axs[2].plot(time, errEk_ktt)
+axs[2].set_yscale('log')
 
 fig.savefig('simulatediff2.png')

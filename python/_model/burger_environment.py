@@ -194,4 +194,5 @@ def environment( s , gridSize, numActions, episodeLength ):
         # Plot energy spectrum at start, mid and end of simulation
         axs[idx,5].plot(timestamps, actionHistory,'g')
 
-        fig.savefig('rl_les.png')
+        figName = fileName + ".png"
+        fig.savefig(figName)

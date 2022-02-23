@@ -111,8 +111,9 @@ e["File Output"]["Frequency"] = 500
 e["File Output"]["Path"] = resultFolder
 
 if args.test:
+    fileName = 'test_ks_{}_{}_{}_{}_{}'.format(args.ic, args.N, args.numactions, args.episodelength, args.run)
     e["Solver"]["Testing"]["Sample Ids"] = [0]
-    e["Problem"]["Custom Settings"]["Filename"] = "les.npz"
+    e["Problem"]["Custom Settings"]["Filename"] = fileName
 
 ### Running Experiment
 

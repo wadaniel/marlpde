@@ -234,7 +234,7 @@ class KS:
         if (actions is not None):
             assert self.basis is not None, print("[KS] Basis not set up (is None).")
             assert len(actions) == self.M, print("[KS] Wrong number of actions (provided {}/{}".format(len(actions), self.M))
-            forcing = np.matmul(actions, self.basis) / 500
+            forcing = np.matmul(actions, self.basis) / 10
 
             Fforcing = fft( forcing )
 

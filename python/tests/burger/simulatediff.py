@@ -63,15 +63,12 @@ sgs.compute_Ek()
 #------------------------------------------------------------------------------
 ## compute errors
 
-#Ekt_interp = f_interpEkt(sgs.tt)
-#Ektt_interp = f_interpEktt(sgs.tt)
-
-#errEk_t = sgs.Ek_t - Ekt_interp
-#errEk_tt = sgs.Ek_tt - Ektt_interp
-
+# instantaneous energy error
 errEk_t = dns.Ek_t - sgs.Ek_t
+# time-cumulative energy average error as a function of time
 errEk_tt = dns.Ek_tt - sgs.Ek_tt
-
+# Time-averaged energy spectrum as a function of wavenumber
+errEk_ktt = ((dns.Ek_ktt[:, :N2] - sgs.Ek_ktt[:, :N2])**2).mean(axis=1)
 
 #------------------------------------------------------------------------------
 ## plot result
@@ -109,9 +106,10 @@ axs[1,2].set_yscale('log')
 
 fig.savefig('simulate_energies.png')
 
-fig, axs = plt.subplots(1,2, sharex='col', sharey='col')
+fig, axs = plt.subplots(1,3, sharex='col', sharey='col')
 
 axs[0].plot(time, errEk_t)
 axs[1].plot(time, errEk_tt)
+axs[2].plot(time, errEk_ktt)
 
 fig.savefig('simulate_ediff.png')

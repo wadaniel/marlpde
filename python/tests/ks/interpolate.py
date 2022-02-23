@@ -9,10 +9,10 @@ KS of fine grid interpolated on coarse crid vs KS on coarse grid.
 """
 
 # Discretization fine grid (DNS)
-N1 = 512
+N1 = 1024
 
 # Discretization coarse grid
-N2 = 256
+N2 = 32
 
 import matplotlib
 matplotlib.use('Agg')
@@ -30,8 +30,10 @@ from KS import *
 ## set parameters and initialize simulation
 L    = 22/(2*np.pi)
 dt   = 0.05
+tTransient = 50
 tEnd = 50
-dns = KS(L=L, N=N1, dt=dt, nu=1.0, tend=tEnd)
+nu   = 1.0
+dns = KS(L=L, N=N1, dt=dt, nu=nu, tend=tTransient)
 
 ## simulate
 dns.simulate()
@@ -44,9 +46,11 @@ tTruth = dns.tt
 xTruth = dns.x
 sTruth, nTruth = np.meshgrid(np.arange(uTruth.shape[0])*dt, 2*np.pi*L/N1*(np.array(range(N1))+1))
 
+u_restart = dns.uu[-1,:].copy()
+
+
 #------------------------------------------------------------------------------
 ## restart
-u_restart = dns.uu[0,:].copy()
 f_restart = interpolate.interp1d(xTruth, u_restart)
 
 # restart from coarse physical space

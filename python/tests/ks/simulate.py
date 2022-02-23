@@ -6,9 +6,6 @@ the instanteneous energy plus the time averaged energy, and the energy spectra a
 start, mid and end of the simulation.
 """
 
-# Discretization grid
-N = 512
-
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
@@ -23,17 +20,36 @@ from scipy.fft import fftfreq
 from KS import *
 
 #------------------------------------------------------------------------------
-## set parameters and initialize simulation
+# DNS defaults
+N    = 1024
 L    = 22/(2*np.pi)
-dt   = 0.05
-tEnd = 1000
-dns  = KS(L=L, N=N, dt=dt, nu=1.0, tend=tEnd)
+nu   = 1.0
+dt   = 0.01
+tTransient = 0
+tEnd = 5000
+tSim = tEnd - tTransient
+nSimSteps = int(tSim/dt)
 
 #------------------------------------------------------------------------------
-## simulate
+## transient
+dns = KS(L=L, N=N, dt=dt, nu=nu, tend=tTransient)
 dns.simulate()
+dns.fou2real()
+ 
+#------------------------------------------------------------------------------
+## restart
+v_restart = dns.vv[-1,:].copy()
+u_restart = dns.uu[-1,:].copy()
+ 
+# set IC
+dns.IC( v0 = v_restart )
+
+# continue simulation
+dns.simulate( nsteps=int(tSim/dt), restart = True )
+
 # convert to physical space
 dns.fou2real()
+
 # compute energies
 dns.compute_Ek()
 
@@ -46,16 +62,14 @@ e_ktt = dns.Ek_ktt
 
 k = dns.k[:N//2]
 
-time = np.arange(tEnd/dt+1)*dt
-
-fig, axs = plt.subplots(1,3)
-s, n = np.meshgrid(2*np.pi*L/N*(np.array(range(N))+1), time)
+fig, axs = plt.subplots(1,3, figsize=(15,15))
+s, n = np.meshgrid(2*np.pi*L/N*(np.array(range(N))+1), dns.tt)
 
 axs[0].contourf(s, n, u, 50)
-axs[1].plot(time, e_t)
-axs[1].plot(time, e_tt)
-axs[2].plot(k, 2.0/N * np.abs(e_ktt[0,0:N//2]),'b--')
-axs[2].plot(k, 2.0/N * np.abs(e_ktt[tEnd//2,0:N//2]),'b:')
+axs[1].plot(dns.tt, e_t)
+axs[1].plot(dns.tt, e_tt)
+axs[2].plot(k, 2.0/N * np.abs(e_ktt[0,0:N//2]),'b:')
+axs[2].plot(k, 2.0/N * np.abs(e_ktt[nSimSteps//2,0:N//2]),'b--')
 axs[2].plot(k, 2.0/N * np.abs(e_ktt[-1,0:N//2]),'b')
 axs[2].set_xscale('log')
 axs[2].set_yscale('log')

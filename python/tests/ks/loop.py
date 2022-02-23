@@ -5,16 +5,24 @@ from KS import *
  
 import matplotlib.pyplot as plt
 
-# defaults
-numGridPoints = 8
+# LES defaults
+numActions = 1
+numGridPoints = 32
+ 
+# DNS defaults
+N    = 1024
 L    = 22/(2*np.pi)
-dt   = 0.1
-tTransient = 20
-tEnd = 50 #5000
+nu   = 1.0
+dt   = 0.01
+tTransient = 50
+tEnd = 100
 tSim = tEnd - tTransient
-   
+nSimSteps = tSim/dt
+
+rewardFactor = 10
+  
 # DNS baseline
-dns = KS(L=L, N=512, dt=dt, nu=1.0, tend=tTransient)
+dns = KS(L=L, N=N, dt=dt, nu=nu, tend=tTransient)
 dns.simulate()
 dns.fou2real()
   
@@ -40,19 +48,19 @@ tAvgEnergy = dns.Ek_tt
 
 
 # init rewards
-rewardFactor = 1e4
 rewards = []
 
 # Initialize LES
-les = KS(L=L, N = numGridPoints, dt=dt, nu=1.0, tend=tEnd-tTransient)
-les.IC( u0 = f_restart(les.x))
+les = KS(L=L, N = numGridPoints, dt=dt, nu=nu, tend=tEnd-tTransient)
+les.IC( u0 = f_restart(les.x) )
+les.setup_basis(numActions)
 
 ## run controlled simulation
 error = 0
 step = 0
 while step < int(tSim/dt) and error == 0:
     
-    actions = 0
+    actions = [0.]
     les.step(actions)
     les.compute_Ek()
     

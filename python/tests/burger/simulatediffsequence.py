@@ -92,6 +92,7 @@ for N in Nx:
 
     errEk_t = dns.Ek_t - sgs.Ek_t
     errEk_tt = dns.Ek_tt - sgs.Ek_tt
+    errEk_ktt = ((dns.Ek_ktt[:, :N2] - sgs.Ek_ktt[:, :N2])**2).mean(axis=1)
     udns_int = f_dns(sgs.x, sgs.tt)
 
     errU = np.abs(sgs.uu-udns_int)
@@ -113,6 +114,8 @@ for N in Nx:
     # Plot energy differences
     axs[idx,3].plot(time, errEk_t)
     axs[idx,3].plot(time, errEk_tt)
+    axs[idx,3].plot(time, errEk_ktt)
+    axs[idx,3].set_yscale('log')
 
     # Plot energy spectrum at start, mid and end of simulation
     axs[idx,4].plot(k2, np.abs(sgs.Ek_ktt[0,0:N//2]),'b:')
