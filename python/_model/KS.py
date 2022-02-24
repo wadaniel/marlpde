@@ -38,7 +38,7 @@ class KS:
         tend = float(tend)
         
         if (nsteps is None):
-            nsteps = int(tend/dt)
+            nsteps = tend//dt
         else:
             nsteps = int(nsteps)
             # override tend
@@ -141,8 +141,8 @@ class KS:
                 self.basis = np.zeros((self.M, self.N))
                 for i in range(self.M):
                     assert self.N % self.M == 0, print("[Burger] Something went wrong in basis setup")
-                    idx1 = i * int(self.N/self.M)
-                    idx2 = (i+1) * int(self.N/self.M)
+                    idx1 = i * self.N//self.M
+                    idx2 = (i+1) * self.N//self.M
                     self.basis[i,idx1:idx2] = 1.
             elif kind == 'hat':
                 self.basis = np.ones((self.M, self.N))
@@ -157,7 +157,7 @@ class KS:
         else:
             self.basis = np.ones((self.M, self.N))
         
-        assert (np.sum(self.basis,axis=0)==1).all(), print("[Burger] Something went wrong in basis setup")
+        np.testing.assert_allclose(np.sum(self.basis, axis=0), 1)
 
     def IC(self, u0=None, v0=None, case='noise', seed=42):
         
@@ -254,7 +254,7 @@ class KS:
         if (actions is not None):
             self.v = self.E*v + (Nv + Fforcing)*self.f1 + 2.*(Na + Nb + 2*Fforcing)*self.f2 + (Nc + Fforcing)*self.f3
         else:
-            self.v = self.E*v + Nv*self.f1 + 2.*(Na + Nb)*self.f2 + Nc*self.f3
+            self.v = 1] #f.E*v + Nv*self.f1 + 2.*(Na + Nb)*self.f2 + Nc*self.f3
 
         self.stepnum += 1
         self.t       += self.dt

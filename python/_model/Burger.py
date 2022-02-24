@@ -39,13 +39,12 @@ class Burger:
         # save to self
         self.L      = L
         self.N      = N
-        self.dx     = L/(N-1)
-        self.x      = np.linspace(0, self.L, N, endpoint=True)
+        self.dx     = L/N
+        self.x      = np.linspace(0, self.L, N, endpoint=False)
         self.dt     = dt
         self.nu     = nu
         self.nsteps = nsteps
         self.nout   = nsteps
-        self.sigma  = 2*pi*L/(2*N)
  
         # Basis
         self.M = 0
@@ -85,7 +84,7 @@ class Burger:
             self.nout = int(nout)
         
         # nout+1 because we store the IC as well
-        self.uu = np.zeros([self.nout+1, self.N], dtype=np.complex64)
+        self.uu = np.zeros([self.nout+1, self.N])
         self.vv = np.zeros([self.nout+1, self.N], dtype=np.complex64)
         self.tt = np.zeros(self.nout+1)
         
@@ -122,8 +121,8 @@ class Burger:
                 self.basis = np.zeros((self.M, self.N))
                 for i in range(self.M):
                     assert self.N % self.M == 0, print("[Burger] Something went wrong in basis setup")
-                    idx1 = i * int(self.N/self.M)
-                    idx2 = (i+1) * int(self.N/self.M)
+                    idx1 = i * self.N//self.M
+                    idx2 = (i+1) * self.N//self.M
                     self.basis[i,idx1:idx2] = 1.
             elif kind == 'hat':
                 self.basis = np.ones((self.M, self.N))
@@ -138,7 +137,7 @@ class Burger:
         else:
             self.basis = np.ones((self.M, self.N))
         
-        assert (np.sum(self.basis,axis=0)==1).all(), print("[Burger] Something went wrong in basis setup")
+        np.testing.assert_allclose(np.sum(self.basis, axis=0), 1)
 
     def IC(self, u0=None, v0=None, case='box', seed=42):
         
@@ -185,8 +184,6 @@ class Burger:
                 print("[Burger] Error: wrong IC array size")
                 return -1
             else:
-                if self.noisy:
-                    print("[Burger] Using given (Fourier) flow field...")
                 # if ok cast to np.array
                 v0 = np.array(v0)
                 # and transform to physical space
@@ -206,7 +203,7 @@ class Burger:
         self.f_truth = interpolate.interp2d(x, t, self.uu_truth, kind='cubic')
  
     def mapGroundTruth(self):
-        t = np.arange(0, self.uu.shape[0])*self.dt
+        t = np.arange(0,self.uu.shape[0])*self.dt
         return self.f_truth(self.x,t)
 
 
@@ -362,12 +359,9 @@ class Burger:
 
     def getReward(self):
         # Convert from spectral to physical space
-        self.fou2real()
-        
-        u = self.uu[self.ioutnum,:]
         t = [self.t]
         uMap = self.f_truth(self.x, t)
-        return -np.abs(u-uMap)
+        return -np.abs(self.u-uMap)
 
     def getState(self, nAgents = None):
         # Convert from spectral to physical space

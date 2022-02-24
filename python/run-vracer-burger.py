@@ -4,9 +4,9 @@ import argparse
 parser = argparse.ArgumentParser()
 parser.add_argument('--N', help='Discretization / number of grid points', required=False, type=int, default=32)
 parser.add_argument('--numactions', help='Number of actions', required=False, type=int, default=1)
-parser.add_argument('--numexp', help='Number of experiences', required=False, type=int, default=1e6)
+parser.add_argument('--numexp', help='Number of experiences', required=False, type=int, default=5e5)
 parser.add_argument('--episodelength', help='Actual length of episode / number of actions', required=False, type=int, default=500)
-parser.add_argument('--ic', help='Initial condition', required=False, type=str, default='sinus')
+parser.add_argument('--ic', help='Initial condition', required=False, type=str, default='box')
 parser.add_argument('--run', help='Run tag', required=False, type=int, default=0)
 parser.add_argument('--test', action='store_true', help='Run tag', required=False)
 
@@ -17,11 +17,6 @@ args = parser.parse_args()
 import sys
 sys.path.append('_model')
 import burger_environment as be
-
-be.dns.IC(case=args.ic)
-be.dns.simulate()
-be.dns.fou2real()
-be.dns.compute_Ek()
 
 
 ### Defining Korali Problem
@@ -40,7 +35,7 @@ if found == True:
 ### Defining Problem Configuration
 e["Problem"]["Type"] = "Reinforcement Learning / Continuous"
 e["Problem"]["Custom Settings"]["Mode"] = "Testing" if args.test else "Training"
-e["Problem"]["Environment Function"] = lambda s : be.environment( s, args.N, args.numactions, args.episodelength )
+e["Problem"]["Environment Function"] = lambda s : be.environment( s, args.N, args.numactions, args.episodelength, args.ic )
 e["Problem"]["Testing Frequency"] = 100
 e["Problem"]["Policy Testing Episodes"] = 1
 
@@ -65,9 +60,9 @@ for i in range(nState):
 for i in range(args.numactions):
     e["Variables"][nState+i]["Name"] = "Forcing " + str(i)
     e["Variables"][nState+i]["Type"] = "Action"
-    e["Variables"][nState+i]["Lower Bound"] = 0.
-    e["Variables"][nState+i]["Upper Bound"] = +0.05
-    e["Variables"][nState+i]["Initial Exploration Noise"] = 0.001
+    e["Variables"][nState+i]["Lower Bound"] = -0.1
+    e["Variables"][nState+i]["Upper Bound"] = +0.1
+    e["Variables"][nState+i]["Initial Exploration Noise"] = 0.01
 
 ### Setting Experience Replay and REFER settings
 
@@ -111,7 +106,7 @@ e["File Output"]["Frequency"] = 500
 e["File Output"]["Path"] = resultFolder
 
 if args.test:
-    fileName = 'test_ks_{}_{}_{}_{}_{}'.format(args.ic, args.N, args.numactions, args.episodelength, args.run)
+    fileName = 'test_burger_{}_{}_{}_{}_{}'.format(args.ic, args.N, args.numactions, args.episodelength, args.run)
     e["Solver"]["Testing"]["Sample Ids"] = [0]
     e["Problem"]["Custom Settings"]["Filename"] = fileName
 

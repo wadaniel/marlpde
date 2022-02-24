@@ -3,16 +3,20 @@ import sys
 sys.path.append('./../../_model/')
 
 from Burger import *
-  
-N     = 1024
-L     = 2*np.pi
-dt    = 0.00055
-tEnd  = 5
-nu    = 0.01
+ 
+# dns defaults
+N    = 512
+L    = 2*np.pi
+dt   = 0.001
+tEnd = 5
+nu   = 0.01
+
+# action defaults
 basis = 'uniform'
 numActions = 1
 
-gridSize = 64
+# les & rl defaults
+gridSize = 32
 episodeLength = 500
 
 # reward defaults
@@ -21,7 +25,7 @@ rewardFactor = 1.
 # DNS baseline
 print("Setting up DNS..")
 dns = Burger(L=L, N=N, dt=dt, nu=nu, tend=tEnd)
-dns.IC(case='sinus')
+dns.IC(case='box')
 dns.simulate()
 dns.fou2real()
 dns.compute_Ek()
@@ -33,11 +37,11 @@ f_restart = interpolate.interp1d(dns.x, dns.u0, kind='cubic')
 tAvgEnergy = dns.Ek_tt
 print("Done!")
 
-  
 # Initialize LES
-les = Burger(L=L, N=gridSize, dt=dt, nu=nu, tend=tEnd)
-les.setup_basis(numActions, basis)
+les = Burger(L=L, N=gridSize, dt=dt, nu=nu, tend=tEnd, noisy=True)
 les.IC( u0 = f_restart(les.x) )
+les.setup_basis(numActions, basis)
+les.setGroundTruth(dns.tt, dns.x, dns.uu)
 
 ## run controlled simulation
 error = 0
@@ -58,9 +62,13 @@ while step < episodeLength and error == 0:
         error = 1
         break
     
+    idx = les.ioutnum
+    uTruthToCoarse = les.mapGroundTruth()
+    uDiffMse = ((uTruthToCoarse[idx,:] - les.uu[idx,:])**2).mean()
+    
     # calculate reward from energy
-    tAvgEnergyLES = les.Ek_tt
-    reward = -rewardFactor*(np.abs(tAvgEnergyLES[step*nIntermediate]-tAvgEnergy[step*nIntermediate]))
+    # reward = -rewardFactor*(np.abs(les.Ek_tt[step*nIntermediate]-dns.Ek_tt[step*nIntermediate]))
+    reward = -rewardFactor*uDiffMse
     cumreward += reward
 
     if (np.isnan(reward)):
