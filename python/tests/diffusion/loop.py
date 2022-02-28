@@ -8,7 +8,7 @@ from Diffusion import *
 N    = 512
 L    = 2*np.pi
 dt   = 0.001
-tEnd = 5
+tEnd = 10
 nu   = 0.01
 
 # action defaults
@@ -20,7 +20,7 @@ gridSize = 32
 episodeLength = 500
 
 # reward defaults
-rewardFactor = 1.
+rewardFactor = 10.
 
 # DNS baseline
 print("Setting up DNS..")
