@@ -16,7 +16,7 @@ args = parser.parse_args()
 
 import sys
 sys.path.append('_model')
-import burger_environment as be
+import diffusion_environment as be
 
 
 ### Defining Korali Problem
@@ -27,7 +27,7 @@ e = korali.Experiment()
 
 ### Defining results folder and loading previous results, if any
 
-resultFolder = '_result_burger_{}_{}_{}_{}_{}/'.format(args.ic, args.N, args.numactions, args.episodelength, args.run)
+resultFolder = '_result_diffusion_{}_{}_{}_{}_{}/'.format(args.ic, args.N, args.numactions, args.episodelength, args.run)
 found = e.loadState(resultFolder + '/latest')
 if found == True:
 	print("[Korali] Continuing execution from previous run...\n")
@@ -107,7 +107,7 @@ e["File Output"]["Frequency"] = 500
 e["File Output"]["Path"] = resultFolder
 
 if args.test:
-    fileName = 'test_burger_{}_{}_{}_{}_{}'.format(args.ic, args.N, args.numactions, args.episodelength, args.run)
+    fileName = 'test_diffusion_{}_{}_{}_{}_{}'.format(args.ic, args.N, args.numactions, args.episodelength, args.run)
     e["Solver"]["Testing"]["Sample Ids"] = [0]
     e["Problem"]["Custom Settings"]["Filename"] = fileName
 

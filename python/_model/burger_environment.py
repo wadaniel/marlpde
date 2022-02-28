@@ -140,8 +140,8 @@ def environment( s , gridSize, numActions, episodeLength, ic ):
         axs[0,2].plot(time, dns.Ek_t)
         axs[0,2].plot(time, dns.Ek_tt)
 
-        axs[0,4].plot(k1, np.abs(dns.Ek_ktt[0,0:N//2]),'b:')
-        axs[0,4].plot(k1, np.abs(dns.Ek_ktt[tEnd//2,0:N//2]),'b--')
+        #axs[0,4].plot(k1, np.abs(dns.Ek_ktt[0,0:N//2]),'b:')
+        #axs[0,4].plot(k1, np.abs(dns.Ek_ktt[tEnd//2,0:N//2]),'b--')
         axs[0,4].plot(k1, np.abs(dns.Ek_ktt[-1,0:N//2]),'b')
         axs[0,4].set_xscale('log')
         axs[0,4].set_yscale('log')
@@ -184,11 +184,14 @@ def environment( s , gridSize, numActions, episodeLength, ic ):
         axs[idx,3].plot(time, errBaseU_t)
 
         # Plot energy spectrum at start, mid and end of simulation
-        axs[idx,4].plot(k2, np.abs(base.Ek_ktt[0,0:gridSize//2]),'b:')
-        axs[idx,4].plot(k2, np.abs(base.Ek_ktt[tEnd//2,0:gridSize//2]),'b--')
+        #axs[idx,4].plot(k2, np.abs(base.Ek_ktt[0,0:gridSize//2]),'b:')
+        #axs[idx,4].plot(k2, np.abs(base.Ek_ktt[tEnd//2,0:gridSize//2]),'b--')
         axs[idx,4].plot(k2, np.abs(base.Ek_ktt[-1,0:gridSize//2]),'b')
         axs[idx,4].set_xscale('log')
         axs[idx,4].set_yscale('log')
+  
+        # Plot energy spectrum difference
+        axs[idx,4].plot(k2, np.abs(dns.Ek_ktt[-1,0:gridSize//2] - base.Ek_ktt[-1,0:gridSize//2]),'--r')
 
 #------------------------------------------------------------------------------
         
@@ -210,14 +213,18 @@ def environment( s , gridSize, numActions, episodeLength, ic ):
         axs[idx,3].plot(time, errU_t)
 
         # Plot energy spectrum at start, mid and end of simulation
-        axs[idx,4].plot(k2, np.abs(les.Ek_ktt[0,0:gridSize//2]),'b:')
-        axs[idx,4].plot(k2, np.abs(les.Ek_ktt[tEnd//2,0:gridSize//2]),'b--')
         axs[idx,4].plot(k2, np.abs(les.Ek_ktt[-1,0:gridSize//2]),'b')
         axs[idx,4].set_xscale('log')
         axs[idx,4].set_yscale('log')
+  
+        # Plot energy spectrum difference
+        axs[idx,4].plot(k2, np.abs(dns.Ek_ktt[-1,0:gridSize//2] - les.Ek_ktt[-1,0:gridSize//2]),'--r')
  
         # Plot energy spectrum at start, mid and end of simulation
-        axs[idx,5].plot(timestamps, actionHistory,'g')
+        actionHistory = np.array(actionHistory)
+        colors = plt.cm.coolwarm(np.linspace(0,1,numActions))
+        for i in range(numActions):
+            axs[idx,5].plot(timestamps, actionHistory[:,i], color=colors[i])
 
         figName = fileName + ".png"
         fig.savefig(figName)

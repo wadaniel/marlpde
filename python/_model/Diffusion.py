@@ -13,7 +13,7 @@ def hat( x, mean, dx ):
     right = np.clip((dx - x + mean)/dx, a_min = 0., a_max = 1.)
     return left + right - 1.
 
-class Burger:
+class Diffusion:
     #
     # Solution of the Burgers equation
     #
@@ -95,8 +95,7 @@ class Burger:
 
     def __setup_fourier(self):
         self.k   = fftfreq(self.N, self.L / (2*np.pi*self.N))
-        self.k1  = 1j * self.k
-        self.k2  = self.k1**2
+        self.k2  = self.k**2
         
     def __setup_etdrk4(self):
         return
@@ -209,7 +208,13 @@ class Burger:
     def getAnalyticalSolution(self, t):
         print("[Diffusion] TODO.. exit")
         sys.exit()
- 
+        
+        if t == 0:
+            return self.u0
+        else:
+            g = 1/np.sqrt(4*np.pi*self.k*t)*np.exp(-self.x**2/(4.*self.nu*self.t))*self.u0
+            return 1/np.sqrt(4*np.pi*self.nu*t)*np.exp(-self.x**2/(4.*self.nu*self.t))*self.u0
+
     def step( self, actions=None ):
 
         Fforcing = np.zeros(self.N)
@@ -220,7 +225,7 @@ class Burger:
 
             Fforcing = fft( forcing )
 
-        self.v = self.v - self.dt*0.5*self.k1*fft(self.u**2) + self.dt*self.nu*self.k2*self.v + Fforcing
+        self.v = self.v - self.dt*self.nu*self.k2*self.v + Fforcing
         self.u = np.real(ifft(self.v))
 
         """
