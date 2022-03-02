@@ -30,7 +30,7 @@ from Burger import *
 ## set parameters and initialize simulation
 L    = 2*np.pi
 dt   = 0.001
-tEnd = 5
+tEnd = 10
 nu   = 0.01
 ic   = 'box'
 dns = Burger(L=L, N=N1, dt=dt, nu=nu, tend=tEnd)

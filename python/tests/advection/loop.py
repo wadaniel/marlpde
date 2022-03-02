@@ -5,7 +5,6 @@ sys.path.append('./../../_model/')
 from Advection import *
  
 # dns defaults
-N    = 512
 L    = 2*np.pi
 dt   = 0.01
 tEnd = 10
@@ -17,37 +16,22 @@ basis = 'uniform'
 numActions = 1
 
 # les & rl defaults
-gridSize = 8
+gridSize = 32
 episodeLength = 500
 
 # reward defaults
 rewardFactor = 10.
 
-# DNS baseline
-print("Setting up DNS..")
-dns = Advection(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case=ic)
-dns.simulate()
-dns.fou2real()
-dns.compute_Ek()
-
-## create interpolated IC
-f_restart = interpolate.interp1d(dns.x, dns.u0, kind='cubic')
-
-# calcuate energies
-tAvgEnergy = dns.Ek_tt
-print("Done!")
-
 # Initialize LES
-les = Advection(L=L, N=gridSize, dt=dt, nu=nu, tend=tEnd, noisy=True)
-les.IC( u0 = f_restart(les.x) )
+les = Advection(L=L, N=gridSize, dt=dt, nu=nu, tend=tEnd, case=ic, noisy=True)
 les.setup_basis(numActions, basis)
-les.setGroundTruth(dns.tt, dns.x, dns.uu)
 
 ## run controlled simulation
 error = 0
 step = 0
 nIntermediate = int(tEnd / dt / episodeLength)
 cumreward = 0.
+
 while step < episodeLength and error == 0:
     
     # apply action and advance environment
@@ -63,11 +47,11 @@ while step < episodeLength and error == 0:
         break
     
     idx = les.ioutnum
-    uTruthToCoarse = les.mapGroundTruth()
-    uDiffMse = ((uTruthToCoarse[idx,:] - les.uu[idx,:])**2).mean()
+    solution = les.getAnalyticalSolution(les.t)
+    print(solution)
+    uDiffMse = ((solution - les.uu[idx,:])**2).mean()
     
     # calculate reward from energy
-    # reward = -rewardFactor*(np.abs(les.Ek_tt[step*nIntermediate]-dns.Ek_tt[step*nIntermediate]))
     reward = -rewardFactor*uDiffMse
     cumreward += reward
 

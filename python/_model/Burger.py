@@ -216,11 +216,11 @@ class Burger:
         if (actions is not None):
             assert self.basis is not None, print("[Burger] Basis not set up (is None).")
             assert len(actions) == self.M, print("[Burger] Wrong number of actions (provided {}/{}".format(len(actions), self.M))
-            forcing = np.matmul(actions, self.basis) / 500
+            forcing = np.matmul(actions, self.basis)
 
             Fforcing = fft( forcing )
 
-        self.v = self.v - self.dt*0.5*self.k1*fft(self.u**2) + self.dt*self.nu*self.k2*self.v + Fforcing # dt missing in Fforcing
+        self.v = self.v - self.dt*0.5*self.k1*fft(self.u**2) + self.dt*self.nu*self.k2*self.v + self.dt*Fforcing 
         self.u = np.real(ifft(self.v))
 
         """

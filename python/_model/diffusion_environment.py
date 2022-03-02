@@ -14,17 +14,18 @@ rewardFactor = 10.
 # basis defaults
 basis = 'hat'
 
-# DNS baseline
-dns = Diffusion(L=L, N=N, dt=dt, nu=nu, tend=tEnd, noisy=True)
-
 def environment( s , gridSize, numActions, episodeLength, ic ):
- 
+    
+    testing = True if s["Custom Settings"]["Mode"] == "Testing" else False
+    noisy = False if testing else True
+
+    # DNS baseline
+    dns = Diffusion(L=L, N=N, dt=dt, nu=nu, tend=tEnd, noisy=noisy)
     dns.IC(case=ic)
     dns.simulate()
     dns.fou2real()
     dns.compute_Ek()
 
-    testing = True if s["Custom Settings"]["Mode"] == "Testing" else False
 
     ## create interpolated IC
     f_restart = interpolate.interp1d(dns.x, dns.u0, kind='cubic')
@@ -133,8 +134,6 @@ def environment( s , gridSize, numActions, episodeLength, ic ):
         axs[0,2].plot(time, dns.Ek_t)
         axs[0,2].plot(time, dns.Ek_tt)
 
-        #axs[0,4].plot(k1, np.abs(dns.Ek_ktt[0,0:N//2]),'b:')
-        #axs[0,4].plot(k1, np.abs(dns.Ek_ktt[tEnd//2,0:N//2]),'b--')
         axs[0,4].plot(k1, np.abs(dns.Ek_ktt[-1,0:N//2]),'b')
         axs[0,4].set_xscale('log')
         axs[0,4].set_yscale('log')

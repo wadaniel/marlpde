@@ -7,6 +7,7 @@ L    = 2*np.pi
 dt   = 0.01
 tEnd = 10
 nu   = 1.
+ic   = 'box'
 
 # reward defaults
 rewardFactor = 10.
@@ -15,25 +16,15 @@ rewardFactor = 10.
 basis = 'hat'
 
 # DNS baseline
-dns = Advection(L=L, N=N, dt=dt, nu=nu, tend=tEnd, noisy=True)
 
 def environment( s , gridSize, numActions, episodeLength, ic ):
  
-    dns.IC(case=ic)
-    dns.simulate()
-    dns.fou2real()
-    dns.compute_Ek()
-
     testing = True if s["Custom Settings"]["Mode"] == "Testing" else False
-
-    ## create interpolated IC
-    f_restart = interpolate.interp1d(dns.x, dns.u0, kind='cubic')
+    noisy = False if testing else True
 
     # Initialize LES
-    les = Advection(L=L, N=gridSize, dt=dt, nu=nu, tend=tEnd, noisy=False)
-    les.IC( u0 = f_restart(les.x) )
+    les = Advection(L=L, N=gridSize, dt=dt, nu=nu, tend=tEnd, case=ic, noisy=noisy)
     les.setup_basis(numActions, basis)
-    les.setGroundTruth(dns.tt, dns.x, dns.uu)
 
     ## get initial state
     state = les.getState().flatten().tolist()
@@ -79,8 +70,8 @@ def environment( s , gridSize, numActions, episodeLength, ic ):
         s["State"] = state
     
         idx = les.ioutnum
-        uTruthToCoarse = les.mapGroundTruth()
-        uDiffMse = ((uTruthToCoarse[idx,:] - les.uu[idx,:])**2).mean()
+        uTruth = les.getAnalyticalSolution(les.t)
+        uDiffMse = ((uTruth - les.uu[idx,:])**2).mean()
  
         # calculate reward from energy
         reward = -rewardFactor*uDiffMse
@@ -110,11 +101,17 @@ def environment( s , gridSize, numActions, episodeLength, ic ):
         np.savez(fileName, x = les.x, t = les.tt, uu = les.uu, vv = les.vv, L=L, N=gridSize, dt=dt, nu=nu, tEnd=tEnd)
          
         print("Running uncontrolled SGS..")
-        base = Diffusion(L=L, N=gridSize, dt=dt, nu=nu, tend=tEnd)
+        base = Advection(L=L, N=gridSize, dt=dt, nu=nu, tend=tEnd)
         base.simulate()
         base.fou2real()
         base.compute_Ek()
-       
+        
+        print("Running DNS..")
+        dns = Advection(L=L, N=N, dt=dt, nu=nu, tend=tEnd, noisy=True)
+        dns.simulate()
+        dns.fou2real()
+        dns.compute_Ek()
+
         k1 = dns.k[:N//2]
 
         time = np.arange(tEnd/dt+1)*dt

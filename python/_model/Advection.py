@@ -157,7 +157,7 @@ class Advection:
                         
                     # Box initialization
                     elif case == 'box':
-                        u0 = np.abs(self.x-self.L/2-offset)<self.L/8
+                        u0 = np.array((np.abs(self.x-self.L/2-offset)<self.L/8),dtype=float)
                     
                     # Sinus
                     elif case == 'sinus':
@@ -221,7 +221,6 @@ class Advection:
 
             Fforcing = fft( forcing )
 
-        #self.v = self.v - 1j*self.dt*self.nu*self.k*self.v + Fforcing #dt missing in Fforcing
         self.v = (self.v + self.dt * Fforcing) / (1. + 1j*self.dt*self.nu*self.k) 
         self.u = np.real(ifft(self.v))
 

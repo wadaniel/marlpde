@@ -221,12 +221,11 @@ class Diffusion:
         if (actions is not None):
             assert self.basis is not None, print("[Diffusion] Basis not set up (is None).")
             assert len(actions) == self.M, print("[Diffusion] Wrong number of actions (provided {}/{}".format(len(actions), self.M))
-            forcing = np.matmul(actions, self.basis) / 500
+            forcing = np.matmul(actions, self.basis)
 
             Fforcing = fft( forcing )
 
-        self.v = self.v - self.dt*self.nu*self.k2*self.v + Fforcing #dt missing in Fforcing
-        #self.v = (self.v + self.dt*Fforcing) / (1+self.nu*self.k2*self.dt) + Fforcing # Implicit euler
+        self.v = (self.v + self.dt*Fforcing) / (1+self.nu*self.k2*self.dt)
         self.u = np.real(ifft(self.v))
 
         """

@@ -16,7 +16,7 @@ basis = 'uniform'
 numActions = 1
 
 # les & rl defaults
-gridSize = 32
+gridSize = 8
 episodeLength = 500
 
 # reward defaults

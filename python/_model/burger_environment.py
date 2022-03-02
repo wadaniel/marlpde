@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 N    = 512
 L    = 2*np.pi
 dt   = 0.001
-tEnd = 5
+tEnd = 10
 nu   = 0.01
 
 # reward defaults
@@ -14,23 +14,16 @@ rewardFactor = 1.
 # basis defaults
 basis = 'hat'
 
-# DNS baseline
-dns = Burger(L=L, N=N, dt=dt, nu=nu, tend=tEnd, noisy=True)
-#dns.IC(case='sinus')
-#dns.IC(case='box')
-#dns.IC(case='gaussian')
-#dns.simulate()
-#dns.fou2real()
-#dns.compute_Ek()
-
 def environment( s , gridSize, numActions, episodeLength, ic ):
  
+    testing = True if s["Custom Settings"]["Mode"] == "Testing" else False
+    noisy = False if testing else True
+    
+    dns = Burger(L=L, N=N, dt=dt, nu=nu, tend=tEnd, noisy=noisy)
     dns.IC(case=ic)
     dns.simulate()
     dns.fou2real()
     dns.compute_Ek()
-
-    testing = True if s["Custom Settings"]["Mode"] == "Testing" else False
 
     ## create interpolated IC
     f_restart = interpolate.interp1d(dns.x, dns.u0, kind='cubic')
