@@ -226,6 +226,7 @@ class Diffusion:
             Fforcing = fft( forcing )
 
         self.v = self.v - self.dt*self.nu*self.k2*self.v + Fforcing #dt missing in Fforcing
+        #self.v = (self.v + self.dt*Fforcing) / (1+self.nu*self.k2*self.dt) + Fforcing # Implicit euler
         self.u = np.real(ifft(self.v))
 
         """

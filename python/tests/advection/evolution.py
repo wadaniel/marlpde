@@ -44,17 +44,18 @@ cs0 = axs.contourf(dns.tt, dns.x, dns.uu.T, 50, cmap=plt.get_cmap("seismic"))
 
 plt.colorbar(cs0, ax=axs)
 
-# for c in cs.collections: c.set_rasterized(True)
 fig.savefig('evolution.png')
 plt.close()
 
 print("Plotting advection_evolution.png ...")
 fig, axs = plt.subplots(4,4, sharex=True, sharey=False, figsize=(15,15))
 for i in range(16):
-    t = int(i * tEnd / dt / 16)
+    t = i * tEnd / 16
+    tidx = int(t/dt)
     k = int(i / 4)
     l = i % 4
-    axs[k,l].plot(dns.x, dns.uu[t,:])
+    axs[k,l].plot(dns.x, dns.uu[tidx,:])
+    axs[k,l].plot(dns.x, dns.getAnalyticalSolution(t), '--k')
 
 fig.savefig('advection_evolution.png'.format())
 plt.close()

@@ -207,8 +207,9 @@ class Advection:
         return self.f_truth(self.x,t)
 
     def getAnalyticalSolution(self, t):
-        print("[Advection] TODO.. exit")
-        sys.exit()
+        delta = self.nu * t / self.dx
+        idx = (np.arange(0, self.N) - int(delta)) % self.N
+        return self.u0[idx]
         
     def step( self, actions=None ):
 
