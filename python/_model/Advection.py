@@ -13,14 +13,14 @@ def hat( x, mean, dx ):
     right = np.clip((dx - x + mean)/dx, a_min = 0., a_max = 1.)
     return left + right - 1.
 
-class Burger:
+class Advection:
     #
-    # Solution of the Burgers equation
+    # Solution of the Advection equation
     #
-    # u_t + u*u_x = nu*u_xx0
+    # u_t + nu*u_x = 0
     # with periodic BCs on x \in [0, L]: u(0,t) = u(L,t).
 
-    def __init__(self, L=1./(2.*np.pi), N=128, dt=0.25, nu=0.0, nsteps=None, tend=150, u0=None, v0=None, noisy = False):
+    def __init__(self, L=1./(2.*np.pi), N=128, dt=0.25, nu=0.0, nsteps=None, tend=150, u0=None, v0=None, case=None, noisy = False):
         
         # Initialize
         L  = float(L); 
@@ -60,14 +60,16 @@ class Burger:
         self.f_truth = None
 
         # set initial condition
-        if (u0 is None) and (v0 is None):
+        if (case is not None):
+            self.IC(case=case)
+        elif (u0 is None) and (v0 is None):
             self.IC()
         elif (u0 is not None):
             self.IC(u0 = u0)
         elif (v0 is not None):
             self.IC(v0 = v0)
         else:
-            print("[Burger] IC ambigous")
+            print("[Advection] IC ambigous")
             sys.exit()
         
         # initialize simulation arrays
@@ -94,9 +96,7 @@ class Burger:
         self.tt[0]   = 0.
 
     def __setup_fourier(self):
-        self.k   = fftfreq(self.N, self.L / (2*np.pi*self.N))
-        self.k1  = 1j * self.k
-        self.k2  = self.k1**2
+        self.k = fftfreq(self.N, self.L / (2*np.pi*self.N))
         
     def __setup_etdrk4(self):
         return
@@ -120,7 +120,7 @@ class Burger:
             if kind == 'uniform':
                 self.basis = np.zeros((self.M, self.N))
                 for i in range(self.M):
-                    assert self.N % self.M == 0, print("[Burger] Something went wrong in basis setup")
+                    assert self.N % self.M == 0, print("[Advection] Something went wrong in basis setup")
                     idx1 = i * self.N//self.M
                     idx2 = (i+1) * self.N//self.M
                     self.basis[i,idx1:idx2] = 1.
@@ -132,7 +132,7 @@ class Burger:
                     self.basis[i,:] = hat( self.x, mean, dx )
 
             else:
-                print("[Burger] Basis function not known, exit..")
+                print("[Advection] Basis function not known, exit..")
                 sys.exit()
         else:
             self.basis = np.ones((self.M, self.N))
@@ -164,13 +164,13 @@ class Burger:
                         u0 = np.sin(self.x+offset)
 
                     else:
-                        print("[Burger] Error: IC case unknown")
+                        print("[Advection] Error: IC case unknown")
                         return -1
 
             else:
                 # check the input size
                 if (np.size(u0,0) != self.N):
-                    print("[Burger] Error: wrong IC array size")
+                    print("[Advection] Error: wrong IC array size")
                     return -1
                 else:
                     # if ok cast to np.array
@@ -181,7 +181,7 @@ class Burger:
             # the initial condition is provided in v0
             # check the input size
             if (np.size(v0,0) != self.N):
-                print("[Burger] Error: wrong IC array size")
+                print("[Advection] Error: wrong IC array size")
                 return -1
             else:
                 # if ok cast to np.array
@@ -207,20 +207,21 @@ class Burger:
         return self.f_truth(self.x,t)
 
     def getAnalyticalSolution(self, t):
-        print("[Diffusion] TODO.. exit")
+        print("[Advection] TODO.. exit")
         sys.exit()
- 
+        
     def step( self, actions=None ):
 
         Fforcing = np.zeros(self.N)
         if (actions is not None):
-            assert self.basis is not None, print("[Burger] Basis not set up (is None).")
-            assert len(actions) == self.M, print("[Burger] Wrong number of actions (provided {}/{}".format(len(actions), self.M))
-            forcing = np.matmul(actions, self.basis) / 500
+            assert self.basis is not None, print("[Advection] Basis not set up (is None).")
+            assert len(actions) == self.M, print("[Advection] Wrong number of actions (provided {}/{}".format(len(actions), self.M))
+            forcing = np.matmul(actions, self.basis) #/ 10 #/ 100
 
             Fforcing = fft( forcing )
 
-        self.v = self.v - self.dt*0.5*self.k1*fft(self.u**2) + self.dt*self.nu*self.k2*self.v + Fforcing # dt missing in Fforcing
+        #self.v = self.v - 1j*self.dt*self.nu*self.k*self.v + Fforcing #dt missing in Fforcing
+        self.v = (self.v + self.dt * Fforcing) / (1. + 1j*self.dt*self.nu*self.k) 
         self.u = np.real(ifft(self.v))
 
         """
@@ -280,7 +281,7 @@ class Burger:
                     self.v += correction
                 
         except FloatingPointError:
-            print("[Burger] Floating point exception occured", flush=True)
+            print("[Advection] Floating point exception occured", flush=True)
             # something exploded
             # cut time series to last saved solution and return
             self.nout = self.ioutnum

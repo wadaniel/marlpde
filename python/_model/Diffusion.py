@@ -15,9 +15,9 @@ def hat( x, mean, dx ):
 
 class Diffusion:
     #
-    # Solution of the Burgers equation
+    # Solution of the Diffusioon equation
     #
-    # u_t + u*u_x = nu*u_xx0
+    # u_t = nu*u_xx
     # with periodic BCs on x \in [0, L]: u(0,t) = u(L,t).
 
     def __init__(self, L=1./(2.*np.pi), N=128, dt=0.25, nu=0.0, nsteps=None, tend=150, u0=None, v0=None, noisy = False):
@@ -67,7 +67,7 @@ class Diffusion:
         elif (v0 is not None):
             self.IC(v0 = v0)
         else:
-            print("[Burger] IC ambigous")
+            print("[Diffusion] IC ambigous")
             sys.exit()
         
         # initialize simulation arrays
@@ -119,7 +119,7 @@ class Diffusion:
             if kind == 'uniform':
                 self.basis = np.zeros((self.M, self.N))
                 for i in range(self.M):
-                    assert self.N % self.M == 0, print("[Burger] Something went wrong in basis setup")
+                    assert self.N % self.M == 0, print("[Diffusion] Something went wrong in basis setup")
                     idx1 = i * self.N//self.M
                     idx2 = (i+1) * self.N//self.M
                     self.basis[i,idx1:idx2] = 1.
@@ -131,7 +131,7 @@ class Diffusion:
                     self.basis[i,:] = hat( self.x, mean, dx )
 
             else:
-                print("[Burger] Basis function not known, exit..")
+                print("[Diffusion] Basis function not known, exit..")
                 sys.exit()
         else:
             self.basis = np.ones((self.M, self.N))
@@ -163,13 +163,13 @@ class Diffusion:
                         u0 = np.sin(self.x+offset)
 
                     else:
-                        print("[Burger] Error: IC case unknown")
+                        print("[Diffusion] Error: IC case unknown")
                         return -1
 
             else:
                 # check the input size
                 if (np.size(u0,0) != self.N):
-                    print("[Burger] Error: wrong IC array size")
+                    print("[Diffusion] Error: wrong IC array size")
                     return -1
                 else:
                     # if ok cast to np.array
@@ -180,7 +180,7 @@ class Diffusion:
             # the initial condition is provided in v0
             # check the input size
             if (np.size(v0,0) != self.N):
-                print("[Burger] Error: wrong IC array size")
+                print("[Diffusion] Error: wrong IC array size")
                 return -1
             else:
                 # if ok cast to np.array
@@ -219,13 +219,13 @@ class Diffusion:
 
         Fforcing = np.zeros(self.N)
         if (actions is not None):
-            assert self.basis is not None, print("[Burger] Basis not set up (is None).")
-            assert len(actions) == self.M, print("[Burger] Wrong number of actions (provided {}/{}".format(len(actions), self.M))
+            assert self.basis is not None, print("[Diffusion] Basis not set up (is None).")
+            assert len(actions) == self.M, print("[Diffusion] Wrong number of actions (provided {}/{}".format(len(actions), self.M))
             forcing = np.matmul(actions, self.basis) / 500
 
             Fforcing = fft( forcing )
 
-        self.v = self.v - self.dt*self.nu*self.k2*self.v + Fforcing
+        self.v = self.v - self.dt*self.nu*self.k2*self.v + Fforcing #dt missing in Fforcing
         self.u = np.real(ifft(self.v))
 
         """
@@ -285,7 +285,7 @@ class Diffusion:
                     self.v += correction
                 
         except FloatingPointError:
-            print("[Burger] Floating point exception occured", flush=True)
+            print("[Diffusion] Floating point exception occured", flush=True)
             # something exploded
             # cut time series to last saved solution and return
             self.nout = self.ioutnum

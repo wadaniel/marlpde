@@ -16,7 +16,7 @@ args = parser.parse_args()
 
 import sys
 sys.path.append('_model')
-import diffusion_environment as de
+import advection_environment as ae
 
 
 ### Defining Korali Problem
@@ -27,7 +27,7 @@ e = korali.Experiment()
 
 ### Defining results folder and loading previous results, if any
 
-resultFolder = '_result_diffusion_{}_{}_{}_{}_{}/'.format(args.ic, args.N, args.numactions, args.episodelength, args.run)
+resultFolder = '_result_advection_{}_{}_{}_{}_{}/'.format(args.ic, args.N, args.numactions, args.episodelength, args.run)
 found = e.loadState(resultFolder + '/latest')
 if found == True:
 	print("[Korali] Continuing execution from previous run...\n")
@@ -35,7 +35,7 @@ if found == True:
 ### Defining Problem Configuration
 e["Problem"]["Type"] = "Reinforcement Learning / Continuous"
 e["Problem"]["Custom Settings"]["Mode"] = "Testing" if args.test else "Training"
-e["Problem"]["Environment Function"] = lambda s : de.environment( s, args.N, args.numactions, args.episodelength, args.ic )
+e["Problem"]["Environment Function"] = lambda s : ae.environment( s, args.N, args.numactions, args.episodelength, args.ic )
 e["Problem"]["Testing Frequency"] = 100
 e["Problem"]["Policy Testing Episodes"] = 1
 
@@ -107,7 +107,7 @@ e["File Output"]["Frequency"] = 500
 e["File Output"]["Path"] = resultFolder
 
 if args.test:
-    fileName = 'test_diffusion_{}_{}_{}_{}_{}'.format(args.ic, args.N, args.numactions, args.episodelength, args.run)
+    fileName = 'test_advection_{}_{}_{}_{}_{}'.format(args.ic, args.N, args.numactions, args.episodelength, args.run)
     e["Solver"]["Testing"]["Sample Ids"] = [0]
     e["Problem"]["Custom Settings"]["Filename"] = fileName
 

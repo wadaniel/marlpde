@@ -1,12 +1,12 @@
-from Diffusion import *
+from Advection import *
 import matplotlib.pyplot as plt 
 
 # dns defaults
 N    = 512
 L    = 2*np.pi
-dt   = 0.001
+dt   = 0.01
 tEnd = 10
-nu   = 0.01
+nu   = 1.
 
 # reward defaults
 rewardFactor = 10.
@@ -15,7 +15,7 @@ rewardFactor = 10.
 basis = 'hat'
 
 # DNS baseline
-dns = Diffusion(L=L, N=N, dt=dt, nu=nu, tend=tEnd, noisy=True)
+dns = Advection(L=L, N=N, dt=dt, nu=nu, tend=tEnd, noisy=True)
 
 def environment( s , gridSize, numActions, episodeLength, ic ):
  
@@ -30,7 +30,7 @@ def environment( s , gridSize, numActions, episodeLength, ic ):
     f_restart = interpolate.interp1d(dns.x, dns.u0, kind='cubic')
 
     # Initialize LES
-    les = Diffusion(L=L, N=gridSize, dt=dt, nu=nu, tend=tEnd, noisy=False)
+    les = Advection(L=L, N=gridSize, dt=dt, nu=nu, tend=tEnd, noisy=False)
     les.IC( u0 = f_restart(les.x) )
     les.setup_basis(numActions, basis)
     les.setGroundTruth(dns.tt, dns.x, dns.uu)

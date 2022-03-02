@@ -2,14 +2,15 @@
 import sys
 sys.path.append('./../../_model/')
 
-from Diffusion import *
+from Advection import *
  
 # dns defaults
 N    = 512
 L    = 2*np.pi
-dt   = 0.001
+dt   = 0.01
 tEnd = 10
-nu   = 0.01
+nu   = 1.
+ic   = 'box'
 
 # action defaults
 basis = 'uniform'
@@ -24,8 +25,7 @@ rewardFactor = 10.
 
 # DNS baseline
 print("Setting up DNS..")
-dns = Diffusion(L=L, N=N, dt=dt, nu=nu, tend=tEnd)
-dns.IC(case='box')
+dns = Advection(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case=ic)
 dns.simulate()
 dns.fou2real()
 dns.compute_Ek()
@@ -38,7 +38,7 @@ tAvgEnergy = dns.Ek_tt
 print("Done!")
 
 # Initialize LES
-les = Diffusion(L=L, N=gridSize, dt=dt, nu=nu, tend=tEnd, noisy=True)
+les = Advection(L=L, N=gridSize, dt=dt, nu=nu, tend=tEnd, noisy=True)
 les.IC( u0 = f_restart(les.x) )
 les.setup_basis(numActions, basis)
 les.setGroundTruth(dns.tt, dns.x, dns.uu)
