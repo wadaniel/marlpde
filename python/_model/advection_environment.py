@@ -5,9 +5,8 @@ import matplotlib.pyplot as plt
 N    = 512
 L    = 2*np.pi
 dt   = 0.01
-tEnd = 10
+tEnd = 5
 nu   = 1.
-ic   = 'box'
 
 # reward defaults
 rewardFactor = 10.
