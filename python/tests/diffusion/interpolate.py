@@ -9,7 +9,7 @@ Dffusion of fine grid interpolated on coarse grid vs Diffusion on coarse grid.
 """
 
 # Discretization fine grid (DNS)
-N1 = 512
+N1 = 1024
 
 # Discretization coarse grid
 N2 = 32
@@ -87,8 +87,8 @@ cs2 = axs[2].contourf(subgrid.x, subgrid.tt, diff, 50, cmap=plt.get_cmap("seismi
 # plt.colorbar(cs0, ax=axs[0])
 plt.colorbar(cs1, ax=axs[1])
 plt.colorbar(cs2, ax=axs[2])
-plt.setp(axs[:], xlabel='$t$')
-plt.setp(axs[0], ylabel='$x$')
+plt.setp(axs[:], xlabel='$x$')
+plt.setp(axs[0], ylabel='$t$')
 # for c in cs.collections: c.set_rasterized(True)
 axs[1].set_yticklabels([])
 axs[2].set_yticklabels([])
