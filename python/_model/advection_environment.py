@@ -101,13 +101,13 @@ def environment( s , gridSize, numActions, episodeLength, ic ):
         np.savez(fileName, x = les.x, t = les.tt, uu = les.uu, vv = les.vv, L=L, N=gridSize, dt=dt, nu=nu, tEnd=tEnd)
          
         print("Running uncontrolled SGS..")
-        base = Advection(L=L, N=gridSize, dt=dt, nu=nu, tend=tEnd)
+        base = Advection(L=L, N=gridSize, dt=dt, nu=nu, tend=tEnd, case=ic, noisy=False)
         base.simulate()
         base.fou2real()
         base.compute_Ek()
         
         print("Running DNS..")
-        dns = Advection(L=L, N=N, dt=dt, nu=nu, tend=tEnd, noisy=True)
+        dns = Advection(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case=ic, noisy=False)
         dns.simulate()
         dns.fou2real()
         dns.compute_Ek()

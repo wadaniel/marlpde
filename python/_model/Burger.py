@@ -20,7 +20,7 @@ class Burger:
     # u_t + u*u_x = nu*u_xx0
     # with periodic BCs on x \in [0, L]: u(0,t) = u(L,t).
 
-    def __init__(self, L=1./(2.*np.pi), N=128, dt=0.25, nu=0.0, nsteps=None, tend=150, u0=None, v0=None, noisy = False):
+    def __init__(self, L=1./(2.*np.pi), N=128, dt=0.25, nu=0.0, nsteps=None, tend=150, u0=None, v0=None, case=case, noisy = False):
         
         # Initialize
         L  = float(L); 
@@ -60,7 +60,9 @@ class Burger:
         self.f_truth = None
 
         # set initial condition
-        if (u0 is None) and (v0 is None):
+        if (case is not None):
+            self.IC(case=case)
+        elif (u0 is None) and (v0 is None):
             self.IC()
         elif (u0 is not None):
             self.IC(u0 = u0)
