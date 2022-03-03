@@ -153,7 +153,11 @@ def environment( s , gridSize, numActions, episodeLength, ic ):
         errEk_tt = dns.Ek_tt - les.Ek_tt
         errU = np.abs(les.uu-udns_int)
         errU_t = np.mean(errU**2, axis=1)
-
+ 
+        emax = max(errBaseU.max(), errU.max())
+        emin = min(errBaseU.min(), errU.min())
+        elevels = np.linspace(emin, emax, 50)
+        
 #------------------------------------------------------------------------------
   
         k2 = les.k[:gridSize//2]
@@ -163,7 +167,7 @@ def environment( s , gridSize, numActions, episodeLength, ic ):
         axs[idx,0].contourf(base.x, base.tt, base.uu, ulevels)
   
         # Plot difference to dns
-        c1 = axs[idx,1].contourf(les.x, base.tt, errBaseU, 50)
+        axs[idx,1].contourf(les.x, base.tt, errBaseU, elevels)
 
         # Plot instanteneous energy and time averaged energy
         axs[idx,2].plot(time, base.Ek_t)
@@ -189,7 +193,7 @@ def environment( s , gridSize, numActions, episodeLength, ic ):
         axs[idx,0].contourf(les.x, les.tt, les.uu, ulevels)
         
         # Plot difference to dns
-        axs[idx,1].contourf(les.x, les.tt, errU, c1.levels)
+        axs[idx,1].contourf(les.x, les.tt, errU, elevels)
  
 
         # Plot instanteneous energy and time averaged energy
