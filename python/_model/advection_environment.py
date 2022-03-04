@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 N    = 512
 L    = 2*np.pi
 dt   = 0.01
-tEnd = 5
+tEnd = 10
 nu   = 1.
 
 # reward defaults
