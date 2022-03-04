@@ -12,7 +12,7 @@ import numpy as np
 
 # Discretization grid
 N1 = 1024
-N2 = 32
+N2 = 128
 m = int(math.log2(N1 / N2)) + 1
 Nx = np.clip(N2*2**np.arange(0., m), a_min=0, a_max=N1).astype(int)
 
@@ -31,11 +31,12 @@ from Burger import *
 #------------------------------------------------------------------------------
 ## set parameters and initialize simulation
 L    = 2*np.pi
-dt   = 0.0005
+dt   = 0.0001
 tEnd = 5
 nu   = 0.01
+ic   = 'turbulence'
 
-dns = Burger(L=L, N=N1, dt=dt, nu=nu, tend=tEnd)
+dns = Burger(L=L, N=N1, dt=dt, nu=nu, tend=tEnd, case=ic)
 
 #------------------------------------------------------------------------------
 print("Simulate DNS")

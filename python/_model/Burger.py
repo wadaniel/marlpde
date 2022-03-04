@@ -164,6 +164,26 @@ class Burger:
                     # Sinus
                     elif case == 'sinus':
                         u0 = np.sin(self.x+offset)
+ 
+                    # Turbulence
+                    elif case == 'turbulence':
+                        # Taken from: 
+                        # A priori and a posteriori evaluations 
+                        # of sub-grid scale models for the Burgers' eq. (Li, Wang, 2016)
+                        
+                        A = 1
+                        u0 = np.ones(self.N)
+                        for k in range(1, self.N):
+                            phase = np.random.uniform(low=-np.pi, high=np.pi) if self.noisy else 0.
+                            Ek = A*5**(-5/3) if k <= 5 else A*k**(-5/3) 
+                            u0 += np.sqrt(2*Ek)*np.sin(k*2*np.pi*self.x/self.L+offset)
+
+                        # rescale
+                        scale = 0.7 / np.sqrt(np.sum((u0-1.)**2)/self.N)
+                        u0 *= scale
+                        
+                        assert( np.sqrt(np.sum((u0-1.)**2)/self.N) < 1.5 )
+                        assert( np.sqrt(np.sum((u0-1.)**2)/self.N) > 0.5 )
 
                     else:
                         print("[Burger] Error: IC case unknown")
