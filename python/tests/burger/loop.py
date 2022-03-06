@@ -10,13 +10,14 @@ L    = 2*np.pi
 dt   = 0.001
 tEnd = 5
 nu   = 0.01
+ic   = 'turbulence'
 
 # action defaults
 basis = 'uniform'
 numActions = 1
 
 # les & rl defaults
-gridSize = 8
+gridSize = 32
 episodeLength = 500
 
 # reward defaults
@@ -24,8 +25,7 @@ rewardFactor = 1.
 
 # DNS baseline
 print("Setting up DNS..")
-dns = Burger(L=L, N=N, dt=dt, nu=nu, tend=tEnd)
-dns.IC(case='box')
+dns = Burger(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case=ic)
 dns.simulate()
 dns.fou2real()
 dns.compute_Ek()

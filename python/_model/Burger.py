@@ -171,6 +171,9 @@ class Burger:
                         # A priori and a posteriori evaluations 
                         # of sub-grid scale models for the Burgers' eq. (Li, Wang, 2016)
                         
+                        if self.noisy == False:
+                            np.random.seed(1337)
+                        
                         A = 1
                         u0 = np.ones(self.N)
                         for k in range(1, self.N):

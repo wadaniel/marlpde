@@ -85,7 +85,7 @@ def environment( s , gridSize, numActions, episodeLength, ic ):
         reward = -rewardFactor*uDiffMse
         cumreward += reward
 
-        if (np.isnan(reward)):
+        if (np.isfinite(reward) == False):
             print("Nan reward detected")
             error = 1
             break
