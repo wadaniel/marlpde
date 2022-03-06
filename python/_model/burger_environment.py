@@ -17,7 +17,7 @@ basis = 'hat'
 def environment( s , gridSize, numActions, episodeLength, ic ):
  
     testing = True if s["Custom Settings"]["Mode"] == "Testing" else False
-    noisy = False if testing else True
+    noisy = False #False if testing else True
     
     dns = Burger(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case=ic, noisy=noisy)
     dns.simulate()
@@ -68,11 +68,13 @@ def environment( s , gridSize, numActions, episodeLength, ic ):
         
 
         # get new state
-        state = les.getState().flatten().tolist()
-        if(np.isnan(state).any() == True):
+        newstate = les.getState().flatten().tolist()
+        if(np.isfinite(newstate).all() == False):
             print("Nan state detected")
             error = 1
             break
+        else:
+            state = newstate
 
         s["State"] = state
     
@@ -89,8 +91,9 @@ def environment( s , gridSize, numActions, episodeLength, ic ):
             print("Nan reward detected")
             error = 1
             break
-
-        s["Reward"] = reward
+    
+        else:
+            s["Reward"] = reward
         step += 1
 
     print(cumreward)
