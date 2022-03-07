@@ -60,9 +60,9 @@ for i in range(nState):
 for i in range(args.numactions):
     e["Variables"][nState+i]["Name"] = "Forcing " + str(i)
     e["Variables"][nState+i]["Type"] = "Action"
-    e["Variables"][nState+i]["Lower Bound"] = -0.1
-    e["Variables"][nState+i]["Upper Bound"] = +0.1
-    e["Variables"][nState+i]["Initial Exploration Noise"] = 0.001
+    e["Variables"][nState+i]["Lower Bound"] = -0.2
+    e["Variables"][nState+i]["Upper Bound"] = +0.2
+    e["Variables"][nState+i]["Initial Exploration Noise"] = 0.01
 
 ### Setting Experience Replay and REFER settings
 
