@@ -3,6 +3,7 @@
 
 export RUN=4
 export NUMEXP=1000000
+export NN=256
 
 
 for env in diffusion #diffusion

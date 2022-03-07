@@ -68,11 +68,13 @@ def environment( s , gridSize, numActions, episodeLength, ic ):
         
 
         # get new state
-        state = les.getState().flatten().tolist()
-        if(np.isnan(state).any() == True):
+        newstate = les.getState().flatten().tolist()
+        if(np.isfinite(newstate).all() == False):
             print("Nan state detected")
             error = 1
             break
+        else:
+            state = newstate
 
         s["State"] = state
     
@@ -85,12 +87,13 @@ def environment( s , gridSize, numActions, episodeLength, ic ):
         reward = -rewardFactor*uDiffMse
         cumreward += reward
 
-        if (np.isnan(reward)):
+        if (np.isfinite(reward) == False):
             print("Nan reward detected")
             error = 1
             break
-
-        s["Reward"] = reward
+    
+        else:
+            s["Reward"] = reward
         step += 1
 
     print(cumreward)

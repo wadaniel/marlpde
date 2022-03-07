@@ -71,7 +71,7 @@ def environment( s , gridSize, numActions, episodeLength, ic ):
 
         # get new state
         state = les.getState().flatten().tolist()
-        if(np.isnan(state).any() == True):
+        if (np.isfinite(reward) == False):
             print("Nan state detected")
             error = 1
             break

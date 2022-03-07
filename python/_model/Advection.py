@@ -145,7 +145,7 @@ class Advection:
         if (v0 is None):
             if (u0 is None):
                     
-                    np.random.seed( seed )
+                    #np.random.seed( seed )
                     offset = np.random.normal(loc=0., scale=self.dx) if self.noisy else 0.
                     
                     # Gaussian initialization
