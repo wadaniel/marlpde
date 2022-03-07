@@ -2,22 +2,30 @@
 import sys
 sys.path.append('./../../_model/')
 
+import argparse
 from Advection import *
+ 
+parser = argparse.ArgumentParser()
+parser.add_argument('--N', help='Discretization / number of grid points', required=False, type=int, default=32)
+parser.add_argument('--ic', help='Initial condition', required=False, type=str, default='box')
+parser.add_argument('--episodelength', help='Actual length of episode / number of actions', required=False, type=int, default=500)
+
+args = parser.parse_args()
  
 # dns defaults
 L    = 2*np.pi
-dt   = 0.01
+dt   = 0.001
 tEnd = 10
 nu   = 1.
-ic   = 'box'
+ic   = args.ic
 
 # action defaults
-basis = 'uniform'
+basis = 'hat'
 numActions = 1
 
 # les & rl defaults
-gridSize = 32
-episodeLength = 500
+gridSize = args.N
+episodeLength = args.episodelength
 
 # reward defaults
 rewardFactor = 10.
@@ -48,7 +56,6 @@ while step < episodeLength and error == 0:
     
     idx = les.ioutnum
     solution = les.getAnalyticalSolution(les.t)
-    print(solution)
     uDiffMse = ((solution - les.uu[idx,:])**2).mean()
     
     # calculate reward from energy

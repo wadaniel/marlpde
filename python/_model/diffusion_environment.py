@@ -19,12 +19,10 @@ def environment( s , gridSize, numActions, episodeLength, ic ):
     testing = True if s["Custom Settings"]["Mode"] == "Testing" else False
     noisy = False if testing else True
 
-    # DNS baseline
     dns = Diffusion(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case=ic, noisy=noisy)
     dns.simulate()
     dns.fou2real()
     dns.compute_Ek()
-
 
     ## create interpolated IC
     f_restart = interpolate.interp1d(dns.x, dns.u0, kind='cubic')
@@ -70,11 +68,14 @@ def environment( s , gridSize, numActions, episodeLength, ic ):
         
 
         # get new state
-        state = les.getState().flatten().tolist()
-        if (np.isfinite(reward) == False):
+        newstate = les.getState().flatten().tolist()
+        if(np.isfinite(newstate).all() == False):
             print("Nan state detected")
             error = 1
             break
+        else:
+            state = newstate
+
 
         s["State"] = state
     
@@ -86,12 +87,13 @@ def environment( s , gridSize, numActions, episodeLength, ic ):
         reward = -rewardFactor*uDiffMse
         cumreward += reward
 
-        if (np.isnan(reward)):
+        if (np.isfinite(reward) == False):
             print("Nan reward detected")
             error = 1
             break
-
-        s["Reward"] = reward
+        else:
+            s["Reward"] = reward
+        
         step += 1
 
     print(cumreward)
@@ -107,10 +109,11 @@ def environment( s , gridSize, numActions, episodeLength, ic ):
 
         fileName = s["Custom Settings"]["Filename"]
         print("Storing les to file {}".format(fileName))
-        np.savez(fileName, x = les.x, t = les.tt, uu = les.uu, vv = les.vv, L=L, N=gridSize, dt=dt, nu=nu, tEnd=tEnd)
+        #np.savez(fileName, x = les.x, t = les.tt, uu = les.uu, vv = les.vv, L=L, N=gridSize, dt=dt, nu=nu, tEnd=tEnd)
          
         print("Running uncontrolled SGS..")
-        base = Diffusion(L=L, N=gridSize, dt=dt, nu=nu, case=ic, tend=tEnd, noisy=False)
+        base = Diffusion(L=L, N=gridSize, dt=dt, nu=nu, tend=tEnd, noisy=False)
+        base.IC(u0 = f_restart(base.x))
         base.simulate()
         base.fou2real()
         base.compute_Ek()
@@ -159,6 +162,7 @@ def environment( s , gridSize, numActions, episodeLength, ic ):
         elevels = np.linspace(emin, emax, 50)
         
 #------------------------------------------------------------------------------
+        print("plot baseline")
   
         k2 = les.k[:gridSize//2]
  
@@ -187,6 +191,7 @@ def environment( s , gridSize, numActions, episodeLength, ic ):
         axs[idx,4].plot(k2, np.abs(dns.Ek_ktt[-1,0:gridSize//2] - base.Ek_ktt[-1,0:gridSize//2]),'--r')
 
 #------------------------------------------------------------------------------
+        print("plot les")
         
         idx += 1
         # Plot solution
@@ -194,7 +199,6 @@ def environment( s , gridSize, numActions, episodeLength, ic ):
         
         # Plot difference to dns
         axs[idx,1].contourf(les.x, les.tt, errU, elevels)
- 
 
         # Plot instanteneous energy and time averaged energy
         axs[idx,2].plot(time, les.Ek_t)
@@ -221,3 +225,21 @@ def environment( s , gridSize, numActions, episodeLength, ic ):
 
         figName = fileName + ".png"
         fig.savefig(figName)
+
+#------------------------------------------------------------------------------
+
+        figName2 = fileName + "_evolution.png"
+        print("Plotting {} ...".format(figName2))
+        
+        fig, axs = plt.subplots(4,4, sharex=True, sharey=False, figsize=(15,15))
+        for i in range(16):
+            t = i * tEnd / 16
+            tidx = int(t/dt)
+            k = int(i / 4)
+            l = i % 4
+            
+            axs[k,l].plot(dns.x, dns.uu[tidx,:], '--k')
+            axs[k,l].plot(les.x, les.uu[tidx,:], '-r')
+            axs[k,l].plot(base.x, base.uu[tidx,:], '-b')
+
+        fig.savefig(figName2)

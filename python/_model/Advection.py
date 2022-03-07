@@ -58,7 +58,10 @@ class Advection:
         self.uu_truth = None
         # interpolation of truth
         self.f_truth = None
-
+ 
+        # initialize simulation arrays
+        self.__setup_timeseries()
+ 
         # set initial condition
         if (case is not None):
             self.IC(case=case)
@@ -71,9 +74,6 @@ class Advection:
         else:
             print("[Advection] IC ambigous")
             sys.exit()
-        
-        # initialize simulation arrays
-        self.__setup_timeseries()
         
         # precompute Fourier-related quantities
         self.__setup_fourier()
@@ -90,30 +90,12 @@ class Advection:
         self.vv = np.zeros([self.nout+1, self.N], dtype=np.complex64)
         self.tt = np.zeros(self.nout+1)
         
-        # store the IC in [0]
-        self.uu[0,:] = self.u0
-        self.vv[0,:] = self.v0
-        self.tt[0]   = 0.
-
     def __setup_fourier(self):
         self.k = fftfreq(self.N, self.L / (2*np.pi*self.N))
         
     def __setup_etdrk4(self):
         return
 
-        """
-        self.E  = np.exp(self.dt*self.l)
-        self.E2 = np.exp(self.dt*self.l/2.)
-        self.M  = 62                                           # no. of points for complex means
-        self.r  = np.exp(1j*pi*(np.r_[1:self.M+1]-0.5)/self.M) # roots of unity
-        self.LR = self.dt*np.repeat(self.l[:,np.newaxis], self.M, axis=1) + np.repeat(self.r[np.newaxis,:], self.N, axis=0)
-        self.Q  = self.dt*np.real(np.mean((np.exp(self.LR/2.) - 1.)/self.LR, 1))
-        self.f1 = self.dt*np.real( np.mean( (-4. -    self.LR              + np.exp(self.LR)*( 4. - 3.*self.LR + self.LR**2) )/(self.LR**3) , 1) )
-        self.f2 = self.dt*np.real( np.mean( ( 2. +    self.LR              + np.exp(self.LR)*(-2. +    self.LR             ) )/(self.LR**3) , 1) )
-        self.f3 = self.dt*np.real( np.mean( (-4. - 3.*self.LR - self.LR**2 + np.exp(self.LR)*( 4. -    self.LR             ) )/(self.LR**3) , 1) )
-        self.g  = -0.5j*self.k
-        """
- 
     def setup_basis(self, M, kind = 'uniform'):
         self.M = M
         if M > 1:
@@ -197,7 +179,12 @@ class Advection:
         self.t   = 0.
         self.stepnum = 0
         self.ioutnum = 0 # [0] is the initial condition
-        
+         
+        # store the IC in [0]
+        self.uu[0,:] = self.u0
+        self.vv[0,:] = self.v0
+        self.tt[0]   = 0.
+
     def setGroundTruth(self, t, x, uu):
         self.uu_truth = uu
         self.f_truth = interpolate.interp2d(x, t, self.uu_truth, kind='cubic')

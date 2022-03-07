@@ -84,7 +84,6 @@ def environment( s , gridSize, numActions, episodeLength, ic ):
         uDiffMse = ((uTruthToCoarse[idx,:] - les.uu[idx,:])**2).mean()
  
         # calculate reward from energy
-        #reward = -rewardFactor*(np.abs(les.Ek_tt[step*nIntermediate]-dns.Ek_tt[step*nIntermediate]))
         reward = -rewardFactor*uDiffMse
         cumreward += reward
 
@@ -95,6 +94,7 @@ def environment( s , gridSize, numActions, episodeLength, ic ):
     
         else:
             s["Reward"] = reward
+ 
         step += 1
 
     print(cumreward)
@@ -113,7 +113,8 @@ def environment( s , gridSize, numActions, episodeLength, ic ):
         np.savez(fileName, x = les.x, t = les.tt, uu = les.uu, vv = les.vv, L=L, N=gridSize, dt=dt, nu=nu, tEnd=tEnd)
          
         print("Running uncontrolled SGS..")
-        base = Burger(L=L, N=gridSize, dt=dt, nu=nu, tend=tEnd, case=ic, noisy=False)
+        base = Burger(L=L, N=gridSize, dt=dt, nu=nu, tend=tEnd, noisy=False)
+        base.IC(u0 = f_restart(base.x))
         base.simulate()
         base.fou2real()
         base.compute_Ek()
@@ -136,8 +137,6 @@ def environment( s , gridSize, numActions, episodeLength, ic ):
         axs[0,2].plot(time, dns.Ek_t)
         axs[0,2].plot(time, dns.Ek_tt)
 
-        #axs[0,4].plot(k1, np.abs(dns.Ek_ktt[0,0:N//2]),'b:')
-        #axs[0,4].plot(k1, np.abs(dns.Ek_ktt[tEnd//2,0:N//2]),'b--')
         axs[0,4].plot(k1, np.abs(dns.Ek_ktt[-1,0:N//2]),'b')
         axs[0,4].set_xscale('log')
         axs[0,4].set_yscale('log')
@@ -164,7 +163,8 @@ def environment( s , gridSize, numActions, episodeLength, ic ):
         elevels = np.linspace(emin, emax, 50)
         
 #------------------------------------------------------------------------------
-  
+        print("plot baseline")
+        
         k2 = les.k[:gridSize//2]
  
         idx = 1
@@ -184,8 +184,6 @@ def environment( s , gridSize, numActions, episodeLength, ic ):
         axs[idx,3].plot(time, errBaseU_t)
 
         # Plot energy spectrum at start, mid and end of simulation
-        #axs[idx,4].plot(k2, np.abs(base.Ek_ktt[0,0:gridSize//2]),'b:')
-        #axs[idx,4].plot(k2, np.abs(base.Ek_ktt[tEnd//2,0:gridSize//2]),'b--')
         axs[idx,4].plot(k2, np.abs(base.Ek_ktt[-1,0:gridSize//2]),'b')
         axs[idx,4].set_xscale('log')
         axs[idx,4].set_yscale('log')
@@ -194,6 +192,7 @@ def environment( s , gridSize, numActions, episodeLength, ic ):
         axs[idx,4].plot(k2, np.abs(dns.Ek_ktt[-1,0:gridSize//2] - base.Ek_ktt[-1,0:gridSize//2]),'--r')
 
 #------------------------------------------------------------------------------
+        print("plot les")
         
         idx += 1
         # Plot solution
@@ -227,4 +226,23 @@ def environment( s , gridSize, numActions, episodeLength, ic ):
             axs[idx,5].plot(timestamps, actionHistory[:,i], color=colors[i])
 
         figName = fileName + ".png"
-        fig.savefig(figName)
+
+#------------------------------------------------------------------------------
+
+        figName2 = fileName + "_evolution.png"
+        print("Plotting {} ...".format(figName2))
+        
+        fig, axs = plt.subplots(4,4, sharex=True, sharey=False, figsize=(15,15))
+        for i in range(16):
+            t = i * tEnd / 16
+            tidx = int(t/dt)
+            k = int(i / 4)
+            l = i % 4
+            
+            axs[k,l].plot(dns.x, dns.uu[tidx,:], '--k')
+            axs[k,l].plot(les.x, les.uu[tidx,:], '-r')
+            axs[k,l].plot(base.x, base.uu[tidx,:], '-b')
+
+
+
+        fig.savefig(figName2)

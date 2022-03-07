@@ -58,7 +58,10 @@ class Diffusion:
         self.uu_truth = None
         # interpolation of truth
         self.f_truth = None
-
+ 
+        # initialize simulation arrays
+        self.__setup_timeseries()
+ 
         # set initial condition
         if (case is not None):
             self.IC(case=case)
@@ -71,10 +74,7 @@ class Diffusion:
         else:
             print("[Diffusion] IC ambigous")
             sys.exit()
-        
-        # initialize simulation arrays
-        self.__setup_timeseries()
-        
+       
         # precompute Fourier-related quantities
         self.__setup_fourier()
         
@@ -91,8 +91,6 @@ class Diffusion:
         self.tt = np.zeros(self.nout+1)
         
         # store the IC in [0]
-        self.uu[0,:] = self.u0
-        self.vv[0,:] = self.v0
         self.tt[0]   = 0.
 
     def __setup_fourier(self):
@@ -102,19 +100,6 @@ class Diffusion:
     def __setup_etdrk4(self):
         return
 
-        """
-        self.E  = np.exp(self.dt*self.l)
-        self.E2 = np.exp(self.dt*self.l/2.)
-        self.M  = 62                                           # no. of points for complex means
-        self.r  = np.exp(1j*pi*(np.r_[1:self.M+1]-0.5)/self.M) # roots of unity
-        self.LR = self.dt*np.repeat(self.l[:,np.newaxis], self.M, axis=1) + np.repeat(self.r[np.newaxis,:], self.N, axis=0)
-        self.Q  = self.dt*np.real(np.mean((np.exp(self.LR/2.) - 1.)/self.LR, 1))
-        self.f1 = self.dt*np.real( np.mean( (-4. -    self.LR              + np.exp(self.LR)*( 4. - 3.*self.LR + self.LR**2) )/(self.LR**3) , 1) )
-        self.f2 = self.dt*np.real( np.mean( ( 2. +    self.LR              + np.exp(self.LR)*(-2. +    self.LR             ) )/(self.LR**3) , 1) )
-        self.f3 = self.dt*np.real( np.mean( (-4. - 3.*self.LR - self.LR**2 + np.exp(self.LR)*( 4. -    self.LR             ) )/(self.LR**3) , 1) )
-        self.g  = -0.5j*self.k
-        """
- 
     def setup_basis(self, M, kind = 'uniform'):
         self.M = M
         if M > 1:
@@ -189,7 +174,7 @@ class Diffusion:
                 v0 = np.array(v0)
                 # and transform to physical space
                 u0 = np.real(ifft(v0))
-        
+         
         # and save to self
         self.u0  = u0
         self.u   = u0
@@ -198,7 +183,12 @@ class Diffusion:
         self.t   = 0.
         self.stepnum = 0
         self.ioutnum = 0 # [0] is the initial condition
-        
+
+        # store the IC in [0]
+        self.uu[0,:] = u0
+        self.vv[0,:] = v0
+        self.tt[0]   = 0.
+
     def setGroundTruth(self, t, x, uu):
         self.uu_truth = uu
         self.f_truth = interpolate.interp2d(x, t, self.uu_truth, kind='cubic')
@@ -227,29 +217,9 @@ class Diffusion:
 
             Fforcing = fft( forcing )
 
+        # Implicit euler in time, spectral in space
         self.v = (self.v + self.dt*Fforcing) / (1+self.nu*self.k2*self.dt)
         self.u = np.real(ifft(self.v))
-
-        """
-        #
-        # Computation is based on v = fft(u), so linear term is diagonal.
-        # The time-discretization is done via ETDRK4
-        # (exponential time differencing - 4th order Runge Kutta)
-        #
-        v = self.v;                           
-        Nv = self.g*fft(np.real(ifft(v))**2)
-        a = self.E2*v + self.Q*Nv;            
-        Na = self.g*fft(np.real(ifft(a))**2)
-        b = self.E2*v + self.Q*Na;            
-        Nb = self.g*fft(np.real(ifft(b))**2)
-        c = self.E2*a + self.Q*(2.*Nb - Nv);  
-        Nc = self.g*fft(np.real(ifft(c))**2)
-        
-        if (action is not None):
-            self.v = self.E*v + (Nv + Fforcing)*self.f1 + 2.*(Na + Nb + 2*Fforcing)*self.f2 + (Nc + Fforcing)*self.f3
-        else:
-            self.v = self.E*v + Nv*self.f1 + 2.*(Na + Nb)*self.f2 + Nc*self.f3
-        """
 
         self.stepnum += 1
         self.t       += self.dt
@@ -379,11 +349,7 @@ class Diffusion:
 
         # Extract state
         u = self.uu[self.ioutnum,:]
-        #dudu = np.zeros(self.N)
-        #dudu[:-1] = (u[1:]-u[:-1])/self.dx
-        #dudu[-1] = dudu[-2]
         dudt = (self.uu[self.ioutnum,:]-self.uu[self.ioutnum-1,:])/self.dt
-        #state = np.column_stack( (u, dudu, dudt) )
         state = np.column_stack( (u, dudt) )
         return state
 

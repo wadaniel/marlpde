@@ -60,11 +60,13 @@ def environment( s , gridSize, numActions, episodeLength, ic ):
         
 
         # get new state
-        state = les.getState().flatten().tolist()
+        newstate = les.getState().flatten().tolist()
         if(np.isnan(state).any() == True):
             print("Nan state detected")
             error = 1
             break
+        else:
+            state = newstate
 
         s["State"] = state
     
@@ -80,8 +82,9 @@ def environment( s , gridSize, numActions, episodeLength, ic ):
             print("Nan reward detected")
             error = 1
             break
+        else:
+            s["Reward"] = reward
 
-        s["Reward"] = reward
         step += 1
 
     print(cumreward)
@@ -97,7 +100,7 @@ def environment( s , gridSize, numActions, episodeLength, ic ):
 
         fileName = s["Custom Settings"]["Filename"]
         print("Storing les to file {}".format(fileName))
-        np.savez(fileName, x = les.x, t = les.tt, uu = les.uu, vv = les.vv, L=L, N=gridSize, dt=dt, nu=nu, tEnd=tEnd)
+        #np.savez(fileName, x = les.x, t = les.tt, uu = les.uu, vv = les.vv, L=L, N=gridSize, dt=dt, nu=nu, tEnd=tEnd)
          
         print("Running uncontrolled SGS..")
         base = Advection(L=L, N=gridSize, dt=dt, nu=nu, tend=tEnd, case=ic, noisy=False)
@@ -129,8 +132,6 @@ def environment( s , gridSize, numActions, episodeLength, ic ):
         axs[0,2].plot(time, dns.Ek_t)
         axs[0,2].plot(time, dns.Ek_tt)
 
-        #axs[0,4].plot(k1, np.abs(dns.Ek_ktt[0,0:N//2]),'b:')
-        #axs[0,4].plot(k1, np.abs(dns.Ek_ktt[tEnd//2,0:N//2]),'b--')
         axs[0,4].plot(k1, np.abs(dns.Ek_ktt[-1,0:N//2]),'b')
         axs[0,4].set_xscale('log')
         axs[0,4].set_yscale('log')
@@ -153,6 +154,7 @@ def environment( s , gridSize, numActions, episodeLength, ic ):
         errU_t = np.mean(errU**2, axis=1)
 
 #------------------------------------------------------------------------------
+        print("plot baseline")
   
         k2 = les.k[:gridSize//2]
  
@@ -185,6 +187,7 @@ def environment( s , gridSize, numActions, episodeLength, ic ):
         axs[idx,4].plot(k2, np.abs(dns.Ek_ktt[-1,0:gridSize//2] - base.Ek_ktt[-1,0:gridSize//2]),'--r')
 
 #------------------------------------------------------------------------------
+        print("plot les")
         
         idx += 1
         # Plot solution
@@ -218,3 +221,21 @@ def environment( s , gridSize, numActions, episodeLength, ic ):
 
         figName = fileName + ".png"
         fig.savefig(figName)
+
+#------------------------------------------------------------------------------
+
+        figName2 = fileName + "_evolution.png"
+        print("Plotting {} ...".format(figName2))
+        
+        fig, axs = plt.subplots(4,4, sharex=True, sharey=False, figsize=(15,15))
+        for i in range(16):
+            t = i * tEnd / 16
+            tidx = int(t/dt)
+            k = int(i / 4)
+            l = i % 4
+            
+            axs[k,l].plot(dns.x, dns.uu[tidx,:], '--k')
+            axs[k,l].plot(les.x, les.uu[tidx,:], '-r')
+            axs[k,l].plot(base.x, base.uu[tidx,:], '-b')
+
+        fig.savefig(figName2)

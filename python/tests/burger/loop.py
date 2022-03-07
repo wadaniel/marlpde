@@ -21,7 +21,7 @@ nu   = 0.01
 ic   = args.ic
 
 # action defaults
-basis = 'uniform'
+basis = 'hat'
 numActions = 1
 
 # les & rl defaults
@@ -75,7 +75,6 @@ while step < episodeLength and error == 0:
     uDiffMse = ((uTruthToCoarse[idx,:] - les.uu[idx,:])**2).mean()
     
     # calculate reward from energy
-    # reward = -rewardFactor*(np.abs(les.Ek_tt[step*nIntermediate]-dns.Ek_tt[step*nIntermediate]))
     reward = -rewardFactor*uDiffMse
     cumreward += reward
 

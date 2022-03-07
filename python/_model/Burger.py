@@ -58,7 +58,10 @@ class Burger:
         self.uu_truth = None
         # interpolation of truth
         self.f_truth = None
-
+ 
+        # initialize simulation arrays
+        self.__setup_timeseries()
+ 
         # set initial condition
         if (case is not None):
             self.IC(case=case)
@@ -71,9 +74,6 @@ class Burger:
         else:
             print("[Burger] IC ambigous")
             sys.exit()
-        
-        # initialize simulation arrays
-        self.__setup_timeseries()
         
         # precompute Fourier-related quantities
         self.__setup_fourier()
@@ -90,20 +90,31 @@ class Burger:
         self.vv = np.zeros([self.nout+1, self.N], dtype=np.complex64)
         self.tt = np.zeros(self.nout+1)
         
-        # store the IC in [0]
-        self.uu[0,:] = self.u0
-        self.vv[0,:] = self.v0
         self.tt[0]   = 0.
 
-    def __setup_fourier(self):
+    #def __setup_fourier(self):
+   
+    def __setup_fourier(self, coeffs=None):
+        #self.x  = 2*pi*self.L*np.r_[0:self.N]/self.N
+        #self.k  = np.r_[0:self.N/2, 0, -self.N/2+1:0]/self.L # Wave numbers
         self.k   = fftfreq(self.N, self.L / (2*np.pi*self.N))
         self.k1  = 1j * self.k
         self.k2  = self.k1**2
-        
-    def __setup_etdrk4(self):
-        return
+ 
+        # Fourier multipliers for the linear term Lu
+        if (coeffs is None):
+            # normal-form equation
+            self.l = self.nu*self.k**2
+        else:
+            # altered-coefficients 
+            self.l = -      coeffs[0]*np.ones(self.k.shape) \
+                     -      coeffs[1]*1j*self.k             \
+                     + (1 + coeffs[2])  *self.k**2          \
+                     +      coeffs[3]*1j*self.k**3          \
+                     - (1 + coeffs[4])  *self.k**4
 
-        """
+
+    def __setup_etdrk4(self):
         self.E  = np.exp(self.dt*self.l)
         self.E2 = np.exp(self.dt*self.l/2.)
         self.M  = 62                                           # no. of points for complex means
@@ -114,7 +125,6 @@ class Burger:
         self.f2 = self.dt*np.real( np.mean( ( 2. +    self.LR              + np.exp(self.LR)*(-2. +    self.LR             ) )/(self.LR**3) , 1) )
         self.f3 = self.dt*np.real( np.mean( (-4. - 3.*self.LR - self.LR**2 + np.exp(self.LR)*( 4. -    self.LR             ) )/(self.LR**3) , 1) )
         self.g  = -0.5j*self.k
-        """
  
     def setup_basis(self, M, kind = 'uniform'):
         self.M = M
@@ -200,8 +210,15 @@ class Burger:
                 else:
                     # if ok cast to np.array
                     u0 = np.array(u0)
+            
             # in any case, set v0:
             v0 = fft(u0)
+            
+            # store the IC in [0]
+            self.uu[0,:] = u0
+            self.vv[0,:] = v0
+            self.tt[0]   = 0.
+
         else:
             # the initial condition is provided in v0
             # check the input size
@@ -238,6 +255,7 @@ class Burger:
     def step( self, actions=None ):
 
         Fforcing = np.zeros(self.N)
+
         if (actions is not None):
             assert self.basis is not None, print("[Burger] Basis not set up (is None).")
             assert len(actions) == self.M, print("[Burger] Wrong number of actions (provided {}/{}".format(len(actions), self.M))
@@ -246,8 +264,7 @@ class Burger:
             Fforcing = fft( forcing )
 
         self.v = self.v - self.dt*0.5*self.k1*fft(self.u**2) + self.dt*self.nu*self.k2*self.v + self.dt*Fforcing 
-        self.u = np.real(ifft(self.v))
-
+        
         """
         #
         # Computation is based on v = fft(u), so linear term is diagonal.
@@ -263,12 +280,14 @@ class Burger:
         c = self.E2*a + self.Q*(2.*Nb - Nv);  
         Nc = self.g*fft(np.real(ifft(c))**2)
         
-        if (action is not None):
+        if (actions is not None):
             self.v = self.E*v + (Nv + Fforcing)*self.f1 + 2.*(Na + Nb + 2*Fforcing)*self.f2 + (Nc + Fforcing)*self.f3
         else:
             self.v = self.E*v + Nv*self.f1 + 2.*(Na + Nb)*self.f2 + Nc*self.f3
         """
-
+        
+        self.u = np.real(ifft(self.v))
+        
         self.stepnum += 1
         self.t       += self.dt
  

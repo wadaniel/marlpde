@@ -2,7 +2,15 @@
 import sys
 sys.path.append('./../../_model/')
 
+import argparse
 from Diffusion import *
+ 
+parser = argparse.ArgumentParser()
+parser.add_argument('--N', help='Discretization / number of grid points', required=False, type=int, default=32)
+parser.add_argument('--ic', help='Initial condition', required=False, type=str, default='box')
+parser.add_argument('--episodelength', help='Actual length of episode / number of actions', required=False, type=int, default=500)
+
+args = parser.parse_args()
  
 # dns defaults
 N    = 512
@@ -10,22 +18,22 @@ L    = 2*np.pi
 dt   = 0.001
 tEnd = 10
 nu   = 0.01
+ic   = args.ic
 
 # action defaults
-basis = 'uniform'
+basis = 'hat'
 numActions = 1
 
 # les & rl defaults
-gridSize = 8
-episodeLength = 500
+gridSize = args.N
+episodeLength = args.episodelength
 
 # reward defaults
 rewardFactor = 10.
 
 # DNS baseline
 print("Setting up DNS..")
-dns = Diffusion(L=L, N=N, dt=dt, nu=nu, tend=tEnd)
-dns.IC(case='box')
+dns = Diffusion(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case=ic, noisy=False)
 dns.simulate()
 dns.fou2real()
 dns.compute_Ek()
@@ -38,7 +46,7 @@ tAvgEnergy = dns.Ek_tt
 print("Done!")
 
 # Initialize LES
-les = Diffusion(L=L, N=gridSize, dt=dt, nu=nu, tend=tEnd, noisy=True)
+les = Diffusion(L=L, N=gridSize, dt=dt, nu=nu, tend=tEnd, noisy=False)
 les.IC( u0 = f_restart(les.x) )
 les.setup_basis(numActions, basis)
 les.setGroundTruth(dns.tt, dns.x, dns.uu)
