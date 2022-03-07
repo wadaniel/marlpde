@@ -147,7 +147,7 @@ class Burger:
         if (v0 is None):
             if (u0 is None):
                     
-                    np.random.seed( seed )
+                    #np.random.seed( seed )
                     offset = np.random.normal(loc=0., scale=self.dx) if self.noisy else 0.
                     
                     # Gaussian initialization
@@ -171,8 +171,7 @@ class Burger:
                         # A priori and a posteriori evaluations 
                         # of sub-grid scale models for the Burgers' eq. (Li, Wang, 2016)
                         
-                        if self.noisy == False:
-                            np.random.seed(1337)
+                        np.random.seed(1337)
                         
                         A = 1
                         u0 = np.ones(self.N)
@@ -185,7 +184,7 @@ class Burger:
                         scale = 0.7 / np.sqrt(np.sum((u0-1.)**2)/self.N)
                         u0 *= scale
                         
-                        assert( np.sqrt(np.sum((u0-1.)**2)/self.N) < 1.5 )
+                        #assert( np.sqrt(np.sum((u0-1.)**2)/self.N) < 1.5 )
                         assert( np.sqrt(np.sum((u0-1.)**2)/self.N) > 0.5 )
 
                     else:

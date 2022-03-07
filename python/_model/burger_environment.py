@@ -17,7 +17,7 @@ basis = 'hat'
 def environment( s , gridSize, numActions, episodeLength, ic ):
  
     testing = True if s["Custom Settings"]["Mode"] == "Testing" else False
-    noisy = False #False if testing else True
+    noisy = False if testing else True
     
     dns = Burger(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case=ic, noisy=noisy)
     dns.simulate()
