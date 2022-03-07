@@ -1,10 +1,12 @@
 # Test
 
 
-export RUN=2
+export RUN=4
+export NUMEXP=1000000
+export NN=256
 
 
-for env in burger #diffusion
+for env in diffusion #diffusion
 do 
     for a in 8 32
     do
