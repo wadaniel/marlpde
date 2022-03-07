@@ -33,7 +33,7 @@ rewardFactor = 1.
 
 # DNS baseline
 print("Setting up DNS..")
-dns = Burger(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case=ic)
+dns = Burger(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case=ic, noisy=True)
 dns.simulate()
 dns.fou2real()
 dns.compute_Ek()
@@ -46,7 +46,7 @@ tAvgEnergy = dns.Ek_tt
 print("Done!")
 
 # Initialize LES
-les = Burger(L=L, N=gridSize, dt=dt, nu=nu, tend=tEnd, noisy=True)
+les = Burger(L=L, N=gridSize, dt=dt, nu=nu, tend=tEnd, noisy=False)
 les.IC( u0 = f_restart(les.x) )
 les.setup_basis(numActions, basis)
 les.setGroundTruth(dns.tt, dns.x, dns.uu)

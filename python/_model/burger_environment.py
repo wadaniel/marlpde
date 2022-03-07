@@ -59,6 +59,7 @@ def environment( s , gridSize, numActions, episodeLength, ic ):
         try:
             for _ in range(nIntermediate):
                 les.step(actions)
+
             les.compute_Ek()
         except Exception as e:
             print("Exception occured:")

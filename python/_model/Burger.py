@@ -171,6 +171,7 @@ class Burger:
                         # A priori and a posteriori evaluations 
                         # of sub-grid scale models for the Burgers' eq. (Li, Wang, 2016)
                         
+                        #np.random.seed(11337)
                         np.random.seed(1337)
                         
                         A = 1
