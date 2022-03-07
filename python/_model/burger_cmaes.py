@@ -16,7 +16,7 @@ basis = 'hat'
 
 def fBurger( s , gridSize, episodeLength, ic ):
  
-    noisy = False
+    noisy = True
     
     dns = Burger(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case=ic, noisy=noisy)
     dns.simulate()
@@ -56,10 +56,12 @@ def fBurger( s , gridSize, episodeLength, ic ):
                 up = np.roll(u, -1)
                 
                 dudx = (u - um)/dx
-                dudxx = (up - 2*u + um)/dx
-            
-                sgs = -cs*cs*dx2*(np.abs(dudxx)*dudx+np.abs(dudx)*dudxx)
+                dudxx = (up - 2*u + um)/dx2
 
+                absolute = np.ones(gridSize)
+                absolute[dudx<0.] = -1.
+
+                sgs = -cs*cs*dx2*(dudxx*dudx+dudx*dudxx)*absolute
                 les.step(-sgs)
 
         except Exception as e:
