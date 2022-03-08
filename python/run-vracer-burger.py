@@ -8,6 +8,7 @@ parser.add_argument('--numexp', help='Number of experiences', required=False, ty
 parser.add_argument('--width', help='Size of hidden layer', required=False, type=int, default=256)
 parser.add_argument('--episodelength', help='Actual length of episode / number of actions', required=False, type=int, default=500)
 parser.add_argument('--ic', help='Initial condition', required=False, type=str, default='box')
+parser.add_argument('--tend', help='Simulation length', required=False, type=int, default=10)
 parser.add_argument('--run', help='Run tag', required=False, type=int, default=0)
 parser.add_argument('--test', action='store_true', help='Run tag', required=False)
 

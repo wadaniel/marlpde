@@ -418,7 +418,7 @@ class Burger:
         self.uu_resid = self.uu - self.uu_filt
 
     def getMseReward(self):
-        uTruthToCoarse = les.mapGroundTruth()
+        uTruthToCoarse = self.mapGroundTruth()
         uDiffMse = ((uTruthToCoarse[self.ioutnum,:] - self.uu[self.ioutnum,:])**2).mean()
         return -uDiffMse
      

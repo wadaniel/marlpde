@@ -1,12 +1,13 @@
 # Test
 
-
-export RUN=4
+# run 5: noisy, 0.1 exp noise
+# run 6: noisy, 0.01 exp noise
+export RUN=5
 export NUMEXP=1000000
 export NN=256
 
 
-for env in diffusion
+for env in burger #diffusion
 do 
     for a in 32
     do
