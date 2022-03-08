@@ -384,6 +384,7 @@ class Diffusion:
 
         # Extract state
         u = self.uu[self.ioutnum,:]
-        dudt = (self.uu[self.ioutnum,:]-self.uu[self.ioutnum-1,:])/self.dt
-        state = np.column_stack( (u, dudt) )
+        #dudt = (self.uu[self.ioutnum,:]-self.uu[self.ioutnum-1,:])/self.dt
+        #state = np.column_stack( (u, dudt) )
+        state = u
         return state
