@@ -159,20 +159,29 @@ class Diffusion:
                         a = 1103515245
                         c = 12345
                         m = 2**13
-    
+                    
                         A = 1
                         u0 = np.ones(self.N)
                         for k in range(1, self.N):
-                            phase = (a * phase + c) % m
+                            phase = (a * phase + c) % m + offset
                             Ek = A*5**(-5/3) if k <= 5 else A*k**(-5/3) 
-                            u0 += np.sqrt(2*Ek)*np.sin(k*2*np.pi*self.x/self.L+phase+offset)
+                            u0 += np.sqrt(2*Ek)*np.sin(k*2*np.pi*self.x/self.L+phase)
 
-                        # rescale
-                        scale = 0.7 / np.sqrt(np.sum((u0-1.)**2)/self.N)
-                        u0 *= scale
-                        
-                        #assert( np.sqrt(np.sum((u0-1.)**2)/self.N) < 1.5 )
-                        assert( np.sqrt(np.sum((u0-1.)**2)/self.N) > 0.5 )
+                        # rescale IC
+                        idx = 0
+                        criterion = np.sqrt(np.sum((u0-1.)**2)/self.N)
+                        while (criterion < 0.65 or criterion > 0.75):
+                            scale = 0.7/criterion
+                            u0 *= scale
+                            criterion = np.sqrt(np.sum((u0-1.)**2)/self.N)
+                            
+                            # exit
+                            idx += 1
+                            if idx > 100:
+                                break
+
+                        assert( criterion < 1.0 )
+                        assert( criterion > 0.4 )
 
                     else:
                         print("[Diffusion] Error: IC case unknown")

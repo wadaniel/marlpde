@@ -25,7 +25,7 @@ L    = 2*np.pi
 dt   = 0.001
 tEnd = 5
 nu   = 0.01
-dns = Burger(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case='turbulence')
+dns = Burger(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case='turbulence', noisy=True)
 
 #------------------------------------------------------------------------------
 print("Simulate..")

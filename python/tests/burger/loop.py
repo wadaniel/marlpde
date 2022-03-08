@@ -33,7 +33,7 @@ rewardFactor = 1.
 
 # DNS baseline
 print("Setting up DNS..")
-dns = Burger(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case=ic, noisy=True)
+dns = Burger(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case=ic, noisy=False)
 dns.simulate()
 dns.fou2real()
 dns.compute_Ek()

@@ -52,7 +52,7 @@ e["Solver"]["Mini Batch"]["Size"] = 256
 
 ### Defining Variables
 
-nState  = args.N*2
+nState  = args.N
 # States (flow at sensor locations)
 for i in range(nState):
 	e["Variables"][i]["Name"] = "Field Information " + str(i)

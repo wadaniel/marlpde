@@ -101,7 +101,7 @@ def environment( s , gridSize, numActions, episodeLength, ic ):
     if error == 1:
         s["State"] = state
         s["Termination"] = "Truncated"
-        s["Reward"] = -500
+        s["Reward"] = -1000 if testing else -np.inf
     
     else:
         s["Termination"] = "Terminal"
