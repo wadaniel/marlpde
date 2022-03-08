@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 
 # LES defaults
 numActions = 1
-numGridPoints = 32
+gridSize = 32
  
 # DNS defaults
 N    = 1024
@@ -44,15 +44,14 @@ dns.fou2real()
 
 # calcuate energies
 dns.compute_Ek()
-tAvgEnergy = dns.Ek_tt
-
 
 # init rewards
 rewards = []
 
 # Initialize LES
-les = KS(L=L, N = numGridPoints, dt=dt, nu=nu, tend=tEnd-tTransient)
-les.IC( u0 = f_restart(les.x) )
+les = KS(L=L, N = gridSize, dt=dt, nu=nu, tend=tEnd-tTransient)
+#les.IC( u0 = f_restart(les.x) )
+les.IC( v0 = v_restart[0:gridSize] )
 les.setup_basis(numActions)
 
 ## run controlled simulation
@@ -64,10 +63,10 @@ while step < int(tSim/dt) and error == 0:
     les.step(actions)
     les.compute_Ek()
     
-    tAvgEnergyLES = les.Ek_tt
-
     # calculate reward from energy
-    reward = -rewardFactor*(np.abs(tAvgEnergyLES[step] -tAvgEnergy[step])) #**2
+    spectralDiff = np.mean((np.log(dns.Ek_ktt[les.ioutnum,0:gridSize//2]) - np.log(les.Ek_ktt[les.ioutnum,0:gridSize//2]))**2)
+    reward = -spectralDiff
+    print(spectralDiff)
     rewards.append(reward)
     
     step += 1

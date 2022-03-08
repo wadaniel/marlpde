@@ -42,14 +42,17 @@ dns0.fou2real()
 # compute energies
 dns0.compute_Ek()
 # IC and interpolation
-IC = dns0.uu[-1,:].copy()
-f_IC = interpolate.interp1d(dns0.x, IC)
+
+v_restart = dns0.vv[-1,:].copy()
+u_restart = dns0.uu[-1,:].copy()
+ 
+f_IC = interpolate.interp1d(dns0.x, u_restart)
 
 #------------------------------------------------------------------------------
 ## simulate DNS from IC
 
 dns = KS(L=L, N=N1, dt=dt, nu=1.0, tend=tEnd-tTransient)
-dns.IC(u0 = IC)
+dns.IC(u0 = u_restart)
 
 dns.simulate()
 # convert to physical space
@@ -59,7 +62,8 @@ dns.compute_Ek()
 
 ## simulate SGS from IC
 sgs = KS(L=L, N=N2, dt=dt, nu=1.0, tend=tEnd-tTransient)
-sgs.IC(u0 = f_IC(sgs.x))
+#sgs.IC(u0 = f_IC(sgs.x))
+sgs.IC(v0 = v_restart[0:N2])
 
 sgs.simulate()
 # convert to physical space
@@ -111,6 +115,7 @@ axs[1,2].plot(k2, 2.0/N2 * np.abs(dns.Ek_ktt[-1,0:N2//2]),'b')
 axs[1,2].set_xscale('log')
 axs[1,2].set_yscale('log')
 
+print("plot simulatediff1.png..")
 fig.savefig('simulatediff1.png')
 
 fig, axs = plt.subplots(1,3, sharex='row', sharey='row')
@@ -122,4 +127,5 @@ axs[1].set_yscale('log')
 axs[2].plot(time, errEk_ktt)
 axs[2].set_yscale('log')
 
+print("plot simulatediff2.png..")
 fig.savefig('simulatediff2.png')

@@ -57,7 +57,7 @@ print("plot DNS")
 k1 = dns.k[:N1//2]
 
 fig, axs = plt.subplots(m+1, 5, sharex='col', sharey='col', subplot_kw=dict(box_aspect=1), figsize=(15,15))
-axs[0,0].contourf(s, n, dns.uu, 50)
+axs[0,0].contourf(dns.x, dns.tt, dns.uu, 50)
 
 axs[0,2].plot(dns.tt, dns.Ek_t)
 axs[0,2].plot(dns.tt, dns.Ek_tt)

@@ -79,12 +79,9 @@ def environment( s , gridSize, numActions, episodeLength, ic ):
 
         s["State"] = state
     
-        idx = les.ioutnum
-        uTruthToCoarse = les.mapGroundTruth()
-        uDiffMse = ((uTruthToCoarse[idx,:] - les.uu[idx,:])**2).mean()
- 
-        # calculate reward from energy
-        reward = -rewardFactor*uDiffMse
+        reward = rewardFactor*les.getMseReward()
+        #spectralDiff = np.mean(np.log(dns.Ek_ktt[les.ioutnum,0:gridSize//2]) - np.log(base.Ek_ktt[les.ioutnum,0:gridSize//2]))
+        #reward = -spectralDiff
         cumreward += reward
 
         if (np.isfinite(reward) == False):

@@ -70,12 +70,10 @@ while step < episodeLength and error == 0:
         error = 1
         break
     
-    idx = les.ioutnum
-    uTruthToCoarse = les.mapGroundTruth()
-    uDiffMse = ((uTruthToCoarse[idx,:] - les.uu[idx,:])**2).mean()
-    
-    # calculate reward from energy
-    reward = -rewardFactor*uDiffMse
+    #reward = rewardFactor*les.getMseReward()
+    spectralDiff = np.mean((np.log(dns.Ek_ktt[les.ioutnum,0:gridSize//2]) - np.log(les.Ek_ktt[les.ioutnum,0:gridSize//2]))**2)
+    reward = -spectralDiff
+    print(spectralDiff)
     cumreward += reward
 
     if (np.isnan(reward)):
