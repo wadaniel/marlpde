@@ -147,13 +147,13 @@ class Advection:
 
                     else:
                         print("[Advection] Error: IC case unknown")
-                        return -1
+                        sys.exit()
 
             else:
                 # check the input size
                 if (np.size(u0,0) != self.N):
                     print("[Advection] Error: wrong IC array size")
-                    return -1
+                    sys.exit()
                 else:
                     # if ok cast to np.array
                     u0 = np.array(u0)
@@ -164,7 +164,8 @@ class Advection:
             # check the input size
             if (np.size(v0,0) != self.N):
                 print("[Advection] Error: wrong IC array size")
-                return -1
+                sys.exit()
+            
             else:
                 # if ok cast to np.array
                 v0 = np.array(v0)
@@ -367,7 +368,3 @@ class Advection:
         #state = np.column_stack( (u, dudu, dudt) )
         state = np.column_stack( (u, dudt) )
         return state
-
-    def updateField(self, factors):
-        # elementwise multiplication
-        self.v = self.v * factors

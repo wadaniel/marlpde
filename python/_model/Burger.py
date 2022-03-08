@@ -198,13 +198,14 @@ class Burger:
 
                     else:
                         print("[Burger] Error: IC case unknown")
-                        return -1
+                        sys.exit()
 
             else:
                 # check the input size
                 if (np.size(u0,0) != self.N):
                     print("[Burger] Error: wrong IC array size")
-                    return -1
+                    sys.exit()
+
                 else:
                     # if ok cast to np.array
                     u0 = np.array(u0)
@@ -217,7 +218,8 @@ class Burger:
             # check the input size
             if (np.size(v0,0) != self.N):
                 print("[Burger] Error: wrong IC array size")
-                return -1
+                sys.exit()
+
             else:
                 # if ok cast to np.array
                 v0 = np.array(v0)
@@ -424,7 +426,3 @@ class Burger:
         #state = np.column_stack( (u, dudu, dudt) )
         state = np.column_stack( (u, dudt) )
         return state
-
-    def updateField(self, factors):
-        # elementwise multiplication
-        self.v = self.v * factors

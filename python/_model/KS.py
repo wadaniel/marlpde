@@ -49,8 +49,8 @@ class KS:
         # save to self
         self.L      = L
         self.N      = N
-        self.dx     = 2*pi*L/N
-        self.x      = 2*pi*self.L*np.r_[0:self.N]/self.N
+        self.dx     = L/N
+        self.x      = np.linspace(0, self.L, N, endpoint=False)
         self.dt     = dt
         self.nu     = nu
         self.nsteps = nsteps
@@ -71,8 +71,13 @@ class KS:
         # interpolation of truth
         self.f_truth = None
 
+        # initialize simulation arrays
+        self.__setup_timeseries()
+ 
         # set initial condition
-        if (u0 is None) and (v0 is None):
+        if (case is not None):
+            self.IC(case=case)
+        elif (u0 is None) and (v0 is None):
             self.IC()
         elif (u0 is not None):
             self.IC(u0 = u0)
@@ -82,17 +87,11 @@ class KS:
             print("[KS] IC ambigous")
             sys.exit()
  
-        # initialize simulation arrays
-        self.__setup_timeseries()
-        
         # precompute Fourier-related quantities
-        self.__setup_fourier(self.coeffs)
+        self.__setup_fourier()
         
         # precompute ETDRK4 scalar quantities:
         self.__setup_etdrk4()
-
-        # Gaussians for forcing terms
-
 
     def __setup_timeseries(self, nout=None):
         if (nout != None):
@@ -103,12 +102,10 @@ class KS:
         self.vv = np.zeros([self.nout+1, self.N], dtype=np.complex64)
         self.tt = np.zeros(self.nout+1)
         
-        # store the IC in [0]
-        self.vv[0,:] = self.v0
         self.tt[0]   = 0.
 
     def __setup_fourier(self, coeffs=None):
-        self.k  = np.r_[0:self.N/2, 0, -self.N/2+1:0]/self.L # Wave numbers
+        self.k   = fftfreq(self.N, self.L / (2*np.pi*self.N))
         # Fourier multipliers for the linear term Lu
         if (coeffs is None):
             # normal-form equation
@@ -177,6 +174,37 @@ class KS:
                     elif case == 'gaussian':
                         sigma = self.L/8
                         u0 = gaussian(self.x, mean=0.5*self.L+offset, sigma=sigma)
+ 
+                    # Box initialization
+                    elif case == 'box':
+                        u0 = np.abs(self.x-self.L/2-offset)<self.L/8
+                    
+                    # Sinus
+                    elif case == 'sinus':
+                        u0 = np.sin(self.x+offset)
+ 
+                    # Turbulence
+                    elif case == 'turbulence':
+                        # Taken from: 
+                        # A priori and a posteriori evaluations 
+                        # of sub-grid scale models for the Burgers' eq. (Li, Wang, 2016)
+                        
+                        #np.random.seed(11337)
+                        np.random.seed(1337)
+                        
+                        A = 1
+                        u0 = np.ones(self.N)
+                        for k in range(1, self.N):
+                            phase = np.random.uniform(low=-np.pi, high=np.pi)
+                            Ek = A*5**(-5/3) if k <= 5 else A*k**(-5/3) 
+                            u0 += np.sqrt(2*Ek)*np.sin(k*2*np.pi*self.x/self.L+phase)
+
+                        # rescale
+                        scale = 0.7 / np.sqrt(np.sum((u0-1.)**2)/self.N)
+                        u0 *= scale
+                        
+                        #assert( np.sqrt(np.sum((u0-1.)**2)/self.N) < 1.5 )
+                        assert( np.sqrt(np.sum((u0-1.)**2)/self.N) > 0.5 )
 
                     else:
                         print("[KS] Error: IC case unknown")
@@ -193,6 +221,7 @@ class KS:
                         print("[KS] Using given (real) flow field...")
                     # if ok cast to np.array
                     u0 = np.array(u0)
+
             # in any case, set v0:
             v0 = fft(u0)
         else:
@@ -218,7 +247,12 @@ class KS:
         self.t   = 0.
         self.stepnum = 0
         self.ioutnum = 0 # [0] is the initial condition
-        
+                
+        # store the IC in [0]
+        self.uu[0,:] = u0
+        self.vv[0,:] = v0
+        self.tt[0]   = 0.
+ 
     def setGroundTruth(self, t, x, uu):
         self.uu_truth = uu
         self.f_truth = interpolate.interp2d(x, t, self.uu_truth, kind='cubic')
@@ -234,7 +268,7 @@ class KS:
         if (actions is not None):
             assert self.basis is not None, print("[KS] Basis not set up (is None).")
             assert len(actions) == self.M, print("[KS] Wrong number of actions (provided {}/{}".format(len(actions), self.M))
-            forcing = np.matmul(actions, self.basis) / 10
+            forcing = np.matmul(actions, self.basis)
 
             Fforcing = fft( forcing )
 
@@ -254,7 +288,7 @@ class KS:
         if (actions is not None):
             self.v = self.E*v + (Nv + Fforcing)*self.f1 + 2.*(Na + Nb + 2*Fforcing)*self.f2 + (Nc + Fforcing)*self.f3
         else:
-            self.v = 1] #f.E*v + Nv*self.f1 + 2.*(Na + Nb)*self.f2 + Nc*self.f3
+            self.v = self.E*v + Nv*self.f1 + 2.*(Na + Nb)*self.f2 + Nc*self.f3
 
         self.stepnum += 1
         self.t       += self.dt
@@ -393,7 +427,3 @@ class KS:
         #state = np.column_stack( (u, dudu, dudt) )
         state = np.column_stack( (u, dudt) )
         return state
-
-    def updateField(self, factors):
-        # elementwise multiplication
-        self.v = self.v * factors
