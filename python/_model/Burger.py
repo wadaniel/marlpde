@@ -417,12 +417,11 @@ class Burger:
         # compute u_resid
         self.uu_resid = self.uu - self.uu_filt
 
-    def getReward(self):
-        # Convert from spectral to physical space
-        t = [self.t]
-        uMap = self.f_truth(self.x, t)
-        return -np.abs(self.u-uMap)
-
+    def getMseReward(self):
+        uTruthToCoarse = les.mapGroundTruth()
+        uDiffMse = ((uTruthToCoarse[self.ioutnum,:] - self.uu[self.ioutnum,:])**2).mean()
+        return -uDiffMse
+     
     def getState(self, nAgents = None):
         # Convert from spectral to physical space
         self.fou2real()

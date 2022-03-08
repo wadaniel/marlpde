@@ -22,15 +22,13 @@ from Burger import *
 #------------------------------------------------------------------------------
 ## set parameters and initialize simulation
 L    = 2*np.pi
-dt   = 0.0005
+dt   = 0.001
 tEnd = 5
 nu   = 0.01
-dns = Burger(L=L, N=N, dt=dt, nu=nu, tend=tEnd)
+ic   = 'turbulence'
 
-# IC based on (https://cfd.ku.edu/papers/AIAA-2015-1283.pdf)
-v0 = np.zeros(N)
-v0[:6] = 5**(-5/3)
-v0[6:] = np.arange(6, N)**(-5/3)
+
+dns = Burger(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case=ic)
 
 print(v0)
 print(v0[:10])
@@ -44,9 +42,7 @@ axs[0].plot(dns.u0)
 axs[1].plot(dns.v0)
 axs[1].set_xscale('log')
 axs[1].set_yscale('log')
-fig.savefig('turbulence_ic.png')
 
-sys.exit()
 #------------------------------------------------------------------------------
 print("Simulate..")
 ## simulate

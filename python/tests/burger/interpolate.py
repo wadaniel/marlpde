@@ -89,9 +89,6 @@ cs1 = axs[1].contourf(subgrid.x, subgrid.tt, uCoarse, ulevels, cmap=plt.get_cmap
 diff = np.abs(uCoarse-uTruthToCoarse)
 cs2 = axs[2].contourf(subgrid.x, subgrid.tt, diff, 50, cmap=plt.get_cmap("coolwarm"))
 
-# plt.colorbar(cs0, ax=axs[0])
-#plt.colorbar(cs1, ax=axs[1])
-#plt.colorbar(cs2, ax=axs[2])
 plt.setp(axs[:], xlabel='$x$')
 plt.setp(axs[0], ylabel='$t$')
 # for c in cs.collections: c.set_rasterized(True)
