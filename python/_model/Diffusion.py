@@ -155,15 +155,17 @@ class Diffusion:
                         # A priori and a posteriori evaluations 
                         # of sub-grid scale models for the Burgers' eq. (Li, Wang, 2016)
                         
-                        #np.random.seed(11337)
-                        np.random.seed(1337)
-                        
+                        phase = 123456789
+                        a = 1103515245
+                        c = 12345
+                        m = 2**13
+    
                         A = 1
                         u0 = np.ones(self.N)
                         for k in range(1, self.N):
-                            phase = np.random.uniform(low=-np.pi, high=np.pi)
+                            phase = (a * phase + c) % m
                             Ek = A*5**(-5/3) if k <= 5 else A*k**(-5/3) 
-                            u0 += np.sqrt(2*Ek)*np.sin(k*2*np.pi*self.x/self.L+phase)
+                            u0 += np.sqrt(2*Ek)*np.sin(k*2*np.pi*self.x/self.L+phase+offset)
 
                         # rescale
                         scale = 0.7 / np.sqrt(np.sum((u0-1.)**2)/self.N)
