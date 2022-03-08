@@ -227,7 +227,7 @@ def environment( s , gridSize, numActions, episodeLength, ic ):
         figName2 = fileName + "_evolution.png"
         print("Plotting {} ...".format(figName2))
         
-        fig, axs = plt.subplots(4,4, sharex=True, sharey=False, figsize=(15,15))
+        fig2, axs = plt.subplots(4,4, sharex=True, sharey=False, figsize=(15,15))
         for i in range(16):
             t = i * tEnd / 16
             tidx = int(t/dt)
@@ -238,4 +238,4 @@ def environment( s , gridSize, numActions, episodeLength, ic ):
             axs[k,l].plot(les.x, les.uu[tidx,:], '-r')
             axs[k,l].plot(base.x, base.uu[tidx,:], '-b')
 
-        fig.savefig(figName2)
+        fig2.savefig(figName2)

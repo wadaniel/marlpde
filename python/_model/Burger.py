@@ -92,8 +92,6 @@ class Burger:
         
         self.tt[0]   = 0.
 
-    #def __setup_fourier(self):
-   
     def __setup_fourier(self, coeffs=None):
         #self.x  = 2*pi*self.L*np.r_[0:self.N]/self.N
         #self.k  = np.r_[0:self.N/2, 0, -self.N/2+1:0]/self.L # Wave numbers
@@ -118,7 +116,7 @@ class Burger:
         self.E  = np.exp(self.dt*self.l)
         self.E2 = np.exp(self.dt*self.l/2.)
         self.M  = 62                                           # no. of points for complex means
-        self.r  = np.exp(1j*pi*(np.r_[1:self.M+1]-0.5)/self.M) # roots of unity
+        self.r  = np.exp(1j*np.pi*(np.r_[1:self.M+1]-0.5)/self.M) # roots of unity
         self.LR = self.dt*np.repeat(self.l[:,np.newaxis], self.M, axis=1) + np.repeat(self.r[np.newaxis,:], self.N, axis=0)
         self.Q  = self.dt*np.real(np.mean((np.exp(self.LR/2.) - 1.)/self.LR, 1))
         self.f1 = self.dt*np.real( np.mean( (-4. -    self.LR              + np.exp(self.LR)*( 4. - 3.*self.LR + self.LR**2) )/(self.LR**3) , 1) )
@@ -214,11 +212,6 @@ class Burger:
             # in any case, set v0:
             v0 = fft(u0)
             
-            # store the IC in [0]
-            self.uu[0,:] = u0
-            self.vv[0,:] = v0
-            self.tt[0]   = 0.
-
         else:
             # the initial condition is provided in v0
             # check the input size
@@ -239,7 +232,12 @@ class Burger:
         self.t   = 0.
         self.stepnum = 0
         self.ioutnum = 0 # [0] is the initial condition
-        
+  
+        # store the IC in [0]
+        self.uu[0,:] = u0
+        self.vv[0,:] = v0
+        self.tt[0]   = 0.
+       
     def setGroundTruth(self, t, x, uu):
         self.uu_truth = uu
         self.f_truth = interpolate.interp2d(x, t, self.uu_truth, kind='cubic')
@@ -264,6 +262,9 @@ class Burger:
             Fforcing = fft( forcing )
 
         self.v = self.v - self.dt*0.5*self.k1*fft(self.u**2) + self.dt*self.nu*self.k2*self.v + self.dt*Fforcing 
+        
+        # Impl-expl step (TODO)
+        #self.v = (self.v - self.dt*0.5*self.k1*fft(self.u**2) + self.dt*Fforcing) / (1. - self.dt*self.nu*self.k2*self.v)
         
         """
         #

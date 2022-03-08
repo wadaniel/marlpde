@@ -22,7 +22,7 @@ from Burger import *
 #------------------------------------------------------------------------------
 ## set parameters and initialize simulation
 L    = 2*np.pi
-dt   = 0.0005
+dt   = 0.0001
 tEnd = 5
 nu   = 0.01
 dns = Burger(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case='turbulence')
@@ -48,7 +48,7 @@ plt.colorbar(cs0, ax=axs)
 fig.savefig('evolution.png')
 plt.close()
 
-print("Plotting diffusion_evolution.png ...")
+print("Plotting burger_evolution.png ...")
 fig, axs = plt.subplots(4,4, sharex=True, sharey=True, figsize=(15,15))
 for i in range(16):
     t = int(i * tEnd / dt / 16)

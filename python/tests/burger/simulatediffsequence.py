@@ -11,7 +11,7 @@ import math
 import numpy as np
 
 # Discretization grid
-N1 = 1024
+N1 = 2048
 N2 = 128
 m = int(math.log2(N1 / N2)) + 1
 Nx = np.clip(N2*2**np.arange(0., m), a_min=0, a_max=N1).astype(int)
