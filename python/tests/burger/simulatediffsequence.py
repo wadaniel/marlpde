@@ -56,17 +56,15 @@ f_dns = interpolate.interp2d(dns.x, dns.tt, dns.uu, kind='cubic')
 print("plot DNS")
 k1 = dns.k[:N1//2]
 
-time = np.arange(tEnd/dt+1)*dt
-s, n = np.meshgrid(2*np.pi*L/N1*(np.array(range(N1))+1), time)
-
 fig, axs = plt.subplots(m+1, 5, sharex='col', sharey='col', subplot_kw=dict(box_aspect=1), figsize=(15,15))
 axs[0,0].contourf(s, n, dns.uu, 50)
 
-axs[0,2].plot(time, dns.Ek_t)
-axs[0,2].plot(time, dns.Ek_tt)
+axs[0,2].plot(dns.tt, dns.Ek_t)
+axs[0,2].plot(dns.tt, dns.Ek_tt)
 
+nt = int(tEnd/dt)
 axs[0,4].plot(k1, np.abs(dns.Ek_ktt[0,0:N1//2]),'b:')
-axs[0,4].plot(k1, np.abs(dns.Ek_ktt[tEnd//2,0:N1//2]),'b--')
+axs[0,4].plot(k1, np.abs(dns.Ek_ktt[nt//2,0:N1//2]),'b--')
 axs[0,4].plot(k1, np.abs(dns.Ek_ktt[-1,0:N1//2]),'b')
 axs[0,4].set_xscale('log')
 axs[0,4].set_yscale('log')
@@ -100,27 +98,26 @@ for N in Nx:
 #------------------------------------------------------------------------------
   
     k2 = sgs.k[:N//2]
-    s, n = np.meshgrid(2*np.pi*L/N*(np.array(range(N))+1), time)
 
     # Plot solution
-    axs[idx,0].contourf(s, n, sgs.uu, 50)
+    axs[idx,0].contourf(sgs.x, sgs.tt, sgs.uu, 50)
     
     # Plot difference to dns
     axs[idx,1].contourf(sgs.x, sgs.tt, errU, 50)
 
     # Plot instanteneous energy and time averaged energy
-    axs[idx,2].plot(time, sgs.Ek_t)
-    axs[idx,2].plot(time, sgs.Ek_tt)
+    axs[idx,2].plot(sgs.tt, sgs.Ek_t)
+    axs[idx,2].plot(sgs.tt, sgs.Ek_tt)
  
     # Plot energy differences
-    axs[idx,3].plot(time, errEk_t)
-    axs[idx,3].plot(time, errEk_tt)
-    axs[idx,3].plot(time, errEk_ktt)
+    axs[idx,3].plot(sgs.tt, errEk_t)
+    axs[idx,3].plot(sgs.tt, errEk_tt)
+    axs[idx,3].plot(sgs.tt, errEk_ktt)
     axs[idx,3].set_yscale('log')
 
     # Plot energy spectrum at start, mid and end of simulation
     axs[idx,4].plot(k2, np.abs(sgs.Ek_ktt[0,0:N//2]),'b:')
-    axs[idx,4].plot(k2, np.abs(sgs.Ek_ktt[tEnd//2,0:N//2]),'b--')
+    axs[idx,4].plot(k2, np.abs(sgs.Ek_ktt[nt//2,0:N//2]),'b--')
     axs[idx,4].plot(k2, np.abs(sgs.Ek_ktt[-1,0:N//2]),'b')
     axs[idx,4].set_xscale('log')
     axs[idx,4].set_yscale('log')

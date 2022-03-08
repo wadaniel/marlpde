@@ -1,7 +1,7 @@
 import sys
 from numpy import pi
 from scipy import interpolate
-from scipy.fftpack import fft, ifft
+from scipy.fftpack import fft, ifft, fftfreq
 import numpy as np
 
 np.seterr(over='raise', invalid='raise')
@@ -38,7 +38,7 @@ class KS:
         tend = float(tend)
         
         if (nsteps is None):
-            nsteps = tend//dt
+            nsteps = int(tend/dt)
         else:
             nsteps = int(nsteps)
             # override tend
@@ -55,7 +55,7 @@ class KS:
         self.nu     = nu
         self.nsteps = nsteps
         self.nout   = nsteps
-        self.sigma  = 2*pi*L/(2*N)
+        self.sigma  = L/(2*N)
         self.coeffs = coeffs
   
         # Basis
@@ -237,7 +237,7 @@ class KS:
                 # if ok cast to np.array
                 v0 = np.array(v0)
                 # and transform to physical space
-                u0 = ifft(v0)
+                u0 = np.real(ifft(v0))
         
         # and save to self
         self.u0  = u0
