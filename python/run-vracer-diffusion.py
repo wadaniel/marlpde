@@ -8,6 +8,7 @@ parser.add_argument('--numexp', help='Number of experiences', required=False, ty
 parser.add_argument('--width', help='Size of hidden layer', required=False, type=int, default=256)
 parser.add_argument('--episodelength', help='Actual length of episode / number of actions', required=False, type=int, default=500)
 parser.add_argument('--ic', help='Initial condition', required=False, type=str, default='box')
+parser.add_argument('--seed', help='Random seed', required=False, type=int, default=42)
 parser.add_argument('--tend', help='Simulation length', required=False, type=int, default=5)
 parser.add_argument('--run', help='Run tag', required=False, type=int, default=0)
 parser.add_argument('--test', action='store_true', help='Run tag', required=False)
@@ -29,7 +30,7 @@ e = korali.Experiment()
 
 ### Defining results folder and loading previous results, if any
 
-resultFolder = '_result_diffusion_{}_{}_{}_{}_{}/'.format(args.ic, args.N, args.numactions, args.episodelength, args.run)
+resultFolder = '_result_diffusion_{}_{}_{}_{}_{}_{}/'.format(args.ic, args.N, args.numactions, args.episodelength, args.seed, args.run)
 found = e.loadState(resultFolder + '/latest')
 if found == True:
 	print("[Korali] Continuing execution from previous run...\n")
@@ -37,7 +38,7 @@ if found == True:
 ### Defining Problem Configuration
 e["Problem"]["Type"] = "Reinforcement Learning / Continuous"
 e["Problem"]["Custom Settings"]["Mode"] = "Testing" if args.test else "Training"
-e["Problem"]["Environment Function"] = lambda s : de.environment( s, args.N, args.numactions, args.episodelength, args.ic )
+e["Problem"]["Environment Function"] = lambda s : de.environment( s, args.N, args.numactions, args.episodelength, args.ic, args.seed )
 e["Problem"]["Testing Frequency"] = 100
 e["Problem"]["Policy Testing Episodes"] = 1
 

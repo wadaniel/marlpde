@@ -79,6 +79,7 @@ def environment( s , gridSize, numActions, episodeLength, ic, seed ):
 
         s["State"] = state
     
+        # calculate reward
         reward = rewardFactor*les.getMseReward()
         #spectralDiff = np.mean(np.log(dns.Ek_ktt[les.ioutnum,0:gridSize//2]) - np.log(base.Ek_ktt[les.ioutnum,0:gridSize//2]))
         #reward = -spectralDiff

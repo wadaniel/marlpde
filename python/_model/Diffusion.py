@@ -20,7 +20,7 @@ class Diffusion:
     # u_t = nu*u_xx
     # with periodic BCs on x \in [0, L]: u(0,t) = u(L,t).
 
-    def __init__(self, L=1./(2.*np.pi), N=128, dt=0.25, nu=0.0, nsteps=None, tend=150, u0=None, v0=None, case=None, noisy = False):
+    def __init__(self, L=1./(2.*np.pi), N=128, dt=0.25, nu=0.0, nsteps=None, tend=150, u0=None, v0=None, case=None, noisy=False, seed=42):
         
         # Initialize
         L  = float(L); 
@@ -35,6 +35,7 @@ class Diffusion:
             tend = dt*nsteps
         
         self.noisy = noisy
+        self.seed = seed
 
         # save to self
         self.L      = L
@@ -155,7 +156,7 @@ class Diffusion:
                         # A priori and a posteriori evaluations 
                         # of sub-grid scale models for the Burgers' eq. (Li, Wang, 2016)
                         
-                        phase = 123456789
+                        phase = 123456789 + self.seed
                         a = 1103515245
                         c = 12345
                         m = 2**13
@@ -180,8 +181,8 @@ class Diffusion:
                             if idx > 100:
                                 break
 
-                        assert( criterion < 1.0 )
-                        assert( criterion > 0.4 )
+                        assert( criterion < 0.8 )
+                        assert( criterion > 0.6 )
 
                     else:
                         print("[Diffusion] Error: IC case unknown")
@@ -372,12 +373,11 @@ class Diffusion:
         # compute u_resid
         self.uu_resid = self.uu - self.uu_filt
 
-    def getReward(self):
-        # Convert from spectral to physical space
-        t = [self.t]
-        uMap = self.f_truth(self.x, t)
-        return -np.abs(self.u-uMap)
-
+    def getMseReward(self):
+        uTruthToCoarse = self.mapGroundTruth()
+        uDiffMse = ((uTruthToCoarse[self.ioutnum,:] - self.uu[self.ioutnum,:])**2).mean()
+        return -uDiffMse
+ 
     def getState(self, nAgents = None):
         # Convert from spectral to physical space
         self.fou2real()

@@ -14,12 +14,12 @@ rewardFactor = 10.
 # basis defaults
 basis = 'hat'
 
-def environment( s , gridSize, numActions, episodeLength, ic ):
+def environment( s , gridSize, numActions, episodeLength, ic, seed ):
     
     testing = True if s["Custom Settings"]["Mode"] == "Testing" else False
     noisy = False if testing else True
 
-    dns = Diffusion(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case=ic, noisy=noisy)
+    dns = Diffusion(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case=ic, noisy=noisy, seed=seed)
     dns.simulate()
     dns.fou2real()
     dns.compute_Ek()
@@ -79,12 +79,9 @@ def environment( s , gridSize, numActions, episodeLength, ic ):
 
         s["State"] = state
     
-        idx = les.ioutnum
-        uTruthToCoarse = les.mapGroundTruth()
-        uDiffMse = ((uTruthToCoarse[idx,:] - les.uu[idx,:])**2).mean()
+        # calculate reward
+        reward = rewardFactor*les.getMseReward()
  
-        # calculate reward from energy
-        reward = -rewardFactor*uDiffMse
         cumreward += reward
 
         if (np.isfinite(reward) == False):
