@@ -10,7 +10,7 @@ echo "NUMACT:"              $NUMACT
 echo "NEXP:"                $NUMEXP
 echo "RUN:"					$RUN
 
-RUNPATH=${SCRATCH}/marlpde/$ENV/$IC/$N/$NUMACT/$RUN/
+RUNPATH=${SCRATCH}/marlpde/$ENV/$RUN/$IC/$N/$NUMACT
 mkdir -p $RUNPATH
 
 cd ..

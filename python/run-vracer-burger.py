@@ -9,6 +9,7 @@ parser.add_argument('--width', help='Size of hidden layer', required=False, type
 parser.add_argument('--episodelength', help='Actual length of episode / number of actions', required=False, type=int, default=500)
 parser.add_argument('--ic', help='Initial condition', required=False, type=str, default='box')
 parser.add_argument('--seed', help='Random seed', required=False, type=int, default=42)
+parser.add_argument('--tend', help='Simulation length', required=False, type=int, default=10)
 parser.add_argument('--run', help='Run tag', required=False, type=int, default=0)
 parser.add_argument('--test', action='store_true', help='Run tag', required=False)
 
@@ -83,7 +84,7 @@ e["Solver"]["Reward"]["Rescaling"]["Enabled"] = True
 
 e["Solver"]["Neural Network"]["Engine"] = "OneDNN"
 e["Solver"]['Neural Network']['Optimizer'] = "Adam"
-e["Solver"]["L2 Regularization"]["Enabled"] = True
+e["Solver"]["L2 Regularization"]["Enabled"] = False
 e["Solver"]["L2 Regularization"]["Importance"] = 1.0
 
 e["Solver"]["Neural Network"]["Hidden Layers"][0]["Type"] = "Layer/Linear"
