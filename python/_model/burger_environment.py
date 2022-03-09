@@ -107,8 +107,9 @@ def environment( s , gridSize, numActions, episodeLength, ic, seed ):
     if testing:
 
         fileName = s["Custom Settings"]["Filename"]
+        actionHistory = np.array(actionHistory)
         print("Storing les to file {}".format(fileName))
-        np.savez(fileName, x = les.x, t = les.tt, uu = les.uu, vv = les.vv, L=L, N=gridSize, dt=dt, nu=nu, tEnd=tEnd)
+        np.savez(fileName, x = les.x, t = les.tt, uu = les.uu, vv = les.vv, L=L, N=gridSize, dt=dt, nu=nu, tEnd=tEnd, actions=actionHistory)
          
         print("Running uncontrolled SGS..")
         base = Burger(L=L, N=gridSize, dt=dt, nu=nu, tend=tEnd, noisy=False)
@@ -218,7 +219,6 @@ def environment( s , gridSize, numActions, episodeLength, ic, seed ):
         axs[idx,4].plot(k2, np.abs(dns.Ek_ktt[-1,0:gridSize//2] - les.Ek_ktt[-1,0:gridSize//2]),'--r')
  
         # Plot energy spectrum at start, mid and end of simulation
-        actionHistory = np.array(actionHistory)
         colors = plt.cm.coolwarm(np.linspace(0,1,numActions))
         for i in range(numActions):
             axs[idx,5].plot(timestamps, actionHistory[:,i], color=colors[i])
