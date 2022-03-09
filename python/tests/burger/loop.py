@@ -19,6 +19,7 @@ dt   = 0.001
 tEnd = 5
 nu   = 0.01
 ic   = args.ic
+seed = 42
 
 # action defaults
 basis = 'hat'
@@ -33,7 +34,7 @@ rewardFactor = 1.
 
 # DNS baseline
 print("Setting up DNS..")
-dns = Burger(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case=ic, noisy=False)
+dns = Burger(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case=ic, noisy=True, seed=seed)
 dns.simulate()
 dns.fou2real()
 dns.compute_Ek()
@@ -70,10 +71,10 @@ while step < episodeLength and error == 0:
         error = 1
         break
     
-    #reward = rewardFactor*les.getMseReward()
-    spectralDiff = np.mean((np.log(dns.Ek_ktt[les.ioutnum,0:gridSize//2]) - np.log(les.Ek_ktt[les.ioutnum,0:gridSize//2]))**2)
-    reward = -spectralDiff
-    print(spectralDiff)
+    reward = rewardFactor*les.getMseReward()
+    #spectralDiff = np.mean((np.log(dns.Ek_ktt[les.ioutnum,0:gridSize//2]) - np.log(les.Ek_ktt[les.ioutnum,0:gridSize//2]))**2)
+    #reward = -spectralDiff
+    #print(spectralDiff)
     cumreward += reward
 
     if (np.isnan(reward)):

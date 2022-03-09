@@ -6,6 +6,7 @@ parser.add_argument('--N', help='Discretization / number of grid points', requir
 parser.add_argument('--numactions', help='Number of actions', required=False, type=int, default=1)
 parser.add_argument('--numexp', help='Number of experiences', required=False, type=int, default=5e5)
 parser.add_argument('--width', help='Size of hidden layer', required=False, type=int, default=256)
+parser.add_argument('--iex', help='Initial exploration', required=False, type=float, default=0.1)
 parser.add_argument('--episodelength', help='Actual length of episode / number of actions', required=False, type=int, default=500)
 parser.add_argument('--ic', help='Initial condition', required=False, type=str, default='box')
 parser.add_argument('--seed', help='Random seed', required=False, type=int, default=42)
@@ -65,7 +66,7 @@ for i in range(args.numactions):
     e["Variables"][nState+i]["Type"] = "Action"
     e["Variables"][nState+i]["Lower Bound"] = -1.
     e["Variables"][nState+i]["Upper Bound"] = +1.
-    e["Variables"][nState+i]["Initial Exploration Noise"] = 0.01
+    e["Variables"][nState+i]["Initial Exploration Noise"] = args.iex
 
 ### Setting Experience Replay and REFER settings
 
@@ -110,7 +111,7 @@ e["File Output"]["Frequency"] = 500
 e["File Output"]["Path"] = resultFolder
 
 if args.test:
-    fileName = 'test_diffusion_{}_{}_{}_{}_{}'.format(args.ic, args.N, args.numactions, args.episodelength, args.run)
+    fileName = 'test_diffusion_{}_{}_{}_{}_{}'.format(args.ic, args.N, args.numactions, args.seed, args.run)
     e["Solver"]["Testing"]["Sample Ids"] = [0]
     e["Problem"]["Custom Settings"]["Filename"] = fileName
 
