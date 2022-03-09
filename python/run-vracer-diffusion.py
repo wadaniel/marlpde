@@ -111,7 +111,7 @@ e["File Output"]["Frequency"] = 500
 e["File Output"]["Path"] = resultFolder
 
 if args.test:
-    fileName = 'test_diffusion_{}_{}_{}_{}_{}'.format(args.ic, args.N, args.numactions, args.episodelength, args.run)
+    fileName = 'test_diffusion_{}_{}_{}_{}_{}'.format(args.ic, args.N, args.numactions, args.seed, args.run)
     e["Solver"]["Testing"]["Sample Ids"] = [0]
     e["Problem"]["Custom Settings"]["Filename"] = fileName
 
