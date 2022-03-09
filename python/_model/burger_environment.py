@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 # dns defaults
 N    = 512
 L    = 2*np.pi
-dt   = 0.002
+dt   = 0.001
 tEnd = 5
 nu   = 0.01
 
