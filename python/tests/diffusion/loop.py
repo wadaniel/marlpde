@@ -8,6 +8,7 @@ from Diffusion import *
 parser = argparse.ArgumentParser()
 parser.add_argument('--N', help='Discretization / number of grid points', required=False, type=int, default=32)
 parser.add_argument('--ic', help='Initial condition', required=False, type=str, default='box')
+parser.add_argument('--seed', help='Random seed', required=False, type=int, default=42)
 parser.add_argument('--episodelength', help='Actual length of episode / number of actions', required=False, type=int, default=500)
 
 args = parser.parse_args()
@@ -15,10 +16,11 @@ args = parser.parse_args()
 # dns defaults
 N    = 512
 L    = 2*np.pi
-dt   = 0.001
+dt   = 0.01
 tEnd = 10
 nu   = 0.01
 ic   = args.ic
+seed = args.seed
 
 # action defaults
 basis = 'hat'
@@ -29,11 +31,11 @@ gridSize = args.N
 episodeLength = args.episodelength
 
 # reward defaults
-rewardFactor = 10.
+rewardFactor = 1.
 
 # DNS baseline
 print("Setting up DNS..")
-dns = Diffusion(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case=ic, noisy=False)
+dns = Diffusion(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case=ic, noisy=True, seed=seed)
 dns.simulate()
 dns.fou2real()
 dns.compute_Ek()

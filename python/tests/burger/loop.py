@@ -8,6 +8,7 @@ from Burger import *
 parser = argparse.ArgumentParser()
 parser.add_argument('--N', help='Discretization / number of grid points', required=False, type=int, default=32)
 parser.add_argument('--ic', help='Initial condition', required=False, type=str, default='box')
+parser.add_argument('--seed', help='Random seed', required=False, type=int, default=42)
 parser.add_argument('--episodelength', help='Actual length of episode / number of actions', required=False, type=int, default=500)
 
 args = parser.parse_args()
@@ -19,7 +20,7 @@ dt   = 0.001
 tEnd = 5
 nu   = 0.01
 ic   = args.ic
-seed = 42
+seed = args.seed
 
 # action defaults
 basis = 'hat'
