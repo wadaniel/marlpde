@@ -20,7 +20,7 @@ class Burger:
     # u_t + u*u_x = nu*u_xx0
     # with periodic BCs on x \in [0, L]: u(0,t) = u(L,t).
 
-    def __init__(self, L=1./(2.*np.pi), N=128, dt=0.25, nu=0.0, nsteps=None, tend=150, u0=None, v0=None, case=None, noisy = False):
+    def __init__(self, L=1./(2.*np.pi), N=128, dt=0.25, nu=0.0, nsteps=None, tend=150, u0=None, v0=None, case=None, noisy = False, seed = 42):
         
         # Initialize
         L  = float(L); 
@@ -35,6 +35,7 @@ class Burger:
             tend = dt*nsteps
         
         self.noisy = noisy
+        self.seed = seed
 
         # save to self
         self.L      = L
@@ -149,7 +150,7 @@ class Burger:
         
         np.testing.assert_allclose(np.sum(self.basis, axis=0), 1)
 
-    def IC(self, u0=None, v0=None, case='box', seed=42):
+    def IC(self, u0=None, v0=None, case='box'):
         
         # Set initial condition
         if (v0 is None):
@@ -178,7 +179,7 @@ class Burger:
                         # A priori and a posteriori evaluations 
                         # of sub-grid scale models for the Burgers' eq. (Li, Wang, 2016)
                         
-                        phase = 123456789
+                        phase = 123456789 + self.seed
                         a = 1103515245
                         c = 12345
                         m = 2**13
@@ -186,7 +187,7 @@ class Burger:
                         A = 1
                         u0 = np.ones(self.N)
                         for k in range(1, self.N):
-                            phase = (a * phase + c) % m + offset
+                            phase = (a * phase + c) % m #+ offset (TODO: not yet learning)
                             Ek = A*5**(-5/3) if k <= 5 else A*k**(-5/3) 
                             u0 += np.sqrt(2*Ek)*np.sin(k*2*np.pi*self.x/self.L+phase)
 
@@ -203,8 +204,8 @@ class Burger:
                             if idx > 100:
                                 break
 
-                        assert( criterion < 1.0 )
-                        assert( criterion > 0.4 )
+                        assert( criterion < 0.8 )
+                        assert( criterion > 0.6 )
 
                     else:
                         print("[Burger] Error: IC case unknown")
@@ -418,7 +419,7 @@ class Burger:
         self.uu_resid = self.uu - self.uu_filt
 
     def getMseReward(self):
-        uTruthToCoarse = les.mapGroundTruth()
+        uTruthToCoarse = self.mapGroundTruth()
         uDiffMse = ((uTruthToCoarse[self.ioutnum,:] - self.uu[self.ioutnum,:])**2).mean()
         return -uDiffMse
      

@@ -14,12 +14,12 @@ rewardFactor = 1.
 # basis defaults
 basis = 'hat'
 
-def environment( s , gridSize, numActions, episodeLength, ic ):
+def environment( s , gridSize, numActions, episodeLength, ic, seed ):
  
     testing = True if s["Custom Settings"]["Mode"] == "Testing" else False
     noisy = False if testing else True
     
-    dns = Burger(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case=ic, noisy=noisy)
+    dns = Burger(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case=ic, noisy=noisy, seed=seed)
     dns.simulate()
     dns.fou2real()
     dns.compute_Ek()
