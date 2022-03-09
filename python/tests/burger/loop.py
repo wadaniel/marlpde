@@ -30,8 +30,12 @@ numActions = 1
 gridSize = args.N
 episodeLength = args.episodelength
 
+# reward structure
+spectralReward = True
+
 # reward defaults
-rewardFactor = 1.
+rewardFactor = 0.001 if spectralReward else 1.
+
 
 # DNS baseline
 print("Setting up DNS..")
@@ -49,7 +53,14 @@ print("Done!")
 
 # Initialize LES
 les = Burger(L=L, N=gridSize, dt=dt, nu=nu, tend=tEnd, noisy=False)
-les.IC( u0 = f_restart(les.x) )
+
+# Initialize LES
+les = Burger(L=L, N=gridSize, dt=dt, nu=nu, tend=tEnd, noisy=False)
+if spectralReward:
+    les.IC( v0 = dns.v0[:gridSize] * gridSize / N )
+else:
+    les.IC( u0 = f_restart(les.x) )
+
 les.setup_basis(numActions, basis)
 les.setGroundTruth(dns.tt, dns.x, dns.uu)
 
@@ -72,12 +83,17 @@ while step < episodeLength and error == 0:
         error = 1
         break
     
-    reward = rewardFactor*les.getMseReward()
-    #spectralDiff = np.mean((np.log(dns.Ek_ktt[les.ioutnum,0:gridSize//2]) - np.log(les.Ek_ktt[les.ioutnum,0:gridSize//2]))**2)
-    #reward = -spectralDiff
-    #print(spectralDiff)
-    cumreward += reward
+    # calculate reward
+    if spectralReward:
+        # Time-averaged energy spectrum as a function of wavenumber
+        #kMseErr = np.mean((dns.Ek_ktt[les.ioutnum,:gridSize] - les.Ek_ktt[les.ioutnum,:gridSize])**2)
+        kMseLogErr = np.mean((np.log(dns.Ek_ktt[les.ioutnum,:gridSize]) - np.log(les.Ek_ktt[les.ioutnum,:gridSize]))**2)
+        reward = -rewardFactor*kMseLogErr
 
+    else:
+        reward = rewardFactor*les.getMseReward()
+
+    cumreward += reward
     if (np.isnan(reward)):
         print("Nan reward detected")
         error = 1
