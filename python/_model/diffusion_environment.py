@@ -9,7 +9,7 @@ tEnd = 10
 nu   = 0.01
 
 # reward defaults
-rewardFactor = 10.
+rewardFactor = 1.
 
 # basis defaults
 basis = 'hat'
