@@ -6,10 +6,10 @@ parser.add_argument('--N', help='Discretization / number of grid points', requir
 parser.add_argument('--numactions', help='Number of actions', required=False, type=int, default=1)
 parser.add_argument('--numexp', help='Number of experiences', required=False, type=int, default=5e5)
 parser.add_argument('--width', help='Size of hidden layer', required=False, type=int, default=256)
-parser.add_argument('--iex', help='Initial exploration', required=False, type=float, default=0.1)
+parser.add_argument('--iex', help='Initial exploration', required=False, type=float, default=0.01)
 parser.add_argument('--episodelength', help='Actual length of episode / number of actions', required=False, type=int, default=500)
 parser.add_argument('--noise', help='Standard deviation of IC', required=False, type=float, default=0.)
-parser.add_argument('--ic', help='Initial condition', required=False, type=str, default='box')
+parser.add_argument('--ic', help='Initial condition', required=False, type=str, default='turbulence')
 parser.add_argument('--seed', help='Random seed', required=False, type=int, default=42)
 parser.add_argument('--tend', help='Simulation length', required=False, type=int, default=10)
 parser.add_argument('--run', help='Run tag', required=False, type=int, default=0)
@@ -49,7 +49,7 @@ e["Problem"]["Policy Testing Episodes"] = 20
 e["Solver"]["Type"] = "Agent / Continuous / VRACER"
 e["Solver"]["Mode"] = "Testing" if args.test else "Training"
 e["Solver"]["Episodes Per Generation"] = 10
-e["Solver"]["Experiences Between Policy Updates"] = 1
+e["Solver"]["Experiences Between Policy Updates"] = 0.5
 e["Solver"]["Learning Rate"] = 0.0001
 e["Solver"]["Discount Factor"] = 1.
 e["Solver"]["Mini Batch"]["Size"] = 256

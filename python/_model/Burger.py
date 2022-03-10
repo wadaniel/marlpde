@@ -173,9 +173,9 @@ class Burger:
                         A = 1
                         u0 = np.ones(self.N)
                         for k in range(1, self.N):
-                            offset = np.random.normal(loc=0., scale=self.noise) if self.noise > 0 else 0.
-                            #offset = np.random.uniform(low=0., high=2*np.pi) if self.noise > 0 else 0.
-                            phase = (a * phase + c) % m #+ offset (TODO: not yet learning)
+                            #offset = np.random.normal(loc=0., scale=self.noise) if self.noise > 0 else 0.
+                            offset = np.random.uniform(low=0., high=2*np.pi) if self.noise > 0 else 0.
+                            phase = (a * phase + c) % m 
                             Ek = A*5**(-5/3) if k <= 5 else A*k**(-5/3) 
                             u0 += np.sqrt(2*Ek)*np.sin(k*2*np.pi*self.x/self.L+phase + offset)
 
@@ -266,7 +266,7 @@ class Burger:
             um = np.roll(u,-1)
             d2udx2 = (up - 2.*u + um)/self.dx**2
 
-            Fforcing = fft( forcing*d2udx2/10 )
+            Fforcing = fft( forcing*d2udx2 )
 
             self.v = self.v - self.dt*0.5*self.k1*fft(self.u**2) + self.dt*self.nu*self.k2*self.v + self.dt*Fforcing 
         
@@ -321,10 +321,10 @@ class Burger:
             self.tt.resize(self.nout+1)          # nout+1 because the IC is in [0]
             return -1
 
-    def fou2real(self):
+    #def fou2real(self):
         # Convert from spectral to physical space
         #self.uut = self.stepnum
-        self.uu = np.real(ifft(self.vv))
+        #self.uu = np.real(ifft(self.vv))
 
     def compute_Ek(self):
         #
@@ -400,16 +400,23 @@ class Burger:
      
     def getState(self, nAgents = None):
         # Convert from spectral to physical space
-        self.fou2real()
+        #self.fou2real()
 
         # Extract state
         u = self.uu[self.ioutnum,:]
+        
         #dudu = np.zeros(self.N)
         #dudu[:-1] = (u[1:]-u[:-1])/self.dx
         #dudu[-1] = dudu[-2]
         #dudt = (self.uu[self.ioutnum,:]-self.uu[self.ioutnum-1,:])/self.dt
         #state = np.column_stack( (u, dudu, dudt) )
         #state = np.column_stack( (u, dudt) )
-        state = u
+        #state = u
+             
+        up = np.roll(u,1)
+        um = np.roll(u,-1)
+        d2udx2 = (up - 2.*u + um)/self.dx**2
         
+        state = d2udx2
+       
         return state

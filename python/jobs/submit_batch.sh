@@ -1,38 +1,23 @@
 # Test
 
-export RUN=10
 export NUMEXP=1000000
-export NN=256
+export NN=512
+export IEX=0.01
+export NOISE=1.0
+export NUMACT=32
+export IC='turbulence'
+export N=64
 
 
-for env in burger diffusion
+for env in burger
 do 
-    for seed in {0..10}
-    do
-        for a in 32
-        do
-            export ENV=$env
-            export IC='turbulence'
-            export N=64
-            export NUMACT=$a
-            export SEED=$seed
-
-            ./sbatch-vracer.sh
-        done
-    done
-done
-
-exit
-
-for env in advection
-do 
-    for a in 32
+    for run in {0..2}
     do
         export ENV=$env
-        export IC='sinus'
-        export N=64
-        export NUMACT=$a
-        
+        export RUN=$run
+        export SEED=$run
+
         ./sbatch-vracer.sh
+        ./sbatch-coupled-vracer.sh
     done
 done

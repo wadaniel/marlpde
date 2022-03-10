@@ -23,7 +23,7 @@ def environment( s , gridSize, numActions, episodeLength, ic, noise, seed ):
     
     dns = Burger(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case=ic, noise=noise, seed=seed)
     dns.simulate()
-    dns.fou2real()
+    #dns.fou2real()
     dns.compute_Ek()
 
     ## create interpolated IC
@@ -142,7 +142,7 @@ def environment( s , gridSize, numActions, episodeLength, ic, noise, seed ):
         base = Burger(L=L, N=gridSize, dt=dt, nu=nu, tend=tEnd, noise=0.)
         base.IC(u0 = f_restart(base.x))
         base.simulate()
-        base.fou2real()
+        #base.fou2real()
         base.compute_Ek()
        
         k1 = dns.k[:N//2]

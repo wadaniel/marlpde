@@ -14,7 +14,7 @@ echo "NOISE:"               $NOISE
 echo "SEED:"                $SEED
 echo "RUN:"					$RUN
 
-RUNPATH=${SCRATCH}/marlpde/$ENV/$RUN/$IC
+RUNPATH=${SCRATCH}/marlpde_coupled/$ENV/$RUN/$IC
 mkdir -p $RUNPATH
 
 cd ..
@@ -39,12 +39,12 @@ cat > run.sbatch <<EOF
 #SBATCH --account=s929
 
 export OMP_NUM_THREADS=\$SLURM_CPUS_PER_TASK
-python3 run-vracer-${ENV}.py --N $N --numactions $NUMACT --numexp $NUMEXP --width $NN --ic $IC --iex $IEX --noise $NOISE --seed $SEED --run $RUN
+python3 run-vracer-coupled-${ENV}.py --N $N --numactions $NUMACT --numexp $NUMEXP --width $NN --ic $IC --iex $IEX --noise $NOISE --seed $SEED --run $RUN
 
 resdir=\$(ls -d _result*)
 python3 -m korali.rlview --dir \$resdir --out vracer.png
 
-python3 run-vracer-${ENV}.py --N $N --numactions $NUMACT --numexp $NUMEXP --width $NN --ic $IC --iex $IEX --noise $NOISE --seed $SEED --run $RUN --test
+python3 run-vracer-coupled-${ENV}.py --N $N --numactions $NUMACT --numexp $NUMEXP --width $NN --ic $IC --iex $IEX --noise $NOISE --seed $SEED --run $RUN --test
 
 EOF
 
