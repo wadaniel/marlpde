@@ -37,7 +37,7 @@ nt   = int(tEnd/dt)
 ic   = 'turbulence'
 seed = 31
 
-dns = Burger(L=L, N=N1, dt=dt, nu=nu, tend=tEnd, case=ic, seed=seed, noisy=False)
+dns = Burger(L=L, N=N1, dt=dt, nu=nu, tend=tEnd, case=ic, seed=seed, noise=0.)
 
 #------------------------------------------------------------------------------
 print("Simulate DNS")

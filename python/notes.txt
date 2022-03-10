@@ -5,4 +5,5 @@
 # Run 11: logenergy reward, no noise
 # Run 12: energy reward, no noise
 # Run 13: d2udx2 multiplier in action (coupled burger name wrong)
-# Run 0:  the real coupled burger, no noise, does it learn?
+# Run 14:  coupled burger, no noise, it learns (deleted, state change)
+# Run 14:  coupled burger, noise 0.1

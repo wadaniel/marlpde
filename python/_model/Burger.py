@@ -42,6 +42,7 @@ class Burger:
         self.L      = L
         self.N      = N
         self.dx     = L/N
+        #self.x      = np.linspace(-0.5*self.L, +0.5*self.L, N, endpoint=False)
         self.x      = np.linspace(0, self.L, N, endpoint=False)
         self.dt     = dt
         self.nu     = nu
@@ -173,6 +174,7 @@ class Burger:
                         u0 = np.ones(self.N)
                         for k in range(1, self.N):
                             offset = np.random.normal(loc=0., scale=self.noise) if self.noise > 0 else 0.
+                            #offset = np.random.uniform(low=0., high=2*np.pi) if self.noise > 0 else 0.
                             phase = (a * phase + c) % m #+ offset (TODO: not yet learning)
                             Ek = A*5**(-5/3) if k <= 5 else A*k**(-5/3) 
                             u0 += np.sqrt(2*Ek)*np.sin(k*2*np.pi*self.x/self.L+phase + offset)
