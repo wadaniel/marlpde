@@ -20,8 +20,12 @@ class Burger:
     # u_t + u*u_x = nu*u_xx0
     # with periodic BCs on x \in [0, L]: u(0,t) = u(L,t).
 
-    def __init__(self, L=1./(2.*np.pi), N=128, dt=0.25, nu=0.0, nsteps=None, tend=150, u0=None, v0=None, case=None, noisy=False, seed=42):
+    def __init__(self, L=2.*np.pi, N=512, dt=0.001, nu=0.0, nsteps=None, tend=150, u0=None, v0=None, case=None, noise=0., seed=42):
         
+        # Randomness
+        self.noise = noise*L
+        self.seed = seed
+       
         # Initialize
         L  = float(L); 
         dt = float(dt); 
@@ -34,9 +38,6 @@ class Burger:
             # override tend
             tend = dt*nsteps
         
-        self.noisy = noisy
-        self.seed = seed
-
         # save to self
         self.L      = L
         self.N      = N
@@ -79,9 +80,6 @@ class Burger:
         # precompute Fourier-related quantities
         self.__setup_fourier()
         
-        # precompute ETDRK4 scalar quantities:
-        self.__setup_etdrk4()
-
     def __setup_timeseries(self, nout=None):
         if (nout != None):
             self.nout = int(nout)
@@ -112,19 +110,6 @@ class Burger:
                      +      coeffs[3]*1j*self.k**3          \
                      - (1 + coeffs[4])  *self.k**4
 
-
-    def __setup_etdrk4(self):
-        self.E  = np.exp(self.dt*self.l)
-        self.E2 = np.exp(self.dt*self.l/2.)
-        self.M  = 62                                           # no. of points for complex means
-        self.r  = np.exp(1j*np.pi*(np.r_[1:self.M+1]-0.5)/self.M) # roots of unity
-        self.LR = self.dt*np.repeat(self.l[:,np.newaxis], self.M, axis=1) + np.repeat(self.r[np.newaxis,:], self.N, axis=0)
-        self.Q  = self.dt*np.real(np.mean((np.exp(self.LR/2.) - 1.)/self.LR, 1))
-        self.f1 = self.dt*np.real( np.mean( (-4. -    self.LR              + np.exp(self.LR)*( 4. - 3.*self.LR + self.LR**2) )/(self.LR**3) , 1) )
-        self.f2 = self.dt*np.real( np.mean( ( 2. +    self.LR              + np.exp(self.LR)*(-2. +    self.LR             ) )/(self.LR**3) , 1) )
-        self.f3 = self.dt*np.real( np.mean( (-4. - 3.*self.LR - self.LR**2 + np.exp(self.LR)*( 4. -    self.LR             ) )/(self.LR**3) , 1) )
-        self.g  = -0.5j*self.k
- 
     def setup_basis(self, M, kind = 'uniform'):
         self.M = M
         if M > 1:
@@ -156,7 +141,7 @@ class Burger:
         if (v0 is None):
             if (u0 is None):
                     
-                    offset = np.random.normal(loc=0., scale=self.dx) if self.noisy else 0.
+                    offset = np.random.normal(loc=0., scale=self.noise) if self.noise > 0 else 0.
                     
                     # Gaussian initialization
                     if case == 'gaussian':
@@ -187,9 +172,10 @@ class Burger:
                         A = 1
                         u0 = np.ones(self.N)
                         for k in range(1, self.N):
+                            offset = np.random.normal(loc=0., scale=self.noise) if self.noise > 0 else 0.
                             phase = (a * phase + c) % m #+ offset (TODO: not yet learning)
                             Ek = A*5**(-5/3) if k <= 5 else A*k**(-5/3) 
-                            u0 += np.sqrt(2*Ek)*np.sin(k*2*np.pi*self.x/self.L+phase)
+                            u0 += np.sqrt(2*Ek)*np.sin(k*2*np.pi*self.x/self.L+phase + offset)
 
                         # rescale IC
                         idx = 0
@@ -272,33 +258,21 @@ class Burger:
             assert len(actions) == self.M, print("[Burger] Wrong number of actions (provided {}/{}".format(len(actions), self.M))
             forcing = np.matmul(actions, self.basis)
 
-            Fforcing = fft( forcing )
+            u = self.uu[self.ioutnum,:]
 
-        self.v = self.v - self.dt*0.5*self.k1*fft(self.u**2) + self.dt*self.nu*self.k2*self.v + self.dt*Fforcing 
+            up = np.roll(u,1)
+            um = np.roll(u,-1)
+            d2udx2 = (up - 2.*u + um)/self.dx**2
+
+            Fforcing = fft( forcing*d2udx2/10 )
+
+            self.v = self.v - self.dt*0.5*self.k1*fft(self.u**2) + self.dt*self.nu*self.k2*self.v + self.dt*Fforcing 
         
+        else:
+            self.v = self.v - self.dt*0.5*self.k1*fft(self.u**2) + self.dt*self.nu*self.k2*self.v
+
         # Impl-expl step (TODO)
         #self.v = (self.v - self.dt*0.5*self.k1*fft(self.u**2) + self.dt*Fforcing) / (1. - self.dt*self.nu*self.k2*self.v)
-        
-        """
-        #
-        # Computation is based on v = fft(u), so linear term is diagonal.
-        # The time-discretization is done via ETDRK4
-        # (exponential time differencing - 4th order Runge Kutta)
-        #
-        v = self.v;                           
-        Nv = self.g*fft(np.real(ifft(v))**2)
-        a = self.E2*v + self.Q*Nv;            
-        Na = self.g*fft(np.real(ifft(a))**2)
-        b = self.E2*v + self.Q*Na;            
-        Nb = self.g*fft(np.real(ifft(b))**2)
-        c = self.E2*a + self.Q*(2.*Nb - Nv);  
-        Nc = self.g*fft(np.real(ifft(c))**2)
-        
-        if (actions is not None):
-            self.v = self.E*v + (Nv + Fforcing)*self.f1 + 2.*(Na + Nb + 2*Fforcing)*self.f2 + (Nc + Fforcing)*self.f3
-        else:
-            self.v = self.E*v + Nv*self.f1 + 2.*(Na + Nb)*self.f2 + Nc*self.f3
-        """
         
         self.u = np.real(ifft(self.v))
         
@@ -309,7 +283,6 @@ class Burger:
         self.uu[self.ioutnum,:] = self.u
         self.vv[self.ioutnum,:] = self.v
         self.tt[self.ioutnum]   = self.t
-        
 
     def simulate(self, nsteps=None, restart=False, correction=[]):
         #
