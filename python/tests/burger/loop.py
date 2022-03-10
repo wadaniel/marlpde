@@ -34,7 +34,8 @@ episodeLength = args.episodelength
 spectralReward = True
 
 # reward defaults
-rewardFactor = 0.001 if spectralReward else 1.
+#rewardFactor = 0.001 if spectralReward else 1.
+rewardFactor = 100 if spectralReward else 1.
 
 
 # DNS baseline
@@ -86,9 +87,9 @@ while step < episodeLength and error == 0:
     # calculate reward
     if spectralReward:
         # Time-averaged energy spectrum as a function of wavenumber
-        #kMseErr = np.mean((dns.Ek_ktt[les.ioutnum,:gridSize] - les.Ek_ktt[les.ioutnum,:gridSize])**2)
-        kMseLogErr = np.mean((np.log(dns.Ek_ktt[les.ioutnum,:gridSize]) - np.log(les.Ek_ktt[les.ioutnum,:gridSize]))**2)
-        reward = -rewardFactor*kMseLogErr
+        kMseErr = np.mean((dns.Ek_ktt[les.ioutnum,:gridSize] - les.Ek_ktt[les.ioutnum,:gridSize])**2)
+        #kMseErr = np.mean((np.log(dns.Ek_ktt[les.ioutnum,:gridSize]) - np.log(les.Ek_ktt[les.ioutnum,:gridSize]))**2)
+        reward = -rewardFactor*kMseErr
 
     else:
         reward = rewardFactor*les.getMseReward()

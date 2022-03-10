@@ -9,8 +9,8 @@ start, mid and end of the simulation.
 import math
 
 # Discretization grid
-N1 = 512
-N2 = 64
+N1 = 1024
+N2 = 512
 
 import matplotlib
 matplotlib.use('Agg')
@@ -30,12 +30,12 @@ from Burger import *
 ## set parameters and initialize simulation
 L    = 2*np.pi
 #dt   = 0.001
-dt   = 0.001
-tEnd = 5
+dt   = 0.0001
+tEnd = 10
 nu   = 0.01
 nt   = int(tEnd/dt)
 ic   = 'turbulence'
-seed = 42
+seed = 31
 
 dns = Burger(L=L, N=N1, dt=dt, nu=nu, tend=tEnd, case=ic, seed=seed, noisy=False)
 
@@ -56,8 +56,8 @@ print("Simulate SGS")
 ## simulate SGS from IC
 sgs = Burger(L=L, N=N2, dt=dt, nu=nu, tend=tEnd)
 u0 = f_IC(sgs.x)
-#sgs.IC(u0 = u0)
-sgs.IC(v0 = dns.v0[:N2]*N2/N1)
+sgs.IC(u0 = u0)
+#sgs.IC(v0 = dns.v0[:N2]*N2/N1)
 sgs.setGroundTruth(dns.tt, dns.x, dns.uu)
 
 sgs.simulate()
@@ -142,6 +142,6 @@ for i in range(16):
     l = i % 4
     
     axs[k,l].plot(dns.x, dns.uu[tidx,:], '--k')
-    axs[k,l].plot(sgs.x, sgs.uu[tidx,:], '-r')
+    axs[k,l].plot(sgs.x, sgs.uu[tidx,:], 'steelblue')
 
 fig2.savefig(figName2)

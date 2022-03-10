@@ -8,17 +8,20 @@ dt   = 0.001
 tEnd = 5
 nu   = 0.01
 
+# reward structure
+spectralReward = True
+
 # reward defaults
-rewardFactor = 1.
+rewardFactor = 0.001 if spectralReward else 1.
 
 # basis defaults
 basis = 'hat'
 
-def fBurger( s , gridSize, episodeLength, ic ):
+def fBurger( s , gridSize, episodeLength, ic, seed):
  
-    noisy = True
+    noisy = False
     
-    dns = Burger(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case=ic, noisy=noisy)
+    dns = Burger(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case=ic, noisy=noisy, seed=seed)
     dns.simulate()
     dns.fou2real()
     dns.compute_Ek()
@@ -64,6 +67,8 @@ def fBurger( s , gridSize, episodeLength, ic ):
                 sgs = -cs*cs*dx2*(dudxx*dudx+dudx*dudxx)*absolute
                 les.step(-sgs)
 
+            les.compute_Ek()
+        
         except Exception as e:
             print("Exception occured:")
             print(str(e))
@@ -78,12 +83,16 @@ def fBurger( s , gridSize, episodeLength, ic ):
             break
         else:
             state = newstate
-
-        idx = les.ioutnum
-        uTruthToCoarse = les.mapGroundTruth()
-        uDiffMse = ((uTruthToCoarse[idx,:] - les.uu[idx,:])**2).mean()
  
-        reward = -rewardFactor*uDiffMse
+        if spectralReward:
+            # Time-averaged energy spectrum as a function of wavenumber
+            #kMseErr = np.mean((dns.Ek_ktt[les.ioutnum,:gridSize] - les.Ek_ktt[les.ioutnum,:gridSize])**2)
+            kMseLogErr = np.mean((np.log(dns.Ek_ktt[les.ioutnum,:gridSize]) - np.log(les.Ek_ktt[les.ioutnum,:gridSize]))**2)
+            reward = -rewardFactor*kMseLogErr + 3.5/500
+ 
+        else:
+            reward = rewardFactor*les.getMseReward()
+ 
         cumreward += reward
 
         if (np.isfinite(reward) == False):
