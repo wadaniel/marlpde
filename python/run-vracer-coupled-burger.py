@@ -21,7 +21,7 @@ args = parser.parse_args()
 
 import sys
 sys.path.append('_model')
-import burger_environment as be
+import coupled_burger_environment as be
 
 
 ### Defining Korali Problem
@@ -32,7 +32,7 @@ e = korali.Experiment()
 
 ### Defining results folder and loading previous results, if any
 
-resultFolder = '_result_burger_{}_{}_{}_{}_{}_{}/'.format(args.ic, args.N, args.numactions, args.noise, args.seed, args.run)
+resultFolder = '_result_coupled_burger_{}_{}_{}_{}_{}_{}/'.format(args.ic, args.N, args.numactions, args.noise, args.seed, args.run)
 found = e.loadState(resultFolder + '/latest')
 if found == True:
 	print("[Korali] Continuing execution from previous run...\n")
@@ -42,7 +42,7 @@ e["Problem"]["Type"] = "Reinforcement Learning / Continuous"
 e["Problem"]["Custom Settings"]["Mode"] = "Testing" if args.test else "Training"
 e["Problem"]["Environment Function"] = lambda s : be.environment( s, args.N, args.numactions, args.episodelength, args.ic, args.noise, args.seed )
 e["Problem"]["Testing Frequency"] = 100
-e["Problem"]["Policy Testing Episodes"] = 20
+e["Problem"]["Policy Testing Episodes"] = 1
 
 ### Defining Agent Configuration 
 
@@ -112,7 +112,7 @@ e["File Output"]["Frequency"] = 500
 e["File Output"]["Path"] = resultFolder
 
 if args.test:
-    fileName = 'test_burger_{}_{}_{}_{}_{}'.format(args.ic, args.N, args.numactions, args.seed, args.run)
+    fileName = 'test_coupled_burger_{}_{}_{}_{}_{}'.format(args.ic, args.N, args.numactions, args.seed, args.run)
     e["Solver"]["Testing"]["Sample Ids"] = [0]
     e["Problem"]["Custom Settings"]["Filename"] = fileName
 

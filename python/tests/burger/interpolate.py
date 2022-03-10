@@ -9,10 +9,10 @@ Burgers of fine grid interpolated on coarse grid vs Burgers on coarse grid.
 """
 
 # Discretization fine grid (DNS)
-N1 = 512
+N1 = 1024
 
 # Discretization coarse grid
-N2 = 32
+N2 = 512
 
 import matplotlib
 matplotlib.use('Agg')
@@ -29,12 +29,13 @@ from Burger import *
 #------------------------------------------------------------------------------
 ## set parameters and initialize simulation
 L    = 2*np.pi
-dt   = 0.001
-tEnd = 10
+dt   = 0.0001
+tEnd = 5
 nu   = 0.01
-ic   = 'box'
-dns = Burger(L=L, N=N1, dt=dt, nu=nu, tend=tEnd)
-dns.IC(case=ic)
+ic   = 'turbulence'
+seed = 31
+
+dns = Burger(L=L, N=N1, dt=dt, nu=nu, tend=tEnd, case=ic, seed=seed)
 
 print("simulate dns..")
 ## simulate

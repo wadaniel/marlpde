@@ -9,8 +9,8 @@ start, mid and end of the simulation.
 import math
 
 # Discretization grid
-N1 = 512
-N2 = 64
+N1 = 1024
+N2 = 512
 
 import matplotlib
 matplotlib.use('Agg')
@@ -29,13 +29,15 @@ from Burger import *
 #------------------------------------------------------------------------------
 ## set parameters and initialize simulation
 L    = 2*np.pi
-dt   = 0.00001
-tEnd = 5
+#dt   = 0.001
+dt   = 0.0001
+tEnd = 10
 nu   = 0.01
 nt   = int(tEnd/dt)
+ic   = 'turbulence'
+seed = 31
 
-dns = Burger(L=L, N=N1, dt=dt, nu=nu, tend=tEnd)
-dns.IC(case='turbulence')
+dns = Burger(L=L, N=N1, dt=dt, nu=nu, tend=tEnd, case=ic, seed=seed, noise=0.)
 
 #------------------------------------------------------------------------------
 print("Simulate DNS")
@@ -55,7 +57,7 @@ print("Simulate SGS")
 sgs = Burger(L=L, N=N2, dt=dt, nu=nu, tend=tEnd)
 u0 = f_IC(sgs.x)
 sgs.IC(u0 = u0)
-#sgs.IC(v0 = dns.v0[:N2])
+#sgs.IC(v0 = dns.v0[:N2]*N2/N1)
 sgs.setGroundTruth(dns.tt, dns.x, dns.uu)
 
 sgs.simulate()
@@ -71,7 +73,7 @@ sgs.compute_Ek()
 errEk_t = np.abs(dns.Ek_t - sgs.Ek_t)
 # time-cumulative energy average error as a function of time
 errEk_tt = np.abs(dns.Ek_tt - sgs.Ek_tt)
-# Time-averaged energy spectrum as a function of wavenumber
+# Time-averaged cum energy spectrum as a function of wavenumber
 errEk_ktt = ((dns.Ek_ktt[:, :N2] - sgs.Ek_ktt[:, :N2])**2).mean(axis=1)
 
 # eval truth on coarse grid
@@ -80,17 +82,13 @@ errU_t = ((sgs.uu - uTruthCoarse)**2).mean(axis=1)
 
 #------------------------------------------------------------------------------
 ## plot result
-print("plot energy")
 k1 = dns.k[:N1//2]
 
-time = np.arange(tEnd/dt+1)*dt
-s, n = np.meshgrid(2*np.pi*L/N1*(np.array(range(N1))+1), time)
-
 fig, axs = plt.subplots(2,3, sharex='col', sharey='col')
-c0 = axs[0,0].contourf(s, n, dns.uu, 50)
+c0 = axs[0,0].contourf(dns.x, dns.tt, dns.uu, 50)
 
-axs[0,1].plot(time, dns.Ek_t)
-axs[0,1].plot(time, dns.Ek_tt)
+axs[0,1].plot(dns.tt, dns.Ek_t)
+axs[0,1].plot(dns.tt, dns.Ek_tt)
 
 axs[0,2].plot(k1, np.abs(dns.Ek_ktt[0,0:N1//2]),'b--')
 axs[0,2].plot(k1, np.abs(dns.Ek_ktt[nt//2,0:N1//2]),'b:')
@@ -99,12 +97,11 @@ axs[0,2].set_xscale('log')
 axs[0,2].set_yscale('log')
 
 k2 = sgs.k[:N2//2]
-s, n = np.meshgrid(2*np.pi*L/N2*(np.array(range(N2))+1), time)
 
-axs[1,0].contourf(s, n, sgs.uu, c0.levels)
+axs[1,0].contourf(sgs.x, sgs.tt, sgs.uu, c0.levels)
 
-axs[1,1].plot(time, sgs.Ek_t)
-axs[1,1].plot(time, sgs.Ek_tt)
+axs[1,1].plot(sgs.tt, sgs.Ek_t)
+axs[1,1].plot(sgs.tt, sgs.Ek_tt)
 
 axs[1,2].plot(k2, np.abs(dns.Ek_ktt[0,0:N2//2]),'b--')
 axs[1,2].plot(k2, np.abs(dns.Ek_ktt[nt//2,0:N2//2]),'b:')
@@ -115,22 +112,25 @@ axs[1,2].set_yscale('log')
 print("plot simulate_energies.png")
 fig.savefig('simulate_energies.png')
 
-fig, axs = plt.subplots(1,4, sharex='row', sharey='row')
+fig, axs = plt.subplots(1,4, sharex='row', figsize=(15,15)) #, sharey='row')
 
-axs[0].plot(time, errEk_t)
+axs[0].title.set_text('Instant energy err')
+axs[0].plot(sgs.tt, errEk_t)
 axs[0].set_yscale('log')
-axs[1].plot(time, errEk_tt)
+axs[1].title.set_text('Time avg energy err')
+axs[1].plot(sgs.tt, errEk_tt)
 axs[1].set_yscale('log')
-axs[2].plot(time, errEk_ktt)
+axs[2].title.set_text('Time avg energy spec mse err')
+axs[2].plot(sgs.tt, errEk_ktt)
 axs[2].set_yscale('log')
-axs[3].plot(time, errU_t)
+axs[3].title.set_text('Instant field mse err')
+axs[3].plot(sgs.tt, errU_t)
 axs[3].set_yscale('log')
 
 print("plot simulate_ediff.png")
 fig.savefig('simulate_ediff.png')
 
 #------------------------------------------------------------------------------
-
 figName2 = 'simulate_evolution.png'
 print("Plotting {} ...".format(figName2))
 
@@ -142,6 +142,6 @@ for i in range(16):
     l = i % 4
     
     axs[k,l].plot(dns.x, dns.uu[tidx,:], '--k')
-    axs[k,l].plot(sgs.x, sgs.uu[tidx,:], '-r')
+    axs[k,l].plot(sgs.x, sgs.uu[tidx,:], 'steelblue')
 
 fig2.savefig(figName2)
