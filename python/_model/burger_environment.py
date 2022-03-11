@@ -134,7 +134,7 @@ def environment( s , gridSize, numActions, episodeLength, ic, noise, seed ):
         base = Burger(L=L, N=gridSize, dt=dt, nu=nu, tend=tEnd, noise=0.)
         base.IC(u0 = f_restart(base.x))
         base.simulate()
-        #base.fou2real()
+        base.fou2real()
         base.compute_Ek()
        
         k1 = dns.k[:N//2]
