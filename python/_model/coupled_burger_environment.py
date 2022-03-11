@@ -70,6 +70,7 @@ def environment( s , gridSize, numActions, episodeLength, ic, noise, seed ):
         except Exception as e:
             print("Exception occured in LES:")
             print(str(e))
+            s["State"] = les.getState().flatten().tolist()
             error = 1
             break
         
@@ -81,17 +82,17 @@ def environment( s , gridSize, numActions, episodeLength, ic, noise, seed ):
         except Exception as e:
             print("Exception occured in BASE:")
             print(str(e))
+            s["State"] = les.getState().flatten().tolist()
             error = 2
             break
  
         # get new state
-        newstate = les.getState().flatten().tolist()
-        if(np.isfinite(newstate).all() == False):
+        state = les.getState().flatten().tolist()
+        if(np.isfinite(state).all() == False):
+            s["State"] = state
             print("Nan state detected")
             error = 1
             break
-        else:
-            state = newstate
 
         s["State"] = state
     
@@ -116,12 +117,12 @@ def environment( s , gridSize, numActions, episodeLength, ic, noise, seed ):
         step += 1
 
         s["State"] = state
+    
     if error == 1:
         s["Termination"] = "Truncated"
         s["Reward"] = -1000 if testing else -np.inf
     
     elif error == 2:
-        s["State"] = state
         s["Termination"] = "Truncated"
         s["Reward"] = max(rewardHistory)
 
