@@ -86,6 +86,7 @@ def environment( s , gridSize, numActions, episodeLength, ic, noise, seed ):
  
         # get new state
         newstate = les.getState().flatten().tolist()
+        #print(newstate)
         if(np.isfinite(newstate).all() == False):
             print("Nan state detected")
             error = 1
@@ -115,9 +116,8 @@ def environment( s , gridSize, numActions, episodeLength, ic, noise, seed ):
  
         step += 1
 
-    print(cumreward)
-    if error == 1:
         s["State"] = state
+    if error == 1:
         s["Termination"] = "Truncated"
         s["Reward"] = -1000 if testing else -np.inf
     
@@ -129,6 +129,7 @@ def environment( s , gridSize, numActions, episodeLength, ic, noise, seed ):
     else:
         s["Termination"] = "Terminal"
 
+    print(cumreward)
     if testing:
             
         les.compute_Ek()

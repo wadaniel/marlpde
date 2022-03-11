@@ -19,6 +19,7 @@ L    = 2*np.pi
 dt   = 0.001
 tEnd = 5
 nu   = 0.01
+noise = 0.0
 ic   = args.ic
 seed = args.seed
 
@@ -40,9 +41,8 @@ rewardFactor = 100 if spectralReward else 1.
 
 # DNS baseline
 print("Setting up DNS..")
-dns = Burger(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case=ic, noisy=True, seed=seed)
+dns = Burger(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case=ic, noise=noise, seed=seed)
 dns.simulate()
-dns.fou2real()
 dns.compute_Ek()
 
 ## create interpolated IC
@@ -53,10 +53,7 @@ tAvgEnergy = dns.Ek_tt
 print("Done!")
 
 # Initialize LES
-les = Burger(L=L, N=gridSize, dt=dt, nu=nu, tend=tEnd, noisy=False)
-
-# Initialize LES
-les = Burger(L=L, N=gridSize, dt=dt, nu=nu, tend=tEnd, noisy=False)
+les = Burger(L=L, N=gridSize, dt=dt, nu=nu, tend=tEnd, noise=noise)
 if spectralReward:
     les.IC( v0 = dns.v0[:gridSize] * gridSize / N )
 else:

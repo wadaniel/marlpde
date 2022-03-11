@@ -248,7 +248,7 @@ class Burger:
         return self.f_truth(self.x,t)
 
     def getAnalyticalSolution(self, t):
-        print("[Diffusion] TODO.. exit")
+        print("[Burger] TODO.. exit")
         sys.exit()
  
     def step( self, actions=None ):
@@ -321,10 +321,11 @@ class Burger:
             self.tt.resize(self.nout+1)          # nout+1 because the IC is in [0]
             return -1
 
-    #def fou2real(self):
+    def fou2real(self):
         # Convert from spectral to physical space
-        #self.uut = self.stepnum
-        #self.uu = np.real(ifft(self.vv))
+        self.uut = self.stepnum
+        if self.stepnum < self.uut:
+            self.uu = np.real(ifft(self.vv))
 
     def compute_Ek(self):
         #
@@ -395,12 +396,14 @@ class Burger:
 
     def getMseReward(self):
         uTruthToCoarse = self.mapGroundTruth()
+        #print(uTruthToCoarse[self.ioutnum,:])
+        #print(self.uu[self.ioutnum,:])
         uDiffMse = ((uTruthToCoarse[self.ioutnum,:] - self.uu[self.ioutnum,:])**2).mean()
         return -uDiffMse
      
     def getState(self, nAgents = None):
         # Convert from spectral to physical space
-        #self.fou2real()
+        #self.iou2real()
 
         # Extract state
         u = self.uu[self.ioutnum,:]
