@@ -93,8 +93,6 @@ class Burger:
         self.tt[0]   = 0.
 
     def __setup_fourier(self, coeffs=None):
-        #self.x  = 2*pi*self.L*np.r_[0:self.N]/self.N
-        #self.k  = np.r_[0:self.N/2, 0, -self.N/2+1:0]/self.L # Wave numbers
         self.k   = fftfreq(self.N, self.L / (2*np.pi*self.N))
         self.k1  = 1j * self.k
         self.k2  = self.k1**2
@@ -174,7 +172,7 @@ class Burger:
                         u0 = np.ones(self.N)
                         for k in range(1, self.N):
                             #offset = np.random.normal(loc=0., scale=self.noise) if self.noise > 0 else 0.
-                            offset = np.random.uniform(low=0., high=2*np.pi) if self.noise > 0 else 0.
+                            offset = np.random.uniform(low=0., high=self.L) if self.noise > 0 else 0.
                             phase = (a * phase + c) % m 
                             Ek = A*5**(-5/3) if k <= 5 else A*k**(-5/3) 
                             u0 += np.sqrt(2*Ek)*np.sin(k*2*np.pi*self.x/self.L+phase + offset)
@@ -396,8 +394,6 @@ class Burger:
 
     def getMseReward(self):
         uTruthToCoarse = self.mapGroundTruth()
-        #print(uTruthToCoarse[self.ioutnum,:])
-        #print(self.uu[self.ioutnum,:])
         uDiffMse = ((uTruthToCoarse[self.ioutnum,:] - self.uu[self.ioutnum,:])**2).mean()
         return -uDiffMse
      

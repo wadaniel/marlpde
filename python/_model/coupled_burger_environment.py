@@ -86,7 +86,6 @@ def environment( s , gridSize, numActions, episodeLength, ic, noise, seed ):
  
         # get new state
         newstate = les.getState().flatten().tolist()
-        #print(newstate)
         if(np.isfinite(newstate).all() == False):
             print("Nan state detected")
             error = 1
