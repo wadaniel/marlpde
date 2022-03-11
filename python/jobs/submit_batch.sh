@@ -17,7 +17,7 @@ do
         export RUN=$run
         export SEED=$run
 
-        ./sbatch-vracer.sh
+        #./sbatch-vracer.sh
         ./sbatch-coupled-vracer.sh
     done
 done

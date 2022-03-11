@@ -42,7 +42,7 @@ e["Problem"]["Type"] = "Reinforcement Learning / Continuous"
 e["Problem"]["Custom Settings"]["Mode"] = "Testing" if args.test else "Training"
 e["Problem"]["Environment Function"] = lambda s : be.environment( s, args.N, args.numactions, args.episodelength, args.ic, args.noise, args.seed )
 e["Problem"]["Testing Frequency"] = 100
-e["Problem"]["Policy Testing Episodes"] = 1
+e["Problem"]["Policy Testing Episodes"] = 20
 
 ### Defining Agent Configuration 
 

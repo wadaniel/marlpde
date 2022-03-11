@@ -1,10 +1,8 @@
 #!/bin/bash -l
 
-# Read Settings file
-# source settings.sh
-
 echo "IEX:"                 $IEX
 echo "N:"                   $N
+echo "NN:"                  $NN
 echo "NUMACT:"              $NUMACT
 echo "NEXP:"                $NUMEXP
 
@@ -19,7 +17,7 @@ mkdir -p $RUNPATH
 
 cd ..
 
-cp run-vracer-${ENV}.py $RUNPATH
+cp run-vracer-coupled-${ENV}.py $RUNPATH
 cp -r _model/ $RUNPATH
 
 cd $RUNPATH

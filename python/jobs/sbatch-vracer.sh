@@ -1,10 +1,8 @@
 #!/bin/bash -l
 
-# Read Settings file
-# source settings.sh
-
 echo "IEX:"                 $IEX
 echo "N:"                   $N
+echo "NN:"                  $NN
 echo "NUMACT:"              $NUMACT
 echo "NEXP:"                $NUMEXP
 
