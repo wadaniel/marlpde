@@ -100,9 +100,14 @@ def environment( s , gridSize, numActions, episodeLength, ic, noise, seed ):
         # calculate reward
         uTruth = les.mapGroundTruth()
         
-        uLesDiffMse = ((uTruth[les.ioutnum,:] - les.uu[les.ioutnum,:])**2).mean()
-        uBaseDiffMse = ((uTruth[les.ioutnum,:] - uBase)**2).mean()
-
+        try:
+            uLesDiffMse = ((uTruth[les.ioutnum,:] - les.uu[les.ioutnum,:])**2).mean()
+            uBaseDiffMse = ((uTruth[les.ioutnum,:] - uBase)**2).mean()
+        except Exception as e:
+            print("Exception occured in MSE:")
+            print(str(e))
+            reward = -np.inf
+ 
         reward = rewardFactor*(uBaseDiffMse-uLesDiffMse)
        
         cumreward += reward
