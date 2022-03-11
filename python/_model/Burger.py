@@ -393,8 +393,14 @@ class Burger:
         self.uu_resid = self.uu - self.uu_filt
 
     def getMseReward(self):
-        uTruthToCoarse = self.mapGroundTruth()
-        uDiffMse = ((uTruthToCoarse[self.ioutnum,:] - self.uu[self.ioutnum,:])**2).mean()
+
+        try:
+            uTruthToCoarse = self.mapGroundTruth()
+            uDiffMse = ((uTruthToCoarse[self.ioutnum,:] - self.uu[self.ioutnum,:])**2).mean()
+        except FloatingPointError:
+            print("[Burger] Floating point exception occured in mse", flush=True)
+            return -np.inf
+
         return -uDiffMse
      
     def getState(self, nAgents = None):
