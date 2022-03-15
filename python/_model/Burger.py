@@ -1,4 +1,5 @@
 import sys
+import time
 from numpy import pi
 from scipy import interpolate
 from scipy.fftpack import fft, ifft, fftfreq
@@ -25,7 +26,8 @@ class Burger:
         # Randomness
         self.noise = noise*L
         self.seed = seed
-       
+        np.random.seed(None)
+
         # Initialize
         L  = float(L); 
         dt = float(dt); 
@@ -163,7 +165,7 @@ class Burger:
                         # A priori and a posteriori evaluations 
                         # of sub-grid scale models for the Burgers' eq. (Li, Wang, 2016)
                         
-                        phase = 123456789 + self.seed
+                        rng = 123456789 + self.seed
                         a = 1103515245
                         c = 12345
                         m = 2**13
@@ -171,12 +173,13 @@ class Burger:
                         A = 1
                         u0 = np.ones(self.N)
                         for k in range(1, self.N):
-                            #offset = np.random.normal(loc=0., scale=self.noise) if self.noise > 0 else 0.
-                            offset = np.random.uniform(low=0., high=self.L) if self.noise > 0 else 0.
-                            phase = (a * phase + c) % m 
+                            #offset = np.random.uniform(low=0., high=2.*np.pi) if self.noise > 0 else 0.
+                            offset = np.random.normal(loc=0., scale=self.noise) if self.noise > 0 else 0.
+                            rng = (a * rng + c) % m
+                            phase = rng/m*2.*np.pi
+
                             Ek = A*5**(-5/3) if k <= 5 else A*k**(-5/3) 
                             u0 += np.sqrt(2*Ek)*np.sin(k*2*np.pi*self.x/self.L+phase + offset)
-
                         # rescale IC
                         idx = 0
                         criterion = np.sqrt(np.sum((u0-1.)**2)/self.N)
@@ -189,7 +192,7 @@ class Burger:
                             idx += 1
                             if idx > 100:
                                 break
-
+                        
                         assert( criterion < 0.8 )
                         assert( criterion > 0.6 )
 
@@ -260,11 +263,12 @@ class Burger:
 
             u = self.uu[self.ioutnum,:]
 
-            up = np.roll(u,1)
-            um = np.roll(u,-1)
-            d2udx2 = (up - 2.*u + um)/self.dx**2
+            #up = np.roll(u,1)
+            #um = np.roll(u,-1)
+            #d2udx2 = (up - 2.*u + um)/self.dx**2
 
-            Fforcing = fft( forcing*d2udx2 )
+            #Fforcing = fft( forcing*d2udx2 )
+            Fforcing = fft( forcing )
 
             self.v = self.v - self.dt*0.5*self.k1*fft(self.u**2) + self.dt*self.nu*self.k2*self.v + self.dt*Fforcing 
         

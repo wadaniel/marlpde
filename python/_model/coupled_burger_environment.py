@@ -12,6 +12,7 @@ nu   = 0.01
 
 # reward defaults
 rewardFactor = 1.
+basereward = True
 
 # basis defaults
 basis = 'hat'
@@ -21,6 +22,7 @@ def environment( s , gridSize, numActions, episodeLength, ic, noise, seed ):
     testing = True if s["Custom Settings"]["Mode"] == "Testing" else False
     #noise = 0. if testing else noise
     
+    seed = s["Sample Id"]
     dns = Burger(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case=ic, noise=noise, seed=seed)
     dns.simulate()
     dns.fou2real()
@@ -28,6 +30,18 @@ def environment( s , gridSize, numActions, episodeLength, ic, noise, seed ):
 
     ## create interpolated IC
     f_restart = interpolate.interp1d(dns.x, dns.u0, kind='cubic')
+    base0 = Burger(L=L, N=gridSize, dt=dt, nu=nu, tend=tEnd, noise=0.)
+ 
+    if basereward == True:
+        try:
+            base0.IC( u0 = f_restart(base0.x) )
+            base0.simulate()
+            base0.fou2real()
+     
+        except Exception as e:
+            print("Exception occured in base0:")
+            print(str(e))
+            error = 1
 
     # Initialize LES
     les = Burger(L=L, N=gridSize, dt=dt, nu=nu, tend=tEnd, noise=0.)
@@ -76,17 +90,18 @@ def environment( s , gridSize, numActions, episodeLength, ic, noise, seed ):
             error = 1
             break
         
-        try:
-            for _ in range(nIntermediate):
-                vBase = vBase - dt*0.5*les.k1*fft(uBase**2) + dt*nu*les.k2*vBase
-                uBase = np.real(ifft(vBase))
-        except Exception as e:
-            print("Exception occured in BASE:")
-            print(str(e))
-            s["State"] = les.getState().flatten().tolist()
-            error = 2
-            break
- 
+        if basereward == False:
+            try:
+                for _ in range(nIntermediate):
+                    vBase = vBase - dt*0.5*les.k1*fft(uBase**2) + dt*nu*les.k2*vBase
+                    uBase = np.real(ifft(vBase))
+            except Exception as e:
+                print("Exception occured in BASE:")
+                print(str(e))
+                s["State"] = les.getState().flatten().tolist()
+                error = 2
+                break
+
         # get new state
         state = les.getState().flatten().tolist()
         if(np.isfinite(state).all() == False):
@@ -102,11 +117,16 @@ def environment( s , gridSize, numActions, episodeLength, ic, noise, seed ):
         
         try:
             uLesDiffMse = ((uTruth[les.ioutnum,:] - les.uu[les.ioutnum,:])**2).mean()
-            uBaseDiffMse = ((uTruth[les.ioutnum,:] - uBase)**2).mean()
+            if basereward == False:
+                uBaseDiffMse = ((uTruth[les.ioutnum,:] - uBase)**2).mean()
+            else:
+                uBaseDiffMse = ((uTruth[les.ioutnum,:] - base0.uu[les.ioutnum,:])**2).mean()
         except Exception as e:
             print("Exception occured in MSE:")
             print(str(e))
             reward = -np.inf
+            error = 1
+            break
  
         reward = rewardFactor*(uBaseDiffMse-uLesDiffMse)
        
