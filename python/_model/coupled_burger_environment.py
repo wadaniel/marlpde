@@ -20,7 +20,7 @@ basis = 'hat'
 def environment( s , gridSize, numActions, episodeLength, ic, noise, seed ):
  
     testing = True if s["Custom Settings"]["Mode"] == "Testing" else False
-    #noise = 0. if testing else noise
+    noise = 0. if testing else noise
     
     seed = s["Sample Id"]
     dns = Burger(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case=ic, noise=noise, seed=seed)

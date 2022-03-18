@@ -1,3 +1,5 @@
+## BARRY
+
 # Run 7: offset inside IC loop, noise 0.1
 # Run 8: offset inside IC loop, noise ~0.01
 # Run 9: offset outside IC loop
@@ -12,3 +14,13 @@
 # Run 0: coupled, basereward == true    (Doesnt learn, too many nans)
 # Run 1: coupled, basereward == false   (Doesnt learn, too many nans)
 # Run 2: coupled, basereward == false (seed 42 and 31), no noise
+
+
+
+## DAINT
+
+
+# Run 1 - 5: uncoupled and coupled (base=True), noise == 0., seed 0..5, iex 0.1
+# Run 6 - 10: uncoupled and coupled (base=True), noise == 0.1, seed 0..5, iex 0.1
+# Run 11 - 15: uncoupled and coupled (base=True), noise == 0.01, seed 0..5, iex 0.1
+# Run 16 - 20: uncoupled and coupled (base=True), noise == 0.001, seed 0..5, iex 0.1
