@@ -12,11 +12,12 @@ L    = 2*np.pi
 dt   = 0.0005
 tEnd = 5
 nu   = 0.01
-basis = 'hat'
 gridSize = 32
 episodeLength = 500
 
-numActions = 3
+# action defaults
+basis = 'hat'
+numActions = 1
 
 # reward defaults
 rewardFactor = 1.
@@ -50,7 +51,12 @@ cumreward = 0.
 while step < episodeLength and error == 0:
     
     # apply action and advance environment
-    actions = np.random.normal(loc=0., scale=1e-4, size=numActions)
+    actions = [1] #,4,2,4] #np.random.normal(loc=0., scale=1e-4, size=numActions)
+    forcing = np.matmul(actions, les.basis)
+    print(step)
+    print(forcing)
+    Fforcing = fft( forcing )
+    print(Fforcing)
     try:
         for _ in range(nIntermediate):
             les.step(actions)

@@ -6,12 +6,11 @@ parser.add_argument('--N', help='Discretization / number of grid points', requir
 parser.add_argument('--numactions', help='Number of actions', required=False, type=int, default=1)
 parser.add_argument('--numexp', help='Number of experiences', required=False, type=int, default=5e5)
 parser.add_argument('--width', help='Size of hidden layer', required=False, type=int, default=256)
-parser.add_argument('--iex', help='Initial exploration', required=False, type=float, default=0.01)
+parser.add_argument('--iex', help='Initial exploration', required=False, type=float, default=0.1)
 parser.add_argument('--episodelength', help='Actual length of episode / number of actions', required=False, type=int, default=500)
-parser.add_argument('--noise', help='Standard deviation of IC', required=False, type=float, default=0.)
-parser.add_argument('--ic', help='Initial condition', required=False, type=str, default='turbulence')
+parser.add_argument('--ic', help='Initial condition', required=False, type=str, default='box')
 parser.add_argument('--seed', help='Random seed', required=False, type=int, default=42)
-parser.add_argument('--tend', help='Simulation length', required=False, type=int, default=10)
+parser.add_argument('--tend', help='Simulation length', required=False, type=int, default=5)
 parser.add_argument('--run', help='Run tag', required=False, type=int, default=0)
 parser.add_argument('--test', action='store_true', help='Run tag', required=False)
 
@@ -21,7 +20,7 @@ args = parser.parse_args()
 
 import sys
 sys.path.append('_model')
-import burger_environment as be
+import diffusion_environment as de
 
 
 ### Defining Korali Problem
@@ -32,7 +31,7 @@ e = korali.Experiment()
 
 ### Defining results folder and loading previous results, if any
 
-resultFolder = '_result_burger_{}_{}_{}_{}_{}_{}/'.format(args.ic, args.N, args.numactions, args.noise, args.seed, args.run)
+resultFolder = '_result_diffusion_{}_{}_{}_{}_{}_{}/'.format(args.ic, args.N, args.numactions, args.episodelength, args.seed, args.run)
 found = e.loadState(resultFolder + '/latest')
 if found == True:
 	print("[Korali] Continuing execution from previous run...\n")
@@ -40,16 +39,16 @@ if found == True:
 ### Defining Problem Configuration
 e["Problem"]["Type"] = "Reinforcement Learning / Continuous"
 e["Problem"]["Custom Settings"]["Mode"] = "Testing" if args.test else "Training"
-e["Problem"]["Environment Function"] = lambda s : be.environment( s, args.N, args.numactions, args.episodelength, args.ic, args.noise, args.seed )
+e["Problem"]["Environment Function"] = lambda s : de.environment( s, args.N, args.numactions, args.episodelength, args.ic, args.seed )
 e["Problem"]["Testing Frequency"] = 100
-e["Problem"]["Policy Testing Episodes"] = 20
+e["Problem"]["Policy Testing Episodes"] = 1
 
 ### Defining Agent Configuration 
 
 e["Solver"]["Type"] = "Agent / Continuous / VRACER"
 e["Solver"]["Mode"] = "Testing" if args.test else "Training"
 e["Solver"]["Episodes Per Generation"] = 10
-e["Solver"]["Experiences Between Policy Updates"] = 0.5
+e["Solver"]["Experiences Between Policy Updates"] = 1
 e["Solver"]["Learning Rate"] = 0.0001
 e["Solver"]["Discount Factor"] = 1.
 e["Solver"]["Mini Batch"]["Size"] = 256
@@ -87,7 +86,7 @@ e["Solver"]["Reward"]["Rescaling"]["Enabled"] = True
 e["Solver"]["Neural Network"]["Engine"] = "OneDNN"
 e["Solver"]['Neural Network']['Optimizer'] = "Adam"
 e["Solver"]["L2 Regularization"]["Enabled"] = False
-e["Solver"]["L2 Regularization"]["Importance"] = 1.0
+e["Solver"]["L2 Regularization"]["Importance"] = 0.0
 
 e["Solver"]["Neural Network"]["Hidden Layers"][0]["Type"] = "Layer/Linear"
 e["Solver"]["Neural Network"]["Hidden Layers"][0]["Output Channels"] = args.width
@@ -112,7 +111,7 @@ e["File Output"]["Frequency"] = 500
 e["File Output"]["Path"] = resultFolder
 
 if args.test:
-    fileName = 'test_burger_{}_{}_{}_{}_{}'.format(args.ic, args.N, args.numactions, args.seed, args.run)
+    fileName = 'test_diffusion_{}_{}_{}_{}_{}'.format(args.ic, args.N, args.numactions, args.seed, args.run)
     e["Solver"]["Testing"]["Sample Ids"] = [0]
     e["Problem"]["Custom Settings"]["Filename"] = fileName
 

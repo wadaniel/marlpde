@@ -1,46 +1,29 @@
-from Burger import *
+from Advection import *
 import matplotlib.pyplot as plt 
 
 # dns defaults
 N    = 512
 L    = 2*np.pi
-dt   = 0.001
-tEnd = 5
-nu   = 0.01
-
-# reward structure
-spectralReward = False
+dt   = 0.01
+tEnd = 10
+nu   = 1.
 
 # reward defaults
-rewardFactor = 0.001 if spectralReward else 1.
-rewardFactor = 100 if spectralReward else 1.
+rewardFactor = 10.
 
 # basis defaults
 basis = 'hat'
 
-def environment( s , gridSize, numActions, episodeLength, ic, noise, seed ):
+# DNS baseline
+
+def environment( s , gridSize, numActions, episodeLength, ic ):
  
     testing = True if s["Custom Settings"]["Mode"] == "Testing" else False
-    noise = 0. if testing else noise   
-    
-    dns = Burger(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case=ic, noise=noise, seed=seed)
-    dns.simulate()
-    dns.fou2real()
-    dns.compute_Ek()
-
-    ## create interpolated IC
-    f_restart = interpolate.interp1d(dns.x, dns.u0, kind='cubic')
+    noisy = False if testing else True
 
     # Initialize LES
-    les = Burger(L=L, N=gridSize, dt=dt, nu=nu, tend=tEnd, noise=0.)
-    if spectralReward:
-        les.IC( v0 = dns.v0[:gridSize] * gridSize / N )
-
-    else:
-        les.IC( u0 = f_restart(les.x) )
-
+    les = Advection(L=L, N=gridSize, dt=dt, nu=nu, tend=tEnd, case=ic, noisy=noisy)
     les.setup_basis(numActions, basis)
-    les.setGroundTruth(dns.tt, dns.x, dns.uu)
 
     ## get initial state
     state = les.getState().flatten().tolist()
@@ -68,9 +51,7 @@ def environment( s , gridSize, numActions, episodeLength, ic, noise, seed ):
         try:
             for _ in range(nIntermediate):
                 les.step(actions)
-
             les.compute_Ek()
-            les.fou2real()
         except Exception as e:
             print("Exception occured:")
             print(str(e))
@@ -80,7 +61,7 @@ def environment( s , gridSize, numActions, episodeLength, ic, noise, seed ):
 
         # get new state
         newstate = les.getState().flatten().tolist()
-        if(np.isfinite(newstate).all() == False):
+        if(np.isnan(state).any() == True):
             print("Nan state detected")
             error = 1
             break
@@ -89,36 +70,28 @@ def environment( s , gridSize, numActions, episodeLength, ic, noise, seed ):
 
         s["State"] = state
     
-        # calculate reward
-
-        if spectralReward:
-            # Time-averaged energy spectrum as a function of wavenumber
-            kMseErr = np.mean((dns.Ek_ktt[les.ioutnum,:gridSize] - les.Ek_ktt[les.ioutnum,:gridSize])**2)
-            reward = -rewardFactor*kMseErr
-            #kMseErr = np.mean((np.log(dns.Ek_ktt[les.ioutnum,:gridSize]) - np.log(les.Ek_ktt[les.ioutnum,:gridSize]))**2)
-            #reward = -rewardFactor*kMseErr + 3.5/500
+        idx = les.ioutnum
+        uTruth = les.getAnalyticalSolution(les.t)
+        uDiffMse = ((uTruth - les.uu[idx,:])**2).mean()
  
-        else:
-            reward = rewardFactor*les.getMseReward()
-    
-       
+        # calculate reward from energy
+        reward = -rewardFactor*uDiffMse
         cumreward += reward
 
         if (np.isfinite(reward) == False):
             print("Nan reward detected")
             error = 1
             break
-    
         else:
             s["Reward"] = reward
- 
+
         step += 1
 
     print(cumreward)
     if error == 1:
         s["State"] = state
         s["Termination"] = "Truncated"
-        s["Reward"] = -1000 if testing else -np.inf
+        s["Reward"] = -500
     
     else:
         s["Termination"] = "Terminal"
@@ -126,17 +99,21 @@ def environment( s , gridSize, numActions, episodeLength, ic, noise, seed ):
     if testing:
 
         fileName = s["Custom Settings"]["Filename"]
-        actionHistory = np.array(actionHistory)
         print("Storing les to file {}".format(fileName))
-        np.savez(fileName, x = les.x, t = les.tt, uu = les.uu, vv = les.vv, L=L, N=gridSize, dt=dt, nu=nu, tEnd=tEnd, actions=actionHistory)
+        #np.savez(fileName, x = les.x, t = les.tt, uu = les.uu, vv = les.vv, L=L, N=gridSize, dt=dt, nu=nu, tEnd=tEnd)
          
         print("Running uncontrolled SGS..")
-        base = Burger(L=L, N=gridSize, dt=dt, nu=nu, tend=tEnd, noise=0.)
-        base.IC(u0 = f_restart(base.x))
+        base = Advection(L=L, N=gridSize, dt=dt, nu=nu, tend=tEnd, case=ic, noisy=False)
         base.simulate()
         base.fou2real()
         base.compute_Ek()
-       
+        
+        print("Running DNS..")
+        dns = Advection(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case=ic, noisy=False)
+        dns.simulate()
+        dns.fou2real()
+        dns.compute_Ek()
+
         k1 = dns.k[:N//2]
 
         time = np.arange(tEnd/dt+1)*dt
@@ -175,20 +152,20 @@ def environment( s , gridSize, numActions, episodeLength, ic, noise, seed ):
         errEk_tt = dns.Ek_tt - les.Ek_tt
         errU = np.abs(les.uu-udns_int)
         errU_t = np.mean(errU**2, axis=1)
- 
-        emax = max(errBaseU.max(), errU.max())
-        emin = min(errBaseU.min(), errU.min())
-        elevels = np.linspace(emin, emax, 50)
-        
+
 #------------------------------------------------------------------------------
         print("plot baseline")
-        
+  
         k2 = les.k[:gridSize//2]
  
         idx = 1
         # Plot solution
         axs[idx,0].contourf(base.x, base.tt, base.uu, ulevels)
   
+        emax = max(errBaseU.max(), errU.max())
+        emin = min(errBaseU.min(), errU.min())
+        elevels = np.linspace(emin, emax, 50)
+        
         # Plot difference to dns
         axs[idx,1].contourf(les.x, base.tt, errBaseU, elevels)
 
@@ -218,7 +195,6 @@ def environment( s , gridSize, numActions, episodeLength, ic, noise, seed ):
         
         # Plot difference to dns
         axs[idx,1].contourf(les.x, les.tt, errU, elevels)
- 
 
         # Plot instanteneous energy and time averaged energy
         axs[idx,2].plot(time, les.Ek_t)
@@ -238,6 +214,7 @@ def environment( s , gridSize, numActions, episodeLength, ic, noise, seed ):
         axs[idx,4].plot(k2, np.abs(dns.Ek_ktt[-1,0:gridSize//2] - les.Ek_ktt[-1,0:gridSize//2]),'--r')
  
         # Plot energy spectrum at start, mid and end of simulation
+        actionHistory = np.array(actionHistory)
         colors = plt.cm.coolwarm(np.linspace(0,1,numActions))
         for i in range(numActions):
             axs[idx,5].plot(timestamps, actionHistory[:,i], color=colors[i])

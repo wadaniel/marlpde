@@ -23,10 +23,11 @@ from KS import *
 
 #------------------------------------------------------------------------------
 ## set parameters and initialize simulation
-L    = 22/(2*np.pi)
+L    = 22
 dt   = 0.05
-tTransient = 10
-tEnd       = 40 + tTransient  #50000
+tTransient = 50
+tEnd       = 3000
+tSim       = tEnd-tTransient
 dns = KS(L=L, N=N, dt=dt, nu=1.0, tend=tTransient)
 
 #------------------------------------------------------------------------------
@@ -48,7 +49,7 @@ u_restart = dns.uu[-1,:].copy()
 dns.IC( u0 = u_restart )
 
 # continue simulation
-dns.simulate( nsteps=int( (tEnd-tTransient)/dt), restart=True )
+dns.simulate( nsteps=int(tSim/dt), restart=True )
 
 # convert to physical space
 dns.fou2real()
@@ -61,7 +62,7 @@ u1 = dns.uu
 dns.IC( v0 = v_restart )
 
 # continue simulation
-dns.simulate( nsteps=int( (tEnd-tTransient)/dt), restart=True )
+dns.simulate( nsteps=int(tSim/dt), restart=True )
 
 # convert to physical space
 dns.fou2real()
@@ -71,23 +72,31 @@ u2 = dns.uu
 
 #------------------------------------------------------------------------------
 ## plot comparison
-fig, axs = plt.subplots(1,4)
+print("Plotting restart.png ...")
+fig, axs = plt.subplots(1,3)
 
-s, n = np.meshgrid(np.arange(tTransient/dt+1)*dt, 2*np.pi*L/N*(np.array(range(N))+1))
-sre, nre = np.meshgrid( tTransient+np.arange((tEnd-tTransient)/dt+1)*dt, 2*np.pi*L/N*(np.array(range(N))+1))
-
-cs0 = axs[0].contourf(s, n, u.T, 50, cmap=plt.get_cmap("seismic"))
-cs0 = axs[1].contourf(sre, nre, u1.T, 50, cmap=plt.get_cmap("seismic"))
-cs1 = axs[2].contourf(sre, nre, u2.T, 50, cmap=plt.get_cmap("seismic"))
+cs0 = axs[0].contourf(dns.tt, dns.x, u1.T, 50, cmap=plt.get_cmap("seismic"))
+cs1 = axs[1].contourf(dns.tt, dns.x, u2.T, 50, cmap=plt.get_cmap("seismic"))
 diff = np.abs(u1-u2)
-cs2 = axs[3].contourf(sre, nre, diff.T, 50, cmap=plt.get_cmap("seismic"))
+cs2 = axs[2].contourf(dns.tt, dns.x, diff.T, 50, cmap=plt.get_cmap("seismic"))
 
 plt.colorbar(cs1, ax=axs[0])
-plt.colorbar(cs2, ax=axs[3])
+plt.colorbar(cs2, ax=axs[2])
 plt.setp(axs[:], xlabel='$t$')
 plt.setp(axs[0], ylabel='$x$')
 axs[1].set_yticklabels([])
 axs[2].set_yticklabels([])
-axs[3].set_yticklabels([])
 # for c in cs.collections: c.set_rasterized(True)
 fig.savefig('restart.png')
+plt.close()
+
+print("Plotting kursiv.png ...")
+fig, axs = plt.subplots(4,4, sharex=True, sharey=True, figsize=(15,15))
+for i in range(16):
+    t = int(i * tSim / dt / 16)
+    k = int(i / 4)
+    l = i % 4
+    axs[k,l].plot(dns.x, u1[t,:])
+
+fig.savefig('kursiv.png'.format())
+plt.close()

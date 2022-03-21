@@ -1,7 +1,7 @@
 #!/bin/python3
 
 """
-This scripts simulates the Burger on two grids (N1, N2) up to t=tEnd. We plot the Burger and
+This scripts simulates the Diffusion on two grids (N1, N2) up to t=tEnd. We plot the Diffusion and
 the instanteneous energy plus the time averaged energy, and the energy spectra at 
 start, mid and end of the simulation.
 """
@@ -11,8 +11,8 @@ import math
 import numpy as np
 
 # Discretization grid
-N1 = 2048
-N2 = 64
+N1 = 1024
+N2 = 32
 m = int(math.log2(N1 / N2)) + 1
 Nx = np.clip(N2*2**np.arange(0., m), a_min=0, a_max=N1).astype(int)
 
@@ -26,17 +26,16 @@ sys.path.append('./../../_model/')
 from scipy import interpolate
 from scipy.fft import fftfreq
 
-from Burger import *
+from Diffusion import *
 
 #------------------------------------------------------------------------------
 ## set parameters and initialize simulation
 L    = 2*np.pi
-dt   = 0.0001
+dt   = 0.0005
 tEnd = 5
 nu   = 0.01
-ic   = 'turbulence'
 
-dns = Burger(L=L, N=N1, dt=dt, nu=nu, tend=tEnd, case=ic)
+dns = Diffusion(L=L, N=N1, dt=dt, nu=nu, tend=tEnd)
 
 #------------------------------------------------------------------------------
 print("Simulate DNS")
@@ -77,7 +76,7 @@ idx = 1
 for N in Nx:
     print("Simulate SGS (N={})".format(N))
     ## simulate SGS from IC
-    sgs = Burger(L=L, N=N, dt=dt, nu=nu, tend=tEnd)
+    sgs = Diffusion(L=L, N=N, dt=dt, nu=nu, tend=tEnd)
     u0 = f_IC(sgs.x)
     sgs.IC(u0 = u0)
 

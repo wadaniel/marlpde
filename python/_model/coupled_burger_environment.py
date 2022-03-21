@@ -1,6 +1,8 @@
 from Burger import *
 import matplotlib.pyplot as plt 
 
+from scipy.fftpack import fft, ifft
+
 # dns defaults
 N    = 512
 L    = 2*np.pi
@@ -8,12 +10,9 @@ dt   = 0.001
 tEnd = 5
 nu   = 0.01
 
-# reward structure
-spectralReward = False
-
 # reward defaults
-rewardFactor = 0.001 if spectralReward else 1.
-rewardFactor = 100 if spectralReward else 1.
+rewardFactor = 1.
+basereward = True
 
 # basis defaults
 basis = 'hat'
@@ -21,8 +20,9 @@ basis = 'hat'
 def environment( s , gridSize, numActions, episodeLength, ic, noise, seed ):
  
     testing = True if s["Custom Settings"]["Mode"] == "Testing" else False
-    noise = 0. if testing else noise   
+    noise = 0. if testing else noise
     
+    seed = s["Sample Id"]
     dns = Burger(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case=ic, noise=noise, seed=seed)
     dns.simulate()
     dns.fou2real()
@@ -30,14 +30,22 @@ def environment( s , gridSize, numActions, episodeLength, ic, noise, seed ):
 
     ## create interpolated IC
     f_restart = interpolate.interp1d(dns.x, dns.u0, kind='cubic')
+    base0 = Burger(L=L, N=gridSize, dt=dt, nu=nu, tend=tEnd, noise=0.)
+ 
+    if basereward == True:
+        try:
+            base0.IC( u0 = f_restart(base0.x) )
+            base0.simulate()
+            base0.fou2real()
+     
+        except Exception as e:
+            print("Exception occured in base0:")
+            print(str(e))
+            error = 1
 
     # Initialize LES
     les = Burger(L=L, N=gridSize, dt=dt, nu=nu, tend=tEnd, noise=0.)
-    if spectralReward:
-        les.IC( v0 = dns.v0[:gridSize] * gridSize / N )
-
-    else:
-        les.IC( u0 = f_restart(les.x) )
+    les.IC( u0 = f_restart(les.x) )
 
     les.setup_basis(numActions, basis)
     les.setGroundTruth(dns.tt, dns.x, dns.uu)
@@ -54,6 +62,7 @@ def environment( s , gridSize, numActions, episodeLength, ic, noise, seed ):
 
     timestamps = []
     actionHistory = []
+    rewardHistory = []
 
     while step < episodeLength and error == 0:
         
@@ -64,7 +73,10 @@ def environment( s , gridSize, numActions, episodeLength, ic, noise, seed ):
         actions = s["Action"]
         actionHistory.append(actions)
         timestamps.append(les.t)
-
+                
+        vBase = les.vv[les.ioutnum,:]
+        uBase = les.uu[les.ioutnum,:]
+ 
         try:
             for _ in range(nIntermediate):
                 les.step(actions)
@@ -72,37 +84,54 @@ def environment( s , gridSize, numActions, episodeLength, ic, noise, seed ):
             les.compute_Ek()
             les.fou2real()
         except Exception as e:
-            print("Exception occured:")
+            print("Exception occured in LES:")
             print(str(e))
+            s["State"] = les.getState().flatten().tolist()
             error = 1
             break
         
+        if basereward == False:
+            try:
+                for _ in range(nIntermediate):
+                    vBase = vBase - dt*0.5*les.k1*fft(uBase**2) + dt*nu*les.k2*vBase
+                    uBase = np.real(ifft(vBase))
+            except Exception as e:
+                print("Exception occured in BASE:")
+                print(str(e))
+                s["State"] = les.getState().flatten().tolist()
+                error = 2
+                break
 
         # get new state
-        newstate = les.getState().flatten().tolist()
-        if(np.isfinite(newstate).all() == False):
+        state = les.getState().flatten().tolist()
+        if(np.isfinite(state).all() == False):
+            s["State"] = state
             print("Nan state detected")
             error = 1
             break
-        else:
-            state = newstate
 
         s["State"] = state
     
         # calculate reward
-
-        if spectralReward:
-            # Time-averaged energy spectrum as a function of wavenumber
-            kMseErr = np.mean((dns.Ek_ktt[les.ioutnum,:gridSize] - les.Ek_ktt[les.ioutnum,:gridSize])**2)
-            reward = -rewardFactor*kMseErr
-            #kMseErr = np.mean((np.log(dns.Ek_ktt[les.ioutnum,:gridSize]) - np.log(les.Ek_ktt[les.ioutnum,:gridSize]))**2)
-            #reward = -rewardFactor*kMseErr + 3.5/500
+        uTruth = les.mapGroundTruth()
+        
+        try:
+            uLesDiffMse = ((uTruth[les.ioutnum,:] - les.uu[les.ioutnum,:])**2).mean()
+            if basereward == False:
+                uBaseDiffMse = ((uTruth[les.ioutnum,:] - uBase)**2).mean()
+            else:
+                uBaseDiffMse = ((uTruth[les.ioutnum,:] - base0.uu[les.ioutnum,:])**2).mean()
+        except Exception as e:
+            print("Exception occured in MSE:")
+            print(str(e))
+            reward = -np.inf
+            error = 1
+            break
  
-        else:
-            reward = rewardFactor*les.getMseReward()
-    
+        reward = rewardFactor*(uBaseDiffMse-uLesDiffMse)
        
         cumreward += reward
+        rewardHistory.append(reward)
 
         if (np.isfinite(reward) == False):
             print("Nan reward detected")
@@ -114,16 +143,23 @@ def environment( s , gridSize, numActions, episodeLength, ic, noise, seed ):
  
         step += 1
 
-    print(cumreward)
-    if error == 1:
         s["State"] = state
+    
+    if error == 1:
         s["Termination"] = "Truncated"
         s["Reward"] = -1000 if testing else -np.inf
     
+    elif error == 2:
+        s["Termination"] = "Truncated"
+        s["Reward"] = max(rewardHistory)
+
     else:
         s["Termination"] = "Terminal"
 
+    print(cumreward)
     if testing:
+            
+        les.compute_Ek()
 
         fileName = s["Custom Settings"]["Filename"]
         actionHistory = np.array(actionHistory)

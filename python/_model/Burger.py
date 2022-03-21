@@ -1,4 +1,5 @@
 import sys
+import time
 from numpy import pi
 from scipy import interpolate
 from scipy.fftpack import fft, ifft, fftfreq
@@ -20,8 +21,13 @@ class Burger:
     # u_t + u*u_x = nu*u_xx0
     # with periodic BCs on x \in [0, L]: u(0,t) = u(L,t).
 
-    def __init__(self, L=1./(2.*np.pi), N=128, dt=0.25, nu=0.0, nsteps=None, tend=150, u0=None, v0=None, noisy = False):
+    def __init__(self, L=2.*np.pi, N=512, dt=0.001, nu=0.0, nsteps=None, tend=150, u0=None, v0=None, case=None, noise=0., seed=42):
         
+        # Randomness
+        self.noise = noise*L
+        self.seed = seed
+        np.random.seed(None)
+
         # Initialize
         L  = float(L); 
         dt = float(dt); 
@@ -34,18 +40,16 @@ class Burger:
             # override tend
             tend = dt*nsteps
         
-        self.noisy = noisy
-
         # save to self
         self.L      = L
         self.N      = N
-        self.dx     = L/(N-1)
-        self.x      = np.linspace(0, self.L, N, endpoint=True)
+        self.dx     = L/N
+        #self.x      = np.linspace(-0.5*self.L, +0.5*self.L, N, endpoint=False)
+        self.x      = np.linspace(0, self.L, N, endpoint=False)
         self.dt     = dt
         self.nu     = nu
         self.nsteps = nsteps
         self.nout   = nsteps
-        self.sigma  = 2*pi*L/(2*N)
  
         # Basis
         self.M = 0
@@ -59,9 +63,14 @@ class Burger:
         self.uu_truth = None
         # interpolation of truth
         self.f_truth = None
-
+ 
+        # initialize simulation arrays
+        self.__setup_timeseries()
+ 
         # set initial condition
-        if (u0 is None) and (v0 is None):
+        if (case is not None):
+            self.IC(case=case)
+        elif (u0 is None) and (v0 is None):
             self.IC()
         elif (u0 is not None):
             self.IC(u0 = u0)
@@ -71,50 +80,37 @@ class Burger:
             print("[Burger] IC ambigous")
             sys.exit()
         
-        # initialize simulation arrays
-        self.__setup_timeseries()
-        
         # precompute Fourier-related quantities
         self.__setup_fourier()
         
-        # precompute ETDRK4 scalar quantities:
-        self.__setup_etdrk4()
-
     def __setup_timeseries(self, nout=None):
         if (nout != None):
             self.nout = int(nout)
         
         # nout+1 because we store the IC as well
-        self.uu = np.zeros([self.nout+1, self.N], dtype=np.complex64)
+        self.uu = np.zeros([self.nout+1, self.N])
         self.vv = np.zeros([self.nout+1, self.N], dtype=np.complex64)
         self.tt = np.zeros(self.nout+1)
         
-        # store the IC in [0]
-        self.uu[0,:] = self.u0
-        self.vv[0,:] = self.v0
         self.tt[0]   = 0.
 
-    def __setup_fourier(self):
+    def __setup_fourier(self, coeffs=None):
         self.k   = fftfreq(self.N, self.L / (2*np.pi*self.N))
         self.k1  = 1j * self.k
         self.k2  = self.k1**2
-        
-    def __setup_etdrk4(self):
-        return
-
-        """
-        self.E  = np.exp(self.dt*self.l)
-        self.E2 = np.exp(self.dt*self.l/2.)
-        self.M  = 62                                           # no. of points for complex means
-        self.r  = np.exp(1j*pi*(np.r_[1:self.M+1]-0.5)/self.M) # roots of unity
-        self.LR = self.dt*np.repeat(self.l[:,np.newaxis], self.M, axis=1) + np.repeat(self.r[np.newaxis,:], self.N, axis=0)
-        self.Q  = self.dt*np.real(np.mean((np.exp(self.LR/2.) - 1.)/self.LR, 1))
-        self.f1 = self.dt*np.real( np.mean( (-4. -    self.LR              + np.exp(self.LR)*( 4. - 3.*self.LR + self.LR**2) )/(self.LR**3) , 1) )
-        self.f2 = self.dt*np.real( np.mean( ( 2. +    self.LR              + np.exp(self.LR)*(-2. +    self.LR             ) )/(self.LR**3) , 1) )
-        self.f3 = self.dt*np.real( np.mean( (-4. - 3.*self.LR - self.LR**2 + np.exp(self.LR)*( 4. -    self.LR             ) )/(self.LR**3) , 1) )
-        self.g  = -0.5j*self.k
-        """
  
+        # Fourier multipliers for the linear term Lu
+        if (coeffs is None):
+            # normal-form equation
+            self.l = self.nu*self.k**2
+        else:
+            # altered-coefficients 
+            self.l = -      coeffs[0]*np.ones(self.k.shape) \
+                     -      coeffs[1]*1j*self.k             \
+                     + (1 + coeffs[2])  *self.k**2          \
+                     +      coeffs[3]*1j*self.k**3          \
+                     - (1 + coeffs[4])  *self.k**4
+
     def setup_basis(self, M, kind = 'uniform'):
         self.M = M
         if M > 1:
@@ -122,8 +118,8 @@ class Burger:
                 self.basis = np.zeros((self.M, self.N))
                 for i in range(self.M):
                     assert self.N % self.M == 0, print("[Burger] Something went wrong in basis setup")
-                    idx1 = i * int(self.N/self.M)
-                    idx2 = (i+1) * int(self.N/self.M)
+                    idx1 = i * self.N//self.M
+                    idx2 = (i+1) * self.N//self.M
                     self.basis[i,idx1:idx2] = 1.
             elif kind == 'hat':
                 self.basis = np.ones((self.M, self.N))
@@ -138,16 +134,15 @@ class Burger:
         else:
             self.basis = np.ones((self.M, self.N))
         
-        assert (np.sum(self.basis,axis=0)==1).all(), print("[Burger] Something went wrong in basis setup")
+        np.testing.assert_allclose(np.sum(self.basis, axis=0), 1)
 
-    def IC(self, u0=None, v0=None, case='box', seed=42):
+    def IC(self, u0=None, v0=None, case='box'):
         
         # Set initial condition
         if (v0 is None):
             if (u0 is None):
                     
-                    np.random.seed( seed )
-                    offset = np.random.normal(loc=0., scale=self.dx) if self.noisy else 0.
+                    offset = np.random.normal(loc=0., scale=self.noise) if self.noise > 0 else 0.
                     
                     # Gaussian initialization
                     if case == 'gaussian':
@@ -163,30 +158,69 @@ class Burger:
                     # Sinus
                     elif case == 'sinus':
                         u0 = np.sin(self.x+offset)
+ 
+                    # Turbulence
+                    elif case == 'turbulence':
+                        # Taken from: 
+                        # A priori and a posteriori evaluations 
+                        # of sub-grid scale models for the Burgers' eq. (Li, Wang, 2016)
+                        
+                        rng = 123456789 + self.seed
+                        a = 1103515245
+                        c = 12345
+                        m = 2**13
+                    
+                        A = 1
+                        u0 = np.ones(self.N)
+                        for k in range(1, self.N):
+                            #offset = np.random.uniform(low=0., high=2.*np.pi) if self.noise > 0 else 0.
+                            offset = np.random.normal(loc=0., scale=self.noise) if self.noise > 0 else 0.
+                            rng = (a * rng + c) % m
+                            phase = rng/m*2.*np.pi
+
+                            Ek = A*5**(-5/3) if k <= 5 else A*k**(-5/3) 
+                            u0 += np.sqrt(2*Ek)*np.sin(k*2*np.pi*self.x/self.L+phase + offset)
+                        # rescale IC
+                        idx = 0
+                        criterion = np.sqrt(np.sum((u0-1.)**2)/self.N)
+                        while (criterion < 0.65 or criterion > 0.75):
+                            scale = 0.7/criterion
+                            u0 *= scale
+                            criterion = np.sqrt(np.sum((u0-1.)**2)/self.N)
+                            
+                            # exit
+                            idx += 1
+                            if idx > 100:
+                                break
+                        
+                        assert( criterion < 0.8 )
+                        assert( criterion > 0.6 )
 
                     else:
                         print("[Burger] Error: IC case unknown")
-                        return -1
+                        sys.exit()
 
             else:
                 # check the input size
                 if (np.size(u0,0) != self.N):
                     print("[Burger] Error: wrong IC array size")
-                    return -1
+                    sys.exit()
+
                 else:
                     # if ok cast to np.array
                     u0 = np.array(u0)
+            
             # in any case, set v0:
             v0 = fft(u0)
+            
         else:
             # the initial condition is provided in v0
             # check the input size
             if (np.size(v0,0) != self.N):
                 print("[Burger] Error: wrong IC array size")
-                return -1
+                sys.exit()
+
             else:
-                if self.noisy:
-                    print("[Burger] Using given (Fourier) flow field...")
                 # if ok cast to np.array
                 v0 = np.array(v0)
                 # and transform to physical space
@@ -200,50 +234,52 @@ class Burger:
         self.t   = 0.
         self.stepnum = 0
         self.ioutnum = 0 # [0] is the initial condition
-        
+  
+        # store the IC in [0]
+        self.uu[0,:] = u0
+        self.vv[0,:] = v0
+        self.tt[0]   = 0.
+       
     def setGroundTruth(self, t, x, uu):
         self.uu_truth = uu
         self.f_truth = interpolate.interp2d(x, t, self.uu_truth, kind='cubic')
  
     def mapGroundTruth(self):
-        t = np.arange(0, self.uu.shape[0])*self.dt
+        t = np.arange(0,self.uu.shape[0])*self.dt
         return self.f_truth(self.x,t)
 
-
+    def getAnalyticalSolution(self, t):
+        print("[Burger] TODO.. exit")
+        sys.exit()
+ 
     def step( self, actions=None ):
 
         Fforcing = np.zeros(self.N)
+
         if (actions is not None):
             assert self.basis is not None, print("[Burger] Basis not set up (is None).")
             assert len(actions) == self.M, print("[Burger] Wrong number of actions (provided {}/{}".format(len(actions), self.M))
-            forcing = np.matmul(actions, self.basis) / 500
+            forcing = np.matmul(actions, self.basis)
 
+            u = self.uu[self.ioutnum,:]
+
+            #up = np.roll(u,1)
+            #um = np.roll(u,-1)
+            #d2udx2 = (up - 2.*u + um)/self.dx**2
+
+            #Fforcing = fft( forcing*d2udx2 )
             Fforcing = fft( forcing )
 
-        self.v = self.v - self.dt*0.5*self.k1*fft(self.u**2) + self.dt*self.nu*self.k2*self.v + Fforcing
-        self.u = np.real(ifft(self.v))
-
-        """
-        #
-        # Computation is based on v = fft(u), so linear term is diagonal.
-        # The time-discretization is done via ETDRK4
-        # (exponential time differencing - 4th order Runge Kutta)
-        #
-        v = self.v;                           
-        Nv = self.g*fft(np.real(ifft(v))**2)
-        a = self.E2*v + self.Q*Nv;            
-        Na = self.g*fft(np.real(ifft(a))**2)
-        b = self.E2*v + self.Q*Na;            
-        Nb = self.g*fft(np.real(ifft(b))**2)
-        c = self.E2*a + self.Q*(2.*Nb - Nv);  
-        Nc = self.g*fft(np.real(ifft(c))**2)
+            self.v = self.v - self.dt*0.5*self.k1*fft(self.u**2) + self.dt*self.nu*self.k2*self.v + self.dt*Fforcing 
         
-        if (action is not None):
-            self.v = self.E*v + (Nv + Fforcing)*self.f1 + 2.*(Na + Nb + 2*Fforcing)*self.f2 + (Nc + Fforcing)*self.f3
         else:
-            self.v = self.E*v + Nv*self.f1 + 2.*(Na + Nb)*self.f2 + Nc*self.f3
-        """
+            self.v = self.v - self.dt*0.5*self.k1*fft(self.u**2) + self.dt*self.nu*self.k2*self.v
 
+        # Impl-expl step (TODO)
+        #self.v = (self.v - self.dt*0.5*self.k1*fft(self.u**2) + self.dt*Fforcing) / (1. - self.dt*self.nu*self.k2*self.v)
+        
+        self.u = np.real(ifft(self.v))
+        
         self.stepnum += 1
         self.t       += self.dt
  
@@ -251,7 +287,6 @@ class Burger:
         self.uu[self.ioutnum,:] = self.u
         self.vv[self.ioutnum,:] = self.v
         self.tt[self.ioutnum]   = self.t
-        
 
     def simulate(self, nsteps=None, restart=False, correction=[]):
         #
@@ -290,8 +325,9 @@ class Burger:
 
     def fou2real(self):
         # Convert from spectral to physical space
-        #self.uut = self.stepnum
-        self.uu = np.real(ifft(self.vv))
+        self.uut = self.stepnum
+        if self.stepnum < self.uut:
+            self.uu = np.real(ifft(self.vv))
 
     def compute_Ek(self):
         #
@@ -360,29 +396,36 @@ class Burger:
         # compute u_resid
         self.uu_resid = self.uu - self.uu_filt
 
-    def getReward(self):
-        # Convert from spectral to physical space
-        self.fou2real()
-        
-        u = self.uu[self.ioutnum,:]
-        t = [self.t]
-        uMap = self.f_truth(self.x, t)
-        return -np.abs(u-uMap)
+    def getMseReward(self):
 
+        try:
+            uTruthToCoarse = self.mapGroundTruth()
+            uDiffMse = ((uTruthToCoarse[self.ioutnum,:] - self.uu[self.ioutnum,:])**2).mean()
+        except FloatingPointError:
+            print("[Burger] Floating point exception occured in mse", flush=True)
+            return -np.inf
+
+        return -uDiffMse
+     
     def getState(self, nAgents = None):
         # Convert from spectral to physical space
-        self.fou2real()
+        #self.iou2real()
 
         # Extract state
         u = self.uu[self.ioutnum,:]
+        
         #dudu = np.zeros(self.N)
         #dudu[:-1] = (u[1:]-u[:-1])/self.dx
         #dudu[-1] = dudu[-2]
-        dudt = (self.uu[self.ioutnum,:]-self.uu[self.ioutnum-1,:])/self.dt
+        #dudt = (self.uu[self.ioutnum,:]-self.uu[self.ioutnum-1,:])/self.dt
         #state = np.column_stack( (u, dudu, dudt) )
-        state = np.column_stack( (u, dudt) )
+        #state = np.column_stack( (u, dudt) )
+        #state = u
+             
+        up = np.roll(u,1)
+        um = np.roll(u,-1)
+        d2udx2 = (up - 2.*u + um)/self.dx**2
+        
+        state = d2udx2
+       
         return state
-
-    def updateField(self, factors):
-        # elementwise multiplication
-        self.v = self.v * factors

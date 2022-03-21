@@ -3,7 +3,7 @@ import sys
 sys.path.append('./../../_model/')
 
 import argparse
-from Burger import *
+from Diffusion import *
  
 parser = argparse.ArgumentParser()
 parser.add_argument('--N', help='Discretization / number of grid points', required=False, type=int, default=32)
@@ -12,14 +12,13 @@ parser.add_argument('--seed', help='Random seed', required=False, type=int, defa
 parser.add_argument('--episodelength', help='Actual length of episode / number of actions', required=False, type=int, default=500)
 
 args = parser.parse_args()
-
+ 
 # dns defaults
 N    = 512
 L    = 2*np.pi
-dt   = 0.001
-tEnd = 5
+dt   = 0.01
+tEnd = 10
 nu   = 0.01
-noise = 0.0
 ic   = args.ic
 seed = args.seed
 
@@ -31,18 +30,14 @@ numActions = 1
 gridSize = args.N
 episodeLength = args.episodelength
 
-# reward structure
-spectralReward = True
-
 # reward defaults
-#rewardFactor = 0.001 if spectralReward else 1.
-rewardFactor = 100 if spectralReward else 1.
-
+rewardFactor = 1.
 
 # DNS baseline
 print("Setting up DNS..")
-dns = Burger(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case=ic, noise=noise, seed=seed)
+dns = Diffusion(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case=ic, noisy=True, seed=seed)
 dns.simulate()
+dns.fou2real()
 dns.compute_Ek()
 
 ## create interpolated IC
@@ -53,12 +48,8 @@ tAvgEnergy = dns.Ek_tt
 print("Done!")
 
 # Initialize LES
-les = Burger(L=L, N=gridSize, dt=dt, nu=nu, tend=tEnd, noise=noise)
-if spectralReward:
-    les.IC( v0 = dns.v0[:gridSize] * gridSize / N )
-else:
-    les.IC( u0 = f_restart(les.x) )
-
+les = Diffusion(L=L, N=gridSize, dt=dt, nu=nu, tend=tEnd, noisy=False)
+les.IC( u0 = f_restart(les.x) )
 les.setup_basis(numActions, basis)
 les.setGroundTruth(dns.tt, dns.x, dns.uu)
 
@@ -81,17 +72,15 @@ while step < episodeLength and error == 0:
         error = 1
         break
     
-    # calculate reward
-    if spectralReward:
-        # Time-averaged energy spectrum as a function of wavenumber
-        kMseErr = np.mean((dns.Ek_ktt[les.ioutnum,:gridSize] - les.Ek_ktt[les.ioutnum,:gridSize])**2)
-        #kMseErr = np.mean((np.log(dns.Ek_ktt[les.ioutnum,:gridSize]) - np.log(les.Ek_ktt[les.ioutnum,:gridSize]))**2)
-        reward = -rewardFactor*kMseErr
-
-    else:
-        reward = rewardFactor*les.getMseReward()
-
+    idx = les.ioutnum
+    uTruthToCoarse = les.mapGroundTruth()
+    uDiffMse = ((uTruthToCoarse[idx,:] - les.uu[idx,:])**2).mean()
+    
+    # calculate reward from energy
+    # reward = -rewardFactor*(np.abs(les.Ek_tt[step*nIntermediate]-dns.Ek_tt[step*nIntermediate]))
+    reward = -rewardFactor*uDiffMse
     cumreward += reward
+
     if (np.isnan(reward)):
         print("Nan reward detected")
         error = 1

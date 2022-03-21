@@ -1,7 +1,7 @@
 #!/bin/python3
 
 """
-This scripts simulates the Burger on two grids (N1, N2) up to t=tEnd. We plot the Burger and
+This scripts simulates the KS on two grids (N1, N2) up to t=tEnd. We plot the Burger and
 the instanteneous energy plus the time averaged energy, and the energy spectra at 
 start, mid and end of the simulation.
 """
@@ -12,9 +12,9 @@ import numpy as np
 
 # Discretization grid
 N1 = 2048
-N2 = 64
-m = int(math.log2(N1 / N2)) + 1
-Nx = np.clip(N2*2**np.arange(0., m), a_min=0, a_max=N1).astype(int)
+N2 = 32
+M = int(math.log2(N1 / N2)) + 1
+Nx = np.clip(N2*2**np.arange(0., M), a_min=0, a_max=N1).astype(int)
 
 import matplotlib
 matplotlib.use('Agg')
@@ -26,22 +26,40 @@ sys.path.append('./../../_model/')
 from scipy import interpolate
 from scipy.fft import fftfreq
 
-from Burger import *
+from KS import *
 
 #------------------------------------------------------------------------------
 ## set parameters and initialize simulation
-L    = 2*np.pi
-dt   = 0.0001
-tEnd = 5
-nu   = 0.01
-ic   = 'turbulence'
+L          = 22
+dt         = 0.01
+tTransient = 50
+tEnd       = 1000
+nu         = 1.
+tSim       = tEnd-tTransient
+dns = KS(L=L, N=N1, dt=dt, nu=nu, tend=tTransient)
 
-dns = Burger(L=L, N=N1, dt=dt, nu=nu, tend=tEnd, case=ic)
+#------------------------------------------------------------------------------
+## simulate
+dns.simulate()
+# convert to physical space
+dns.fou2real()
+
+#------------------------------------------------------------------------------
+## plot result
+u = dns.uu
+#------------------------------------------------------------------------------
+## restart
+v_restart = dns.vv[-1,:].copy()
+u_restart = dns.uu[-1,:].copy()
+
 
 #------------------------------------------------------------------------------
 print("Simulate DNS")
+# restart from physical space
+dns.IC( u0 = u_restart )
+
 ## simulate DNS in transient phase and produce IC
-dns.simulate()
+dns.simulate( nsteps=int(tSim/dt), restart=True )
 # convert to physical space
 dns.fou2real()
 # compute energies
@@ -49,20 +67,19 @@ dns.compute_Ek()
 # IC and interpolation
 IC = dns.u0.copy()
 f_IC = interpolate.interp1d(dns.x, IC)
-
 f_dns = interpolate.interp2d(dns.x, dns.tt, dns.uu, kind='cubic')
 
 #------------------------------------------------------------------------------
 print("plot DNS")
 k1 = dns.k[:N1//2]
 
-fig, axs = plt.subplots(m+1, 5, sharex='col', sharey='col', subplot_kw=dict(box_aspect=1), figsize=(15,15))
+fig, axs = plt.subplots(M+1, 5, sharex='col', sharey='col', subplot_kw=dict(box_aspect=1), figsize=(15,15))
 axs[0,0].contourf(dns.x, dns.tt, dns.uu, 50)
 
 axs[0,2].plot(dns.tt, dns.Ek_t)
 axs[0,2].plot(dns.tt, dns.Ek_tt)
 
-nt = int(tEnd/dt)
+nt = int(tSim/dt)
 axs[0,4].plot(k1, np.abs(dns.Ek_ktt[0,0:N1//2]),'b:')
 axs[0,4].plot(k1, np.abs(dns.Ek_ktt[nt//2,0:N1//2]),'b--')
 axs[0,4].plot(k1, np.abs(dns.Ek_ktt[-1,0:N1//2]),'b')
@@ -77,7 +94,7 @@ idx = 1
 for N in Nx:
     print("Simulate SGS (N={})".format(N))
     ## simulate SGS from IC
-    sgs = Burger(L=L, N=N, dt=dt, nu=nu, tend=tEnd)
+    sgs = KS(L=L, N=N, dt=dt, nu=nu, tend=tSim)
     u0 = f_IC(sgs.x)
     sgs.IC(u0 = u0)
 

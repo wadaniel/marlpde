@@ -1,10 +1,10 @@
 #!/bin/python3
 
 """
-This scripts simulates the Burgers on a fine grid (N1) and on a coare grid (N2)
+This scripts simulates the Diffusion on a fine grid (N1) and on a coare grid (N2)
 The IC in the coarse grid is the interpolated IC of the fine grid. Then we plot 
-the Burgers of the fine grid, the Burgers on the coarse grid, and the difference between 
-Burgers of fine grid interpolated on coarse grid vs Burgers on coarse grid.
+the Diffusion of the fine grid, the Diffusion on the coarse grid, and the difference between 
+Dffusion of fine grid interpolated on coarse grid vs Diffusion on coarse grid.
 
 """
 
@@ -12,7 +12,7 @@ Burgers of fine grid interpolated on coarse grid vs Burgers on coarse grid.
 N1 = 1024
 
 # Discretization coarse grid
-N2 = 512
+N2 = 32
 
 import matplotlib
 matplotlib.use('Agg')
@@ -24,18 +24,17 @@ sys.path.append('./../../_model/')
 
 from scipy import interpolate
 import numpy as np
-from Burger import *
+from Diffusion import *
 
 #------------------------------------------------------------------------------
 ## set parameters and initialize simulation
 L    = 2*np.pi
-dt   = 0.0001
+dt   = 0.001
 tEnd = 5
 nu   = 0.01
-ic   = 'turbulence'
-seed = 31
-
-dns = Burger(L=L, N=N1, dt=dt, nu=nu, tend=tEnd, case=ic, seed=seed)
+ic   = 'box'
+dns = Diffusion(L=L, N=N1, dt=dt, nu=nu, tend=tEnd)
+dns.IC(case=ic)
 
 print("simulate dns..")
 ## simulate
@@ -54,7 +53,7 @@ u_restart = dns.uu[0,:].copy()
 f_restart = interpolate.interp1d(xTruth, u_restart)
 
 # restart from coarse physical space
-subgrid = Burger(L=L, N=N2, dt=dt, nu=nu, tend=tEnd)
+subgrid = Diffusion(L=L, N=N2, dt=dt, nu=nu, tend=tEnd)
 subgrid.IC(case=ic)
 subgrid.setGroundTruth(tTruth, xTruth, uTruth)
 
@@ -79,17 +78,15 @@ uTruthToCoarse = subgrid.mapGroundTruth()
 #------------------------------------------------------------------------------
 ## plot comparison
 print("plotting..")
-
-umax = max(dns.uu.max(), subgrid.uu.max())
-umin = min(dns.uu.min(), subgrid.uu.min())
-ulevels = np.linspace(umin, umax, 50)
-
-fig, axs = plt.subplots(1,3, figsize=(15,15))
-cs0 = axs[0].contourf(dns.x, dns.tt, uTruth, ulevels, cmap=plt.get_cmap("coolwarm"))
-cs1 = axs[1].contourf(subgrid.x, subgrid.tt, uCoarse, ulevels, cmap=plt.get_cmap("coolwarm"))
+fig, axs = plt.subplots(1,3)
+cs0 = axs[0].contourf(dns.x, dns.tt, uTruth, 50, cmap=plt.get_cmap("seismic"))
+cs1 = axs[1].contourf(subgrid.x, subgrid.tt, uCoarse, 50, cmap=plt.get_cmap("seismic"))
 diff = np.abs(uCoarse-uTruthToCoarse)
-cs2 = axs[2].contourf(subgrid.x, subgrid.tt, diff, 50, cmap=plt.get_cmap("coolwarm"))
+cs2 = axs[2].contourf(subgrid.x, subgrid.tt, diff, 50, cmap=plt.get_cmap("seismic"))
 
+# plt.colorbar(cs0, ax=axs[0])
+plt.colorbar(cs1, ax=axs[1])
+plt.colorbar(cs2, ax=axs[2])
 plt.setp(axs[:], xlabel='$x$')
 plt.setp(axs[0], ylabel='$t$')
 # for c in cs.collections: c.set_rasterized(True)

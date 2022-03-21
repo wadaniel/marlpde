@@ -1,29 +1,25 @@
-from Burger import *
+from Diffusion import *
 import matplotlib.pyplot as plt 
 
 # dns defaults
 N    = 512
 L    = 2*np.pi
-dt   = 0.001
-tEnd = 5
+dt   = 0.01
+tEnd = 10
 nu   = 0.01
 
-# reward structure
-spectralReward = False
-
 # reward defaults
-rewardFactor = 0.001 if spectralReward else 1.
-rewardFactor = 100 if spectralReward else 1.
+rewardFactor = 1.
 
 # basis defaults
 basis = 'hat'
 
-def environment( s , gridSize, numActions, episodeLength, ic, noise, seed ):
- 
-    testing = True if s["Custom Settings"]["Mode"] == "Testing" else False
-    noise = 0. if testing else noise   
+def environment( s , gridSize, numActions, episodeLength, ic, seed ):
     
-    dns = Burger(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case=ic, noise=noise, seed=seed)
+    testing = True if s["Custom Settings"]["Mode"] == "Testing" else False
+    noisy = False if testing else True
+
+    dns = Diffusion(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case=ic, noisy=noisy, seed=seed)
     dns.simulate()
     dns.fou2real()
     dns.compute_Ek()
@@ -32,13 +28,8 @@ def environment( s , gridSize, numActions, episodeLength, ic, noise, seed ):
     f_restart = interpolate.interp1d(dns.x, dns.u0, kind='cubic')
 
     # Initialize LES
-    les = Burger(L=L, N=gridSize, dt=dt, nu=nu, tend=tEnd, noise=0.)
-    if spectralReward:
-        les.IC( v0 = dns.v0[:gridSize] * gridSize / N )
-
-    else:
-        les.IC( u0 = f_restart(les.x) )
-
+    les = Diffusion(L=L, N=gridSize, dt=dt, nu=nu, tend=tEnd, noisy=False)
+    les.IC( u0 = f_restart(les.x) )
     les.setup_basis(numActions, basis)
     les.setGroundTruth(dns.tt, dns.x, dns.uu)
 
@@ -68,9 +59,7 @@ def environment( s , gridSize, numActions, episodeLength, ic, noise, seed ):
         try:
             for _ in range(nIntermediate):
                 les.step(actions)
-
             les.compute_Ek()
-            les.fou2real()
         except Exception as e:
             print("Exception occured:")
             print(str(e))
@@ -87,38 +76,28 @@ def environment( s , gridSize, numActions, episodeLength, ic, noise, seed ):
         else:
             state = newstate
 
+
         s["State"] = state
     
         # calculate reward
-
-        if spectralReward:
-            # Time-averaged energy spectrum as a function of wavenumber
-            kMseErr = np.mean((dns.Ek_ktt[les.ioutnum,:gridSize] - les.Ek_ktt[les.ioutnum,:gridSize])**2)
-            reward = -rewardFactor*kMseErr
-            #kMseErr = np.mean((np.log(dns.Ek_ktt[les.ioutnum,:gridSize]) - np.log(les.Ek_ktt[les.ioutnum,:gridSize]))**2)
-            #reward = -rewardFactor*kMseErr + 3.5/500
+        reward = rewardFactor*les.getMseReward()
  
-        else:
-            reward = rewardFactor*les.getMseReward()
-    
-       
         cumreward += reward
 
         if (np.isfinite(reward) == False):
             print("Nan reward detected")
             error = 1
             break
-    
         else:
             s["Reward"] = reward
- 
+        
         step += 1
 
     print(cumreward)
     if error == 1:
         s["State"] = state
         s["Termination"] = "Truncated"
-        s["Reward"] = -1000 if testing else -np.inf
+        s["Reward"] = -500
     
     else:
         s["Termination"] = "Terminal"
@@ -131,7 +110,7 @@ def environment( s , gridSize, numActions, episodeLength, ic, noise, seed ):
         np.savez(fileName, x = les.x, t = les.tt, uu = les.uu, vv = les.vv, L=L, N=gridSize, dt=dt, nu=nu, tEnd=tEnd, actions=actionHistory)
          
         print("Running uncontrolled SGS..")
-        base = Burger(L=L, N=gridSize, dt=dt, nu=nu, tend=tEnd, noise=0.)
+        base = Diffusion(L=L, N=gridSize, dt=dt, nu=nu, tend=tEnd, noisy=False)
         base.IC(u0 = f_restart(base.x))
         base.simulate()
         base.fou2real()
@@ -182,7 +161,7 @@ def environment( s , gridSize, numActions, episodeLength, ic, noise, seed ):
         
 #------------------------------------------------------------------------------
         print("plot baseline")
-        
+  
         k2 = les.k[:gridSize//2]
  
         idx = 1
@@ -218,7 +197,6 @@ def environment( s , gridSize, numActions, episodeLength, ic, noise, seed ):
         
         # Plot difference to dns
         axs[idx,1].contourf(les.x, les.tt, errU, elevels)
- 
 
         # Plot instanteneous energy and time averaged energy
         axs[idx,2].plot(time, les.Ek_t)
