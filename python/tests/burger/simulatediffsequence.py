@@ -11,7 +11,7 @@ import math
 import numpy as np
 
 # Discretization grid
-N1 = 2048
+N1 = 512
 N2 = 64
 m = int(math.log2(N1 / N2)) + 1
 Nx = np.clip(N2*2**np.arange(0., m), a_min=0, a_max=N1).astype(int)
@@ -49,7 +49,6 @@ dns.compute_Ek()
 # IC and interpolation
 IC = dns.u0.copy()
 f_IC = interpolate.interp1d(dns.x, IC)
-
 f_dns = interpolate.interp2d(dns.x, dns.tt, dns.uu, kind='cubic')
 
 #------------------------------------------------------------------------------
@@ -79,7 +78,8 @@ for N in Nx:
     ## simulate SGS from IC
     sgs = Burger(L=L, N=N, dt=dt, nu=nu, tend=tEnd)
     u0 = f_IC(sgs.x)
-    sgs.IC(u0 = u0)
+    #sgs.IC(u0 = u0)
+    sgs.IC(v0 = dns.v0[:N] * N / N1)
 
     sgs.simulate()
     # convert to physical space
@@ -95,6 +95,7 @@ for N in Nx:
     udns_int = f_dns(sgs.x, sgs.tt)
 
     errU = np.abs(sgs.uu-udns_int)
+
 #------------------------------------------------------------------------------
   
     k2 = sgs.k[:N//2]
@@ -119,6 +120,12 @@ for N in Nx:
     axs[idx,4].plot(k2, np.abs(sgs.Ek_ktt[0,0:N//2]),'b:')
     axs[idx,4].plot(k2, np.abs(sgs.Ek_ktt[nt//2,0:N//2]),'b--')
     axs[idx,4].plot(k2, np.abs(sgs.Ek_ktt[-1,0:N//2]),'b')
+    
+    # Energy spectrum error
+    axs[idx,4].plot(k2, np.abs(dns.Ek_ktt[0,0:N//2] - sgs.Ek_ktt[0,0:N//2]),'r:')
+    axs[idx,4].plot(k2, np.abs(dns.Ek_ktt[nt//2,0:N//2] - sgs.Ek_ktt[nt//2,0:N//2]),'r--')
+    axs[idx,4].plot(k2, np.abs(dns.Ek_ktt[-1,0:N//2] - sgs.Ek_ktt[-1,0:N//2]),'r')
+
     axs[idx,4].set_xscale('log')
     axs[idx,4].set_yscale('log')
 

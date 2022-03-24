@@ -56,8 +56,8 @@ print("Simulate SGS")
 ## simulate SGS from IC
 sgs = Burger(L=L, N=N2, dt=dt, nu=nu, tend=tEnd)
 u0 = f_IC(sgs.x)
-sgs.IC(u0 = u0)
-#sgs.IC(v0 = dns.v0[:N2]*N2/N1)
+#sgs.IC(u0 = u0)
+sgs.IC(v0 = dns.v0[:N2]*N2/N1)
 sgs.setGroundTruth(dns.tt, dns.x, dns.uu)
 
 sgs.simulate()
@@ -90,9 +90,10 @@ c0 = axs[0,0].contourf(dns.x, dns.tt, dns.uu, 50)
 axs[0,1].plot(dns.tt, dns.Ek_t)
 axs[0,1].plot(dns.tt, dns.Ek_tt)
 
-axs[0,2].plot(k1, np.abs(dns.Ek_ktt[0,0:N1//2]),'b--')
-axs[0,2].plot(k1, np.abs(dns.Ek_ktt[nt//2,0:N1//2]),'b:')
+axs[0,2].plot(k1, np.abs(dns.Ek_ktt[0,0:N1//2]),'b:')
+axs[0,2].plot(k1, np.abs(dns.Ek_ktt[nt//2,0:N1//2]),'b--')
 axs[0,2].plot(k1, np.abs(dns.Ek_ktt[-1,0:N1//2]),'b')
+
 axs[0,2].set_xscale('log')
 axs[0,2].set_yscale('log')
 
@@ -103,13 +104,18 @@ axs[1,0].contourf(sgs.x, sgs.tt, sgs.uu, c0.levels)
 axs[1,1].plot(sgs.tt, sgs.Ek_t)
 axs[1,1].plot(sgs.tt, sgs.Ek_tt)
 
-axs[1,2].plot(k2, np.abs(dns.Ek_ktt[0,0:N2//2]),'b--')
-axs[1,2].plot(k2, np.abs(dns.Ek_ktt[nt//2,0:N2//2]),'b:')
-axs[1,2].plot(k2, np.abs(dns.Ek_ktt[-1,0:N2//2]),'b')
+axs[1,2].plot(k2, np.abs(sgs.Ek_ktt[0,0:N2//2]),'b:')
+axs[1,2].plot(k2, np.abs(sgs.Ek_ktt[nt//2,0:N2//2]),'b--')
+axs[1,2].plot(k2, np.abs(sgs.Ek_ktt[-1,0:N2//2]),'b')
+
+axs[1,2].plot(k2, np.abs(dns.Ek_ktt[0,0:N2//2] - sgs.Ek_ktt[0,0:N2//2]),'r:')
+axs[1,2].plot(k2, np.abs(dns.Ek_ktt[nt//2,0:N2//2] - sgs.Ek_ktt[nt//2,0:N2//2]),'r--')
+axs[1,2].plot(k2, np.abs(dns.Ek_ktt[-1,0:N2//2] - sgs.Ek_ktt[-1,0:N2//2]),'r')
+
 axs[1,2].set_xscale('log')
 axs[1,2].set_yscale('log')
 
-print("plot simulate_energies.png")
+print("Plot simulate_energies.png")
 fig.savefig('simulate_energies.png')
 
 fig, axs = plt.subplots(1,4, sharex='row', figsize=(15,15)) #, sharey='row')

@@ -6,7 +6,7 @@ import argparse
 from Burger import *
  
 parser = argparse.ArgumentParser()
-parser.add_argument('--N', help='Discretization / number of grid points', required=False, type=int, default=32)
+parser.add_argument('--N', help='Discretization / number of grid points', required=False, type=int, default=64)
 parser.add_argument('--ic', help='Initial condition', required=False, type=str, default='box')
 parser.add_argument('--seed', help='Random seed', required=False, type=int, default=42)
 parser.add_argument('--episodelength', help='Actual length of episode / number of actions', required=False, type=int, default=500)
