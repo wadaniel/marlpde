@@ -9,11 +9,13 @@ tEnd = 5
 nu   = 0.01
 
 # reward structure
-spectralReward = False
+spectralReward = True
+spectralLogReward = False
 
 # reward defaults
-rewardFactor = 0.001 if spectralReward else 1.
-#rewardFactor = 100 if spectralReward else 1.
+rewardFactor = 100 if spectralReward else 1.
+rewardFactor = 0.001 if spectralLogReward else rewardFactor
+
 
 # basis defaults
 basis = 'hat'
@@ -33,7 +35,7 @@ def environment( s , gridSize, numActions, episodeLength, ic, noise, seed ):
 
     # Initialize LES
     les = Burger(L=L, N=gridSize, dt=dt, nu=nu, tend=tEnd, noise=0.)
-    if spectralReward:
+    if spectralReward or spectralLogReward:
         les.IC( v0 = dns.v0[:gridSize] * gridSize / N )
 
     else:
@@ -90,18 +92,19 @@ def environment( s , gridSize, numActions, episodeLength, ic, noise, seed ):
         s["State"] = state
     
         # calculate reward
-
         if spectralReward:
             # Time-averaged energy spectrum as a function of wavenumber
             kMseErr = np.mean((dns.Ek_ktt[les.ioutnum,:gridSize] - les.Ek_ktt[les.ioutnum,:gridSize])**2)
             reward = -rewardFactor*kMseErr
-            #kMseErr = np.mean((np.log(dns.Ek_ktt[les.ioutnum,:gridSize]) - np.log(les.Ek_ktt[les.ioutnum,:gridSize]))**2)
-            #reward = -rewardFactor*kMseErr + 3.5/500
- 
+    
+        elif spectralLogReward:
+            kMseLogErr = np.mean((np.log(dns.Ek_ktt[les.ioutnum,:gridSize]) - np.log(les.Ek_ktt[les.ioutnum,:gridSize]))**2)
+            reward = -rewardFactor*kMseLogErr
+
         else:
             reward = rewardFactor*les.getMseReward()
-    
-       
+
+        # accumulat reward
         cumreward += reward
 
         if (np.isfinite(reward) == False):
@@ -196,7 +199,7 @@ def environment( s , gridSize, numActions, episodeLength, ic, noise, seed ):
         axs[idx,2].plot(time, base.Ek_t)
         axs[idx,2].plot(time, base.Ek_tt)
      
-        # Plot energy differences
+        # Plot energy and field differences
         axs[idx,3].plot(time, errBaseEk_t)
         axs[idx,3].plot(time, errBaseEk_tt)
         axs[idx,3].plot(time, errBaseU_t)

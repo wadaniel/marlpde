@@ -33,10 +33,11 @@ episodeLength = args.episodelength
 
 # reward structure
 spectralReward = True
+spectralLogReward = False
 
 # reward defaults
-#rewardFactor = 0.001 if spectralReward else 1.
 rewardFactor = 100 if spectralReward else 1.
+rewardFactor = 0.001 if spectralLogReward else rewardFactor
 
 
 # DNS baseline
@@ -54,7 +55,7 @@ print("Done!")
 
 # Initialize LES
 les = Burger(L=L, N=gridSize, dt=dt, nu=nu, tend=tEnd, noise=noise)
-if spectralReward:
+if spectralReward or spectralLogReward:
     les.IC( v0 = dns.v0[:gridSize] * gridSize / N )
 else:
     les.IC( u0 = f_restart(les.x) )
@@ -85,8 +86,11 @@ while step < episodeLength and error == 0:
     if spectralReward:
         # Time-averaged energy spectrum as a function of wavenumber
         kMseErr = np.mean((dns.Ek_ktt[les.ioutnum,:gridSize] - les.Ek_ktt[les.ioutnum,:gridSize])**2)
-        #kMseErr = np.mean((np.log(dns.Ek_ktt[les.ioutnum,:gridSize]) - np.log(les.Ek_ktt[les.ioutnum,:gridSize]))**2)
         reward = -rewardFactor*kMseErr
+    
+    elif spectralLogReward:
+        kMseLogErr = np.mean((np.log(dns.Ek_ktt[les.ioutnum,:gridSize]) - np.log(les.Ek_ktt[les.ioutnum,:gridSize]))**2)
+        reward = -rewardFactor*kMseLogErr
 
     else:
         reward = rewardFactor*les.getMseReward()
