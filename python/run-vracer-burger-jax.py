@@ -32,7 +32,7 @@ e = korali.Experiment()
 
 ### Defining results folder and loading previous results, if any
 
-resultFolder = '_result_burger_{}_{}_{}_{}_{}_{}/'.format(args.ic, args.N, args.numactions, args.noise, args.seed, args.run)
+resultFolder = '_result_burger_jax_{}_{}_{}_{}_{}_{}/'.format(args.ic, args.N, args.numactions, args.noise, args.seed, args.run)
 found = e.loadState(resultFolder + '/latest')
 if found == True:
 	print("[Korali] Continuing execution from previous run...\n")
@@ -112,7 +112,7 @@ e["File Output"]["Frequency"] = 500
 e["File Output"]["Path"] = resultFolder
 
 if args.test:
-    fileName = 'test_burger_{}_{}_{}_{}_{}'.format(args.ic, args.N, args.numactions, args.seed, args.run)
+    fileName = 'test_burger_jax_{}_{}_{}_{}_{}'.format(args.ic, args.N, args.numactions, args.seed, args.run)
     e["Solver"]["Testing"]["Sample Ids"] = [0]
     e["Problem"]["Custom Settings"]["Filename"] = fileName
 

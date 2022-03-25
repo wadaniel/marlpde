@@ -260,7 +260,6 @@ class Burger_jax:
 
     def jexpl_euler(self, actions, u, v,  n):
 
-        Fforcing = np.zeros(self.N)
         forcing = jnp.matmul(actions, self.basis)
         Fforcing = jnp.fft.fft( forcing )
 
@@ -293,8 +292,7 @@ class Burger_jax:
 
         if (actions is not None):
 
-            #(self.u, self.v) = self.expl_euler(actions, self.u, self.v, nIntermed)
-            Fforcing = np.zeros(self.N)
+            actions = np.array(actions)
             forcing = np.matmul(actions, self.basis)
             Fforcing = fft( forcing )
 
@@ -456,6 +454,8 @@ class Burger_jax:
         gl = np.roll(self.gradient, shift = 1, axis = 0)
         gr = np.roll(self.gradient, shift = -1, axis = 0)
         d2gdx2 = (gl -2.*self.gradient + gr)/self.dx**2
+        #print(np.max(d2gdx2, axis=0))
+        #print(np.min(d2gdx2, axis=0))
 
         return d2gdx2
 

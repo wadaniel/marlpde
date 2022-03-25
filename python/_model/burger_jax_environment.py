@@ -19,16 +19,21 @@ rewardFactor = 0.001 if spectralLogReward else rewardFactor
 
 # basis defaults
 basis = 'hat'
+ 
+dns = Burger_jax(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case='turbulence', noise=0., seed=42)
+dns.simulate()
+dns.fou2real()
+dns.compute_Ek()
 
 def environment( s , gridSize, numActions, episodeLength, ic, noise, seed ):
 
     testing = True if s["Custom Settings"]["Mode"] == "Testing" else False
     noise = 0. if testing else noise
 
-    dns = Burger_jax(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case=ic, noise=noise, seed=seed)
-    dns.simulate()
-    dns.fou2real()
-    dns.compute_Ek()
+    #dns = Burger_jax(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case=ic, noise=noise, seed=seed)
+    #dns.simulate()
+    #dns.fou2real()
+    #dns.compute_Ek()
 
     ## create interpolated IC
     f_restart = interpolate.interp1d(dns.x, dns.u0, kind='cubic')
@@ -46,9 +51,8 @@ def environment( s , gridSize, numActions, episodeLength, ic, noise, seed ):
 
     ## get initial state
     state = les.getState().flatten().tolist()
-    gradient = les.getGrad()
     s["State"] = state
-    s["State Gradient"] = gradient
+    s["State Gradient"] = les.getGrad().tolist()
     ## run controlled simulation
     error = 0
     step = 0
@@ -59,7 +63,6 @@ def environment( s , gridSize, numActions, episodeLength, ic, noise, seed ):
     actionHistory = []
 
     while step < episodeLength and error == 0:
-
         # Getting new action
         s.update()
 
@@ -69,13 +72,11 @@ def environment( s , gridSize, numActions, episodeLength, ic, noise, seed ):
         timestamps.append(les.t)
 
         try:
-            #for _ in range(nIntermediate):
             les.step(actions, nIntermediate)
-
             les.compute_Ek()
             les.fou2real()
         except Exception as e:
-            print("Exception occured:")
+            print("[burger_jax_env] Exception occured during in stepping..:")
             print(str(e))
             error = 1
             break
@@ -91,8 +92,10 @@ def environment( s , gridSize, numActions, episodeLength, ic, noise, seed ):
         else:
             state = newstate
             gradient = newgrad
+
+        #print(step)
         s["State"] = state
-        s["State Gradient"] = gradient
+        s["State Gradient"] = gradient.tolist()
         
         if spectralReward:
             # Time-averaged energy spectrum as a function of wavenumber
@@ -106,7 +109,7 @@ def environment( s , gridSize, numActions, episodeLength, ic, noise, seed ):
         else:
             reward = rewardFactor*les.getMseReward()
 
-
+        
 
         cumreward += reward
 
@@ -123,6 +126,7 @@ def environment( s , gridSize, numActions, episodeLength, ic, noise, seed ):
     print(cumreward)
     if error == 1:
         s["State"] = state
+        s["State Gradient"] = les.getGrad().tolist()
         s["Termination"] = "Truncated"
         s["Reward"] = -1000 if testing else -np.inf
 
