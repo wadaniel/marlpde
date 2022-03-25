@@ -180,6 +180,7 @@ class Burger:
 
                             Ek = A*5**(-5/3) if k <= 5 else A*k**(-5/3) 
                             u0 += np.sqrt(2*Ek)*np.sin(k*2*np.pi*self.x/self.L+phase + offset)
+                            
                         # rescale IC
                         idx = 0
                         criterion = np.sqrt(np.sum((u0-1.)**2)/self.N)
@@ -414,14 +415,6 @@ class Burger:
 
         # Extract state
         u = self.uu[self.ioutnum,:]
-        
-        #dudu = np.zeros(self.N)
-        #dudu[:-1] = (u[1:]-u[:-1])/self.dx
-        #dudu[-1] = dudu[-2]
-        #dudt = (self.uu[self.ioutnum,:]-self.uu[self.ioutnum-1,:])/self.dt
-        #state = np.column_stack( (u, dudu, dudt) )
-        #state = np.column_stack( (u, dudt) )
-        #state = u
              
         up = np.roll(u,1)
         um = np.roll(u,-1)

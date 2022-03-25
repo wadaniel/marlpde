@@ -460,20 +460,9 @@ class Burger_jax:
         return d2gdx2
 
     def getState(self, nAgents = None):
-        # Convert from spectral to physical space
-        #self.iou2real()
 
         # Extract state
         u = self.uu[self.ioutnum,:]
-
-        #dudu = np.zeros(self.N)
-        #dudu[:-1] = (u[1:]-u[:-1])/self.dx
-        #dudu[-1] = dudu[-2]
-        #dudt = (self.uu[self.ioutnum,:]-self.uu[self.ioutnum-1,:])/self.dt
-        #state = np.column_stack( (u, dudu, dudt) )
-        #state = np.column_stack( (u, dudt) )
-        #state = u
-
         up = np.roll(u,1)
         um = np.roll(u,-1)
         d2udx2 = (up - 2.*u + um)/self.dx**2

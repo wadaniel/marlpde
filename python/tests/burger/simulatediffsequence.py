@@ -74,6 +74,7 @@ axs[0,4].set_yscale('log')
 idx = 1
 
 for N in Nx:
+
     print("Simulate SGS (N={})".format(N))
     ## simulate SGS from IC
     sgs = Burger(L=L, N=N, dt=dt, nu=nu, tend=tEnd)

@@ -10,10 +10,12 @@ nu   = 0.01
 
 # reward structure
 spectralReward = False
+spectralLogReward = True
 
 # reward defaults
-rewardFactor = 0.001 if spectralReward else 1.
-#rewardFactor = 100 if spectralReward else 1.
+rewardFactor = 100 if spectralReward else 1.
+rewardFactor = 0.001 if spectralLogReward else rewardFactor
+
 
 # basis defaults
 basis = 'hat'
@@ -33,7 +35,7 @@ def environment( s , gridSize, numActions, episodeLength, ic, noise, seed ):
 
     # Initialize LES
     les = Burger_jax(L=L, N=gridSize, dt=dt, nu=nu, tend=tEnd, noise=0.)
-    if spectralReward:
+    if spectralReward or spectralLogReward:
         les.IC( v0 = dns.v0[:gridSize] * gridSize / N )
 
     else:
@@ -91,17 +93,19 @@ def environment( s , gridSize, numActions, episodeLength, ic, noise, seed ):
             gradient = newgrad
         s["State"] = state
         s["State Gradient"] = gradient
-        # calculate reward
-
+        
         if spectralReward:
             # Time-averaged energy spectrum as a function of wavenumber
             kMseErr = np.mean((dns.Ek_ktt[les.ioutnum,:gridSize] - les.Ek_ktt[les.ioutnum,:gridSize])**2)
             reward = -rewardFactor*kMseErr
-            #kMseErr = np.mean((np.log(dns.Ek_ktt[les.ioutnum,:gridSize]) - np.log(les.Ek_ktt[les.ioutnum,:gridSize]))**2)
-            #reward = -rewardFactor*kMseErr + 3.5/500
+    
+        elif spectralLogReward:
+            kMseLogErr = np.mean((np.log(dns.Ek_ktt[les.ioutnum,:gridSize]) - np.log(les.Ek_ktt[les.ioutnum,:gridSize]))**2)
+            reward = -rewardFactor*kMseLogErr
 
         else:
             reward = rewardFactor*les.getMseReward()
+
 
 
         cumreward += reward
