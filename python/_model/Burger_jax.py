@@ -131,7 +131,7 @@ class Burger_jax:
         jnp.allclose(jnp.sum(self.basis, axis=0), 1)
         "setting up gradient"
         assert self.N % self.M == 0, "[Burger] Something went wrong in gradient setup"
-        self.gradient = jnp.ones((self.N, self.M))
+        self.gradient = np.ones((self.N, self.M))
 
     def IC(self, u0=None, v0=None, case='box', seed=42):
 

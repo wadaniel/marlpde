@@ -270,6 +270,17 @@ class Burger_jax2:
 
         return (u, v)
 
+    def expl_euler(self, actions, u, v):
+
+        Fforcing = np.zeros(self.N)
+        forcing = np.matmul(actions, self.basis)
+        Fforcing = fft( forcing )
+
+        v = v - self.dt*0.5*self.k1*fft(u*u) + self.dt*self.nu*self.k2*v + self.dt*Fforcing
+        u = np.real(ifft(v))
+
+        return (u, v)
+
     def grad(self, actions, u, v):
 
         #ee = jit(self.expl_euler)
