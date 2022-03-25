@@ -450,6 +450,15 @@ class Burger_jax:
 
         return -uDiffMse
 
+
+    def getGrad(self, nAgens = None):
+        # laplace operator applied to gradient for diffusion
+        gl = np.roll(self.gradient, shift = 1, axis = 0)
+        gr = np.roll(self.gradient, shift = -1, axis = 0)
+        d2gdx2 = (gl -2.*self.gradient + gr)/self.dx**2
+
+        return d2gdx2
+
     def getState(self, nAgents = None):
         # Convert from spectral to physical space
         #self.iou2real()
