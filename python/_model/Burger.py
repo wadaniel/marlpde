@@ -268,6 +268,7 @@ class Burger:
             #d2udx2 = (up - 2.*u + um)/self.dx**2
 
             #Fforcing = fft( forcing*d2udx2 )
+            
             Fforcing = fft( forcing )
 
             self.v = self.v - self.dt*0.5*self.k1*fft(self.u**2) + self.dt*self.nu*self.k2*self.v + self.dt*Fforcing 

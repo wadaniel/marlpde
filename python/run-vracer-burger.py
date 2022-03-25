@@ -42,7 +42,7 @@ e["Problem"]["Type"] = "Reinforcement Learning / Continuous"
 e["Problem"]["Custom Settings"]["Mode"] = "Testing" if args.test else "Training"
 e["Problem"]["Environment Function"] = lambda s : be.environment( s, args.N, args.numactions, args.episodelength, args.ic, args.noise, args.seed )
 e["Problem"]["Testing Frequency"] = 100
-e["Problem"]["Policy Testing Episodes"] = 20
+e["Problem"]["Policy Testing Episodes"] = 1
 
 ### Defining Agent Configuration 
 
@@ -65,8 +65,8 @@ for i in range(nState):
 for i in range(args.numactions):
     e["Variables"][nState+i]["Name"] = "Forcing " + str(i)
     e["Variables"][nState+i]["Type"] = "Action"
-    e["Variables"][nState+i]["Lower Bound"] = -1.
-    e["Variables"][nState+i]["Upper Bound"] = +1.
+    e["Variables"][nState+i]["Lower Bound"] = -5.
+    e["Variables"][nState+i]["Upper Bound"] = +5.
     e["Variables"][nState+i]["Initial Exploration Noise"] = args.iex
 
 ### Setting Experience Replay and REFER settings

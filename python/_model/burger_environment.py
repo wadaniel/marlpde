@@ -9,8 +9,8 @@ tEnd = 5
 nu   = 0.01
 
 # reward structure
-spectralReward = True
-spectralLogReward = False
+spectralReward = False
+spectralLogReward = True
 
 # reward defaults
 rewardFactor = 100 if spectralReward else 1.
