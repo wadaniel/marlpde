@@ -13,7 +13,7 @@ spectralReward = False
 
 # reward defaults
 rewardFactor = 0.001 if spectralReward else 1.
-rewardFactor = 100 if spectralReward else 1.
+#rewardFactor = 100 if spectralReward else 1.
 
 # basis defaults
 basis = 'hat'
