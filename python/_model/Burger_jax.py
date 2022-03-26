@@ -451,6 +451,9 @@ class Burger_jax:
 
     def getGrad(self, nAgens = None):
 
+        return self.gradient
+
+        """
         # laplace operator applied to gradient for diffusion
         gl = np.roll(self.gradient, shift = 1, axis = 0)
         gr = np.roll(self.gradient, shift = -1, axis = 0)
@@ -459,11 +462,16 @@ class Burger_jax:
         #print(np.min(d2gdx2, axis=0))
 
         return d2gdx2
+        """
 
     def getState(self, nAgents = None):
 
         # Extract state
         u = self.uu[self.ioutnum,:]
+
+        return self.u
+        
+        """
         up = np.roll(u,1)
         um = np.roll(u,-1)
         d2udx2 = (up - 2.*u + um)/self.dx**2
@@ -471,3 +479,4 @@ class Burger_jax:
         state = d2udx2
 
         return state
+        """

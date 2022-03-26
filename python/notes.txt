@@ -38,4 +38,6 @@
 # Run 46 - Logspectral reward with mean rescale, iex 1.
 # Run 47 - Logspectral reward with mean rescale, iex 1., diff forcing
 
-# Run 51 - Logspectral reward with mean rescale, iex 0.1, N = 32
+# Run 51 - Logspectral reward with mean rescale, iex 0.1, N = 32 (seed 42 and 31)
+# Run 52 - Spectral reward with mean rescale, iex 0.1, N = 32 (seed 42, 3.08 reward at start)
+# Run 53 - Instantanteous Logspectral reward with mean rescale, iex 0.1, N = 32 (seed 42, -6.1 reward at start)
