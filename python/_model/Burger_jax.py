@@ -17,6 +17,18 @@ def hat( x, mean, dx ):
     right = np.clip((dx - x + mean)/dx, a_min = 0., a_max = 1.)
     return left + right - 1.
 
+@jit
+def jexpl_euler(actions, u, v,  n, basis, dt, nu, k1, k2):
+
+    forcing = jnp.matmul(actions, basis)
+    Fforcing = jnp.fft.fft( forcing )
+
+    v = v - dt*0.5*k1*jnp.fft.fft(u*u) + dt*nu*k2*v + dt*Fforcing
+    u = jnp.real(jnp.fft.ifft(v))
+
+    return (u, v)
+
+
 class Burger_jax:
     #
     # Solution of the Burgers equation
@@ -58,7 +70,7 @@ class Burger_jax:
         self.basis = None
 
         # gradient
-        self.gradient = 0
+        self.gradient = np.zeros((self.N, self.M))
 
         # time when field space transformed
         self.uut = -1
@@ -140,7 +152,7 @@ class Burger_jax:
             self.basis = np.ones((self.M, self.N))
 
         np.testing.assert_allclose(np.sum(self.basis, axis=0), 1)
-        self.gradient = np.ones((self.N, self.M))
+        self.gradient = np.zeros((self.N, self.M))
 
     def IC(self, u0=None, v0=None, case='box'):
 
@@ -258,21 +270,8 @@ class Burger_jax:
         print("[Burger] TODO.. exit")
         sys.exit()
 
-    def jexpl_euler(self, actions, u, v,  n):
-
-        forcing = jnp.matmul(actions, self.basis)
-        Fforcing = jnp.fft.fft( forcing )
-
-        for _ in range(n):
-
-            v = v - self.dt*0.5*self.k1*jnp.fft.fft(u*u) + self.dt*self.nu*self.k2*v + self.dt*Fforcing
-            u = jnp.real(jnp.fft.ifft(v))
-
-        return (u, v)
-
     def expl_euler(self, actions, u, v, n):
 
-        Fforcing = np.zeros(self.N)
         forcing = np.matmul(actions, self.basis)
         Fforcing = fft( forcing )
 
@@ -284,10 +283,8 @@ class Burger_jax:
         return (u, v)
 
     def grad(self, actions, u, v, n):
-
-        #ee = jit(self.expl_euler)
-        return jacfwd(self.jexpl_euler, has_aux=True)(actions, u, v, n)
-
+        return jacfwd(jexpl_euler, has_aux=True, argnums=(0,1))(actions, u, v, n, self.basis, self.dt, self.nu, self.k1, self.k2)[0]
+ 
     def step( self, actions=None, nIntermed=1 ):
 
         if (actions is not None):
@@ -296,6 +293,8 @@ class Burger_jax:
             forcing = np.matmul(actions, self.basis)
             Fforcing = fft( forcing )
 
+            self.gradient = np.zeros((self.N, self.M))
+            
             for _ in range(nIntermed):
 
                 self.v = self.v - self.dt*0.5*self.k1*fft(self.u**2) + self.dt*self.nu*self.k2*self.v + self.dt*Fforcing
@@ -309,7 +308,8 @@ class Burger_jax:
                 self.vv[self.ioutnum,:] = self.v
                 self.tt[self.ioutnum]   = self.t
 
-            self.gradient = self.grad(actions, self.u, self.v, nIntermed)[0]
+                duda, dudu = self.grad(actions, self.u, self.v, nIntermed)
+                self.gradient = np.matmul(dudu, self.gradient) + duda
 
         else:
 
@@ -450,6 +450,7 @@ class Burger_jax:
 
 
     def getGrad(self, nAgens = None):
+
         # laplace operator applied to gradient for diffusion
         gl = np.roll(self.gradient, shift = 1, axis = 0)
         gr = np.roll(self.gradient, shift = -1, axis = 0)

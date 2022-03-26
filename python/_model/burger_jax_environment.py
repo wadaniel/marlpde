@@ -86,14 +86,13 @@ def environment( s , gridSize, numActions, episodeLength, ic, noise, seed ):
         newstate = les.getState().flatten().tolist()
         newgrad = les.getGrad()
         if(np.isfinite(newstate).all() == False):
-            print("Nan state detected")
+            print("[burger_jax_env] Nan state detected")
             error = 1
             break
         else:
             state = newstate
             gradient = newgrad
 
-        #print(step)
         s["State"] = state
         s["State Gradient"] = gradient.tolist()
         
@@ -114,7 +113,7 @@ def environment( s , gridSize, numActions, episodeLength, ic, noise, seed ):
         cumreward += reward
 
         if (np.isfinite(reward) == False):
-            print("Nan reward detected")
+            print("[burger_jax_env] Nan reward detected")
             error = 1
             break
 
