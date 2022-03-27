@@ -40,4 +40,8 @@
 
 # Run 51 - Logspectral reward with mean rescale, iex 0.1, N = 32 (seed 42 and 31)
 # Run 52 - Spectral reward with mean rescale, iex 0.1, N = 32 (seed 42, 3.08 reward at start)
-# Run 53 - Instantanteous Logspectral reward with mean rescale, iex 0.1, N = 32 (seed 42, -6.1 reward at start)
+# Run 53 - Instantanteous Logspectral reward with mean rescale, iex 0.1, N = 32 (seed 42, -6.13 reward at start)
+
+
+# Run 60 - Logspectral reward, N 32, Sinus
+# Run 61 - Mse reward, N 32, Sinus

@@ -10,7 +10,7 @@ nu   = 0.01
 
 # reward structure
 spectralReward = False
-spectralLogReward = True
+spectralLogReward = False
 
 # reward defaults
 rewardFactor = 0.001 if spectralReward else 1.
@@ -28,7 +28,6 @@ def environment( s , gridSize, numActions, episodeLength, ic, noise, seed ):
  
     testing = True if s["Custom Settings"]["Mode"] == "Testing" else False
     noise = 0. if testing else noise   
- 
     
     if noise > 0.:
         dns = Burger(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case=ic, noise=noise, seed=seed)
@@ -45,7 +44,6 @@ def environment( s , gridSize, numActions, episodeLength, ic, noise, seed ):
     les = Burger(L=L, N=gridSize, dt=dt, nu=nu, tend=tEnd, noise=0.)
     if spectralReward or spectralLogReward:
         les.IC( v0 = dns.v0[:gridSize] * gridSize / N )
-
     else:
         les.IC( u0 = f_restart(les.x) )
 

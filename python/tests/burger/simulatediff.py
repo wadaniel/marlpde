@@ -93,6 +93,7 @@ axs[0,1].plot(dns.tt, dns.Ek_tt)
 axs[0,2].plot(k1, np.abs(dns.Ek_ktt[0,0:N1//2]),'b:')
 axs[0,2].plot(k1, np.abs(dns.Ek_ktt[nt//2,0:N1//2]),'b--')
 axs[0,2].plot(k1, np.abs(dns.Ek_ktt[-1,0:N1//2]),'b')
+axs[0,2].plot(k1[2:-10], 1e-5*k1[2:-10]**(-2),'k--', linewidth=0.5)
 
 axs[0,2].set_xscale('log')
 axs[0,2].set_yscale('log')

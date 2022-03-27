@@ -13,27 +13,29 @@ spectralReward = False
 spectralLogReward = True
 
 # reward defaults
-rewardFactor = 100 if spectralReward else 1.
+rewardFactor = 0.001 if spectralReward else 1.
 rewardFactor = 0.001 if spectralLogReward else rewardFactor
 
+dns_default = Burger_jax(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case='turbulence', noise=0., seed=42)
+dns_default.simulate()
+dns_default.fou2real()
+dns_default.compute_Ek()
 
 # basis defaults
 basis = 'hat'
  
-dns = Burger_jax(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case='turbulence', noise=0., seed=42)
-dns.simulate()
-dns.fou2real()
-dns.compute_Ek()
-
 def environment( s , gridSize, numActions, episodeLength, ic, noise, seed ):
 
     testing = True if s["Custom Settings"]["Mode"] == "Testing" else False
     noise = 0. if testing else noise
 
-    #dns = Burger_jax(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case=ic, noise=noise, seed=seed)
-    #dns.simulate()
-    #dns.fou2real()
-    #dns.compute_Ek()
+    if noise > 0.:
+        dns = Burger_jax(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case=ic, noise=noise, seed=seed)
+        dns.simulate()
+        dns.fou2real()
+        dns.compute_Ek()
+    else:
+        dns = dns_default
 
     ## create interpolated IC
     f_restart = interpolate.interp1d(dns.x, dns.u0, kind='cubic')
@@ -42,7 +44,6 @@ def environment( s , gridSize, numActions, episodeLength, ic, noise, seed ):
     les = Burger_jax(L=L, N=gridSize, dt=dt, nu=nu, tend=tEnd, noise=0.)
     if spectralReward or spectralLogReward:
         les.IC( v0 = dns.v0[:gridSize] * gridSize / N )
-
     else:
         les.IC( u0 = f_restart(les.x) )
 
@@ -98,11 +99,13 @@ def environment( s , gridSize, numActions, episodeLength, ic, noise, seed ):
         
         if spectralReward:
             # Time-averaged energy spectrum as a function of wavenumber
-            kMseErr = np.mean((dns.Ek_ktt[les.ioutnum,:gridSize] - les.Ek_ktt[les.ioutnum,:gridSize])**2)
+            #kMseErr = np.mean((dns.Ek_ktt[les.ioutnum,:gridSize] - les.Ek_ktt[les.ioutnum,:gridSize])**2)
+            kMseErr = np.mean(np.log(np.abs((dns.Ek_ktt[les.ioutnum,:gridSize] - les.Ek_ktt[les.ioutnum,:gridSize]))))
             reward = -rewardFactor*kMseErr
     
         elif spectralLogReward:
-            kMseLogErr = np.mean((np.log(dns.Ek_ktt[les.ioutnum,:gridSize]) - np.log(les.Ek_ktt[les.ioutnum,:gridSize]))**2)
+            #kMseLogErr = np.mean((np.log(dns.Ek_ktt[les.ioutnum,:gridSize]) - np.log(les.Ek_ktt[les.ioutnum,:gridSize]))**2)
+            kMseLogErr = np.mean((np.log(dns.Ek_kt[les.ioutnum,:gridSize]) - np.log(les.Ek_kt[les.ioutnum,:gridSize]))**2)
             reward = -rewardFactor*kMseLogErr
 
         else:

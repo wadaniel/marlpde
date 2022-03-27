@@ -264,13 +264,13 @@ class Burger:
 
             u = self.uu[self.ioutnum,:]
 
-            #up = np.roll(u,1)
-            #um = np.roll(u,-1)
-            #d2udx2 = (up - 2.*u + um)/self.dx**2
+            up = np.roll(u,1)
+            um = np.roll(u,-1)
+            d2udx2 = (up - 2.*u + um)/self.dx**2
 
-            #Fforcing = fft( forcing*d2udx2 )
+            Fforcing = fft( forcing*d2udx2 )
             
-            Fforcing = fft( forcing )
+            #Fforcing = fft( forcing )
 
             self.v = self.v - self.dt*0.5*self.k1*fft(self.u**2) + self.dt*self.nu*self.k2*self.v + self.dt*Fforcing 
         

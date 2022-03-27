@@ -59,13 +59,14 @@ def fBurger( s , gridSize, episodeLength, ic, seed):
                 up = np.roll(u, -1)
                 
                 dudx = (u - um)/dx
-                dudxx = (up - 2*u + um)/dx2
+                d2udx2 = (up - 2*u + um)/dx2
 
                 absolute = np.ones(gridSize)
                 absolute[dudx<0.] = -1.
 
-                sgs = -cs*cs*dx2*(dudxx*dudx+dudx*dudxx)*absolute
-                les.step(-sgs)
+                #sgs = cs*cs*dx2*(d2udx2*dudx+dudx*d2udx2)*absolute
+                sgs = cs*cs*dx2*(d2udx2*d2udx2)
+                les.step(sgs)
 
             les.compute_Ek()
         
