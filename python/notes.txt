@@ -24,3 +24,7 @@
 # Run 6 - 10: uncoupled and coupled (base=True), noise == 0.1, seed 0..5, iex 0.1
 # Run 11 - 15: uncoupled and coupled (base=True), noise == 0.01, seed 0..5, iex 0.1
 # Run 16 - 20: uncoupled and coupled (base=True), noise == 0.001, seed 0..5, iex 0.1
+
+
+
+# Run 21 - 25: uncoupled with spectral reward, noise == 0., seed 0..5, iex 0.1
