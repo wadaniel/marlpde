@@ -11,8 +11,8 @@ import math
 import numpy as np
 
 # Discretization grid
-N1 = 2048
-N2 = 64
+N1 = 512
+N2 = 32
 m = int(math.log2(N1 / N2)) + 1
 Nx = np.clip(N2*2**np.arange(0., m), a_min=0, a_max=N1).astype(int)
 
@@ -49,7 +49,6 @@ dns.compute_Ek()
 # IC and interpolation
 IC = dns.u0.copy()
 f_IC = interpolate.interp1d(dns.x, IC)
-
 f_dns = interpolate.interp2d(dns.x, dns.tt, dns.uu, kind='cubic')
 
 #------------------------------------------------------------------------------
@@ -75,11 +74,14 @@ axs[0,4].set_yscale('log')
 idx = 1
 
 for N in Nx:
+
     print("Simulate SGS (N={})".format(N))
     ## simulate SGS from IC
     sgs = Burger(L=L, N=N, dt=dt, nu=nu, tend=tEnd)
+
     u0 = f_IC(sgs.x)
-    sgs.IC(u0 = u0)
+    #sgs.IC(u0 = u0)
+    sgs.IC(v0 = dns.v0[:N] * N / N1)
 
     sgs.simulate()
     # convert to physical space
@@ -91,10 +93,12 @@ for N in Nx:
 
     errEk_t = dns.Ek_t - sgs.Ek_t
     errEk_tt = dns.Ek_tt - sgs.Ek_tt
-    errEk_ktt = ((dns.Ek_ktt[:, :N2] - sgs.Ek_ktt[:, :N2])**2).mean(axis=1)
+    errEk_ktt = ((dns.Ek_ktt[:, :N] - sgs.Ek_ktt[:, :N])**2).mean(axis=1)
     udns_int = f_dns(sgs.x, sgs.tt)
 
     errU = np.abs(sgs.uu-udns_int)
+    errUmse = np.mean((sgs.uu-udns_int)**2, axis=1)
+
 #------------------------------------------------------------------------------
   
     k2 = sgs.k[:N//2]
@@ -108,17 +112,26 @@ for N in Nx:
     # Plot instanteneous energy and time averaged energy
     axs[idx,2].plot(sgs.tt, sgs.Ek_t)
     axs[idx,2].plot(sgs.tt, sgs.Ek_tt)
+    axs[idx,2].set_ylim(bottom=0.)
  
     # Plot energy differences
-    axs[idx,3].plot(sgs.tt, errEk_t)
-    axs[idx,3].plot(sgs.tt, errEk_tt)
-    axs[idx,3].plot(sgs.tt, errEk_ktt)
-    axs[idx,3].set_yscale('log')
+    if N != N1:
+        #axs[idx,3].plot(sgs.tt, errEk_t)
+        #axs[idx,3].plot(sgs.tt, errEk_tt)
+        #axs[idx,3].plot(sgs.tt, errEk_ktt)
+        axs[idx,3].plot(sgs.tt, errUmse)
+        axs[idx,3].set_yscale('log')
 
     # Plot energy spectrum at start, mid and end of simulation
     axs[idx,4].plot(k2, np.abs(sgs.Ek_ktt[0,0:N//2]),'b:')
     axs[idx,4].plot(k2, np.abs(sgs.Ek_ktt[nt//2,0:N//2]),'b--')
     axs[idx,4].plot(k2, np.abs(sgs.Ek_ktt[-1,0:N//2]),'b')
+    
+    # Energy spectrum error
+    axs[idx,4].plot(k2, np.abs(dns.Ek_ktt[0,0:N//2] - sgs.Ek_ktt[0,0:N//2]),'r:')
+    axs[idx,4].plot(k2, np.abs(dns.Ek_ktt[nt//2,0:N//2] - sgs.Ek_ktt[nt//2,0:N//2]),'r--')
+    axs[idx,4].plot(k2, np.abs(dns.Ek_ktt[-1,0:N//2] - sgs.Ek_ktt[-1,0:N//2]),'r')
+
     axs[idx,4].set_xscale('log')
     axs[idx,4].set_yscale('log')
 

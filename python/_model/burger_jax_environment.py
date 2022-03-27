@@ -1,5 +1,5 @@
-from Burger import *
-import matplotlib.pyplot as plt 
+from Burger_jax import *
+import matplotlib.pyplot as plt
 
 # dns defaults
 N    = 512
@@ -13,36 +13,33 @@ spectralReward = False
 spectralLogReward = True
 
 # reward defaults
-rewardFactor = 0.001 if spectralReward else 1.
+rewardFactor = 100 if spectralReward else 1.
 rewardFactor = 0.001 if spectralLogReward else rewardFactor
 
-dns_default = Burger(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case='turbulence', noise=0., seed=42)
-dns_default.simulate()
-dns_default.fou2real()
-dns_default.compute_Ek()
 
 # basis defaults
 basis = 'hat'
+ 
+dns = Burger_jax(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case='turbulence', noise=0., seed=42)
+dns.simulate()
+dns.fou2real()
+dns.compute_Ek()
 
 def environment( s , gridSize, numActions, episodeLength, ic, noise, seed ):
- 
+
     testing = True if s["Custom Settings"]["Mode"] == "Testing" else False
-    noise = 0. if testing else noise   
- 
-    
-    if noise > 0.:
-        dns = Burger(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case=ic, noise=noise, seed=seed)
-        dns.simulate()
-        dns.fou2real()
-        dns.compute_Ek()
-    else:
-        dns = dns_default
+    noise = 0. if testing else noise
+
+    #dns = Burger_jax(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case=ic, noise=noise, seed=seed)
+    #dns.simulate()
+    #dns.fou2real()
+    #dns.compute_Ek()
 
     ## create interpolated IC
     f_restart = interpolate.interp1d(dns.x, dns.u0, kind='cubic')
 
     # Initialize LES
-    les = Burger(L=L, N=gridSize, dt=dt, nu=nu, tend=tEnd, noise=0.)
+    les = Burger_jax(L=L, N=gridSize, dt=dt, nu=nu, tend=tEnd, noise=0.)
     if spectralReward or spectralLogReward:
         les.IC( v0 = dns.v0[:gridSize] * gridSize / N )
 
@@ -55,7 +52,7 @@ def environment( s , gridSize, numActions, episodeLength, ic, noise, seed ):
     ## get initial state
     state = les.getState().flatten().tolist()
     s["State"] = state
-
+    s["State Gradient"] = les.getGrad().tolist()
     ## run controlled simulation
     error = 0
     step = 0
@@ -66,7 +63,6 @@ def environment( s , gridSize, numActions, episodeLength, ic, noise, seed ):
     actionHistory = []
 
     while step < episodeLength and error == 0:
-        
         # Getting new action
         s.update()
 
@@ -76,63 +72,63 @@ def environment( s , gridSize, numActions, episodeLength, ic, noise, seed ):
         timestamps.append(les.t)
 
         try:
-            for _ in range(nIntermediate):
-                les.step(actions)
-
+            les.step(actions, nIntermediate)
             les.compute_Ek()
             les.fou2real()
         except Exception as e:
-            print("Exception occured:")
+            print("[burger_jax_env] Exception occured during in stepping..:")
             print(str(e))
             error = 1
             break
-        
+
 
         # get new state
         newstate = les.getState().flatten().tolist()
+        newgrad = les.getGrad()
         if(np.isfinite(newstate).all() == False):
-            print("Nan state detected")
+            print("[burger_jax_env] Nan state detected")
             error = 1
             break
         else:
             state = newstate
+            gradient = newgrad
 
         s["State"] = state
-    
-        # calculate reward
+        s["State Gradient"] = gradient.tolist()
+        
         if spectralReward:
             # Time-averaged energy spectrum as a function of wavenumber
-            #kMseErr = np.mean((dns.Ek_ktt[les.ioutnum,:gridSize] - les.Ek_ktt[les.ioutnum,:gridSize])**2)
-            kMseErr = np.mean(np.log(np.abs((dns.Ek_ktt[les.ioutnum,:gridSize] - les.Ek_ktt[les.ioutnum,:gridSize]))))
+            kMseErr = np.mean((dns.Ek_ktt[les.ioutnum,:gridSize] - les.Ek_ktt[les.ioutnum,:gridSize])**2)
             reward = -rewardFactor*kMseErr
     
         elif spectralLogReward:
-            #kMseLogErr = np.mean((np.log(dns.Ek_ktt[les.ioutnum,:gridSize]) - np.log(les.Ek_ktt[les.ioutnum,:gridSize]))**2)
-            kMseLogErr = np.mean((np.log(dns.Ek_kt[les.ioutnum,:gridSize]) - np.log(les.Ek_kt[les.ioutnum,:gridSize]))**2)
+            kMseLogErr = np.mean((np.log(dns.Ek_ktt[les.ioutnum,:gridSize]) - np.log(les.Ek_ktt[les.ioutnum,:gridSize]))**2)
             reward = -rewardFactor*kMseLogErr
 
         else:
             reward = rewardFactor*les.getMseReward()
 
-        # accumulat reward
+        
+
         cumreward += reward
 
         if (np.isfinite(reward) == False):
-            print("Nan reward detected")
+            print("[burger_jax_env] Nan reward detected")
             error = 1
             break
-    
+
         else:
             s["Reward"] = reward
- 
+
         step += 1
 
     print(cumreward)
     if error == 1:
         s["State"] = state
+        s["State Gradient"] = les.getGrad().tolist()
         s["Termination"] = "Truncated"
         s["Reward"] = -1000 if testing else -np.inf
-    
+
     else:
         s["Termination"] = "Terminal"
 
@@ -142,24 +138,15 @@ def environment( s , gridSize, numActions, episodeLength, ic, noise, seed ):
         actionHistory = np.array(actionHistory)
         print("Storing les to file {}".format(fileName))
         np.savez(fileName, x = les.x, t = les.tt, uu = les.uu, vv = les.vv, L=L, N=gridSize, dt=dt, nu=nu, tEnd=tEnd, actions=actionHistory)
-         
+
         print("Running uncontrolled SGS..")
         base = Burger(L=L, N=gridSize, dt=dt, nu=nu, tend=tEnd, noise=0.)
-        if spectralReward or spectralLogReward:
-            print("Init spectrum.")
-            base.IC( v0 = dns.v0[:gridSize] * gridSize / N )
-
-        else:
-            print("Init interpolation.")
-            base.IC( u0 = f_restart(base.x) )
-
-
+        base.IC(u0 = f_restart(base.x))
         base.simulate()
         base.fou2real()
         base.compute_Ek()
-       
+
         k1 = dns.k[:N//2]
-        k2 = les.k[:gridSize//2]
 
         time = np.arange(tEnd/dt+1)*dt
 
@@ -177,11 +164,10 @@ def environment( s , gridSize, numActions, episodeLength, ic, noise, seed ):
         axs[0,2].plot(time, dns.Ek_t)
         axs[0,2].plot(time, dns.Ek_tt)
 
-        axs[0,4].plot(k1, np.abs(dns.Ek_ktt[0,0:N//2]),':b')
-        axs[0,4].plot(k1, np.abs(dns.Ek_ktt[dns.ioutnum//2,0:N//2]),'--b')
         axs[0,4].plot(k1, np.abs(dns.Ek_ktt[-1,0:N//2]),'b')
         axs[0,4].set_xscale('log')
- 
+        axs[0,4].set_yscale('log')
+
 #------------------------------------------------------------------------------
 
         errBaseEk_t = dns.Ek_t - base.Ek_t
@@ -190,84 +176,76 @@ def environment( s , gridSize, numActions, episodeLength, ic, noise, seed ):
         f_dns = interpolate.interp2d(dns.x, dns.tt, dns.uu, kind='cubic')
         udns_int = f_dns(base.x, base.tt)
         errBaseU = np.abs(base.uu-udns_int)
-        mseBaseU_t = np.mean(errBaseU**2, axis=1)
+        errBaseU_t = np.mean(errBaseU**2, axis=1)
 
 #------------------------------------------------------------------------------
 
         errEk_t = dns.Ek_t - les.Ek_t
         errEk_tt = dns.Ek_tt - les.Ek_tt
         errU = np.abs(les.uu-udns_int)
-        mseU_t = np.mean(errU**2, axis=1)
- 
+        errU_t = np.mean(errU**2, axis=1)
+
         emax = max(errBaseU.max(), errU.max())
         emin = min(errBaseU.min(), errU.min())
         elevels = np.linspace(emin, emax, 50)
-        
+
 #------------------------------------------------------------------------------
         print("plot baseline")
-        
- 
+
+        k2 = les.k[:gridSize//2]
+
         idx = 1
         # Plot solution
         axs[idx,0].contourf(base.x, base.tt, base.uu, ulevels)
-  
+
         # Plot difference to dns
-        axs[idx,1].contourf(base.x, base.tt, errBaseU, elevels)
+        axs[idx,1].contourf(les.x, base.tt, errBaseU, elevels)
 
         # Plot instanteneous energy and time averaged energy
         axs[idx,2].plot(time, base.Ek_t)
         axs[idx,2].plot(time, base.Ek_tt)
-     
-        # Plot energy and field differences
-        #axs[idx,3].plot(time, errBaseEk_t)
-        #axs[idx,3].plot(time, errBaseEk_tt)
-        axs[idx,3].plot(time, mseBaseU_t)
-        axs[idx,3].set_yscale('log')
+
+        # Plot energy differences
+        axs[idx,3].plot(time, errBaseEk_t)
+        axs[idx,3].plot(time, errBaseEk_tt)
+        axs[idx,3].plot(time, errBaseU_t)
 
         # Plot energy spectrum at start, mid and end of simulation
-        axs[idx,4].plot(k2, np.abs(base.Ek_ktt[0,0:gridSize//2]),':b')
-        axs[idx,4].plot(k2, np.abs(base.Ek_ktt[dns.ioutnum//2,0:gridSize//2]),'--b')
-        axs[idx,4].plot(k2, np.abs(base.Ek_ktt[-1,0:gridSize//2]),'-b')
+        axs[idx,4].plot(k2, np.abs(base.Ek_ktt[-1,0:gridSize//2]),'b')
         axs[idx,4].set_xscale('log')
         axs[idx,4].set_yscale('log')
-  
+
         # Plot energy spectrum difference
-        axs[idx,4].plot(k2, np.abs(dns.Ek_ktt[0,0:gridSize//2] - base.Ek_ktt[0,0:gridSize//2]),':r')
-        axs[idx,4].plot(k2, np.abs(dns.Ek_ktt[dns.ioutnum//2,0:gridSize//2] - base.Ek_ktt[dns.ioutnum//2,0:gridSize//2]),'--r')
-        axs[idx,4].plot(k2, np.abs(dns.Ek_ktt[-1,0:gridSize//2] - base.Ek_ktt[-1,0:gridSize//2]),'-r')
+        axs[idx,4].plot(k2, np.abs(dns.Ek_ktt[-1,0:gridSize//2] - base.Ek_ktt[-1,0:gridSize//2]),'--r')
 
 #------------------------------------------------------------------------------
         print("plot les")
-        
+
         idx += 1
         # Plot solution
         axs[idx,0].contourf(les.x, les.tt, les.uu, ulevels)
-        
+
         # Plot difference to dns
         axs[idx,1].contourf(les.x, les.tt, errU, elevels)
- 
+
 
         # Plot instanteneous energy and time averaged energy
         axs[idx,2].plot(time, les.Ek_t)
         axs[idx,2].plot(time, les.Ek_tt)
-     
+
         # Plot energy differences
-        #axs[idx,3].plot(time, errEk_t)
-        #axs[idx,3].plot(time, errEk_tt)
-        axs[idx,3].plot(time, mseU_t)
-        axs[idx,3].set_yscale('log')
+        axs[idx,3].plot(time, errEk_t)
+        axs[idx,3].plot(time, errEk_tt)
+        axs[idx,3].plot(time, errU_t)
 
         # Plot energy spectrum at start, mid and end of simulation
-        axs[idx,4].plot(k2, np.abs(les.Ek_ktt[0,0:gridSize//2]),':b')
-        axs[idx,4].plot(k2, np.abs(les.Ek_ktt[dns.ioutnum//2,0:gridSize//2]),'--b')
-        axs[idx,4].plot(k2, np.abs(les.Ek_ktt[-1,0:gridSize//2]),'-b')
+        axs[idx,4].plot(k2, np.abs(les.Ek_ktt[-1,0:gridSize//2]),'b')
         axs[idx,4].set_xscale('log')
-  
+        axs[idx,4].set_yscale('log')
+
         # Plot energy spectrum difference
-        axs[idx,4].plot(k2, np.abs(dns.Ek_ktt[0,0:gridSize//2] - les.Ek_ktt[0,0:gridSize//2]),':r')
-        axs[idx,4].plot(k2, np.abs(dns.Ek_ktt[dns.ioutnum//2,0:gridSize//2] - les.Ek_ktt[dns.ioutnum//2,0:gridSize//2]),'--r')
-        axs[idx,4].plot(k2, np.abs(dns.Ek_ktt[-1,0:gridSize//2] - les.Ek_ktt[-1,0:gridSize//2]),'-r')
- 
+        axs[idx,4].plot(k2, np.abs(dns.Ek_ktt[-1,0:gridSize//2] - les.Ek_ktt[-1,0:gridSize//2]),'--r')
+
         # Plot energy spectrum at start, mid and end of simulation
         colors = plt.cm.coolwarm(np.linspace(0,1,numActions))
         for i in range(numActions):
@@ -280,14 +258,14 @@ def environment( s , gridSize, numActions, episodeLength, ic, noise, seed ):
 
         figName2 = fileName + "_evolution.png"
         print("Plotting {} ...".format(figName2))
-        
+
         fig2, axs = plt.subplots(4,4, sharex=True, sharey=False, figsize=(15,15))
         for i in range(16):
             t = i * tEnd / 16
             tidx = int(t/dt)
             k = int(i / 4)
             l = i % 4
-            
+
             axs[k,l].plot(dns.x, dns.uu[tidx,:], '--k')
             axs[k,l].plot(les.x, les.uu[tidx,:], '-r')
             axs[k,l].plot(base.x, base.uu[tidx,:], '-b')

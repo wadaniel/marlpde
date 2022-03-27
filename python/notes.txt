@@ -24,7 +24,18 @@
 # Run 6 - 10: uncoupled and coupled (base=True), noise == 0.1, seed 0..5, iex 0.1
 # Run 11 - 15: uncoupled and coupled (base=True), noise == 0.01, seed 0..5, iex 0.1
 # Run 16 - 20: uncoupled and coupled (base=True), noise == 0.001, seed 0..5, iex 0.1
-
-
-
 # Run 21 - 25: uncoupled with spectral reward, noise == 0., seed 0..5, iex 0.1
+
+## BARRY
+
+# Run 42 - spectral reward
+# Run 43 - spectral reward with mean rescale
+# Run 44 - spectral reward with mean rescale, width 512
+# Run 45 - Logspectral reward with mean rescale
+
+# Run 46 - Logspectral reward with mean rescale, iex 1.
+# Run 47 - Logspectral reward with mean rescale, iex 1., diff forcing
+
+# Run 51 - Logspectral reward with mean rescale, iex 0.1, N = 32 (seed 42 and 31)
+# Run 52 - Spectral reward with mean rescale, iex 0.1, N = 32 (seed 42, 3.08 reward at start)
+# Run 53 - Instantanteous Logspectral reward with mean rescale, iex 0.1, N = 32 (seed 42, -6.1 reward at start)
