@@ -94,7 +94,7 @@ class Burger_jax:
         elif (v0 is not None):
             self.IC(v0 = v0)
         else:
-            print("[Burger] IC ambigous")
+            print("[Burger_jax] IC ambigous")
             sys.exit()
 
         # precompute Fourier-related quantities
@@ -134,7 +134,7 @@ class Burger_jax:
             if kind == 'uniform':
                 self.basis = np.zeros((self.M, self.N))
                 for i in range(self.M):
-                    assert self.N % self.M == 0, print("[Burger] Something went wrong in basis setup")
+                    assert self.N % self.M == 0, print("[Burger_jax] Something went wrong in basis setup")
                     idx1 = i * self.N//self.M
                     idx2 = (i+1) * self.N//self.M
                     self.basis[i,idx1:idx2] = 1.
@@ -146,7 +146,7 @@ class Burger_jax:
                     self.basis[i,:] = hat( self.x, mean, dx )
 
             else:
-                print("[Burger] Basis function not known, exit..")
+                print("[Burger_jax] Basis function not known, exit..")
                 sys.exit()
         else:
             self.basis = np.ones((self.M, self.N))
@@ -215,13 +215,13 @@ class Burger_jax:
                         assert( criterion > 0.6 )
 
                     else:
-                        print("[Burger] Error: IC case unknown")
+                        print("[Burger_jax] Error: IC case unknown")
                         sys.exit()
 
             else:
                 # check the input size
                 if (np.size(u0,0) != self.N):
-                    print("[Burger] Error: wrong IC array size")
+                    print("[Burger_jax] Error: wrong IC array size")
                     sys.exit()
 
                 else:
@@ -235,7 +235,7 @@ class Burger_jax:
             # the initial condition is provided in v0
             # check the input size
             if (np.size(v0,0) != self.N):
-                print("[Burger] Error: wrong IC array size")
+                print("[Burger_jax] Error: wrong IC array size")
                 sys.exit()
 
             else:
@@ -267,7 +267,7 @@ class Burger_jax:
         return self.f_truth(self.x,t)
 
     def getAnalyticalSolution(self, t):
-        print("[Burger] TODO.. exit")
+        print("[Burger_jax] TODO.. exit")
         sys.exit()
 
     def expl_euler(self, actions, u, v, n):
@@ -356,7 +356,7 @@ class Burger_jax:
                     self.v += correction
 
         except FloatingPointError:
-            print("[Burger] Floating point exception occured", flush=True)
+            print("[Burger_jax] Floating point exception occured", flush=True)
             # something exploded
             # cut time series to last saved solution and return
             self.nout = self.ioutnum
@@ -366,8 +366,8 @@ class Burger_jax:
 
     def fou2real(self):
         # Convert from spectral to physical space
-        self.uut = self.stepnum
         if self.stepnum < self.uut:
+            self.uut = self.stepnum
             self.uu = np.real(ifft(self.vv))
 
     def compute_Ek(self):
@@ -443,7 +443,7 @@ class Burger_jax:
             uTruthToCoarse = self.mapGroundTruth()
             uDiffMse = ((uTruthToCoarse[self.ioutnum,:] - self.uu[self.ioutnum,:])**2).mean()
         except FloatingPointError:
-            print("[Burger] Floating point exception occured in mse", flush=True)
+            print("[Burger_jax] Floating point exception occured in mse", flush=True)
             return -np.inf
 
         return -uDiffMse

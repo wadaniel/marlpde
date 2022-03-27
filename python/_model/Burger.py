@@ -327,8 +327,8 @@ class Burger:
 
     def fou2real(self):
         # Convert from spectral to physical space
-        self.uut = self.stepnum
         if self.stepnum < self.uut:
+            self.uut = self.stepnum
             self.uu = np.real(ifft(self.vv))
 
     def compute_Ek(self):

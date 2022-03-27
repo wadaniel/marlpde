@@ -161,7 +161,7 @@ def environment( s , gridSize, numActions, episodeLength, ic, noise, seed ):
 
         time = np.arange(tEnd/dt+1)*dt
 
-        fig, axs = plt.subplots(3, 6, sharex='col', sharey='col', subplot_kw=dict(box_aspect=1), figsize=(15,15))
+        fig1, axs1 = plt.subplots(3, 6, sharex='col', sharey='col', subplot_kw=dict(box_aspect=1), figsize=(15,15))
 
         umax = max(dns.uu.max(), base.uu.max(), les.uu.max())
         umin = min(dns.uu.min(), base.uu.min(), les.uu.min())
@@ -170,15 +170,15 @@ def environment( s , gridSize, numActions, episodeLength, ic, noise, seed ):
 #------------------------------------------------------------------------------
         print("plot DNS")
 
-        axs[0,0].contourf(dns.x, dns.tt, dns.uu, ulevels)
+        axs1[0,0].contourf(dns.x, dns.tt, dns.uu, ulevels)
 
-        axs[0,2].plot(time, dns.Ek_t)
-        axs[0,2].plot(time, dns.Ek_tt)
+        axs1[0,2].plot(time, dns.Ek_t)
+        axs1[0,2].plot(time, dns.Ek_tt)
 
-        axs[0,4].plot(k1, np.abs(dns.Ek_ktt[0,0:N//2]),':b')
-        axs[0,4].plot(k1, np.abs(dns.Ek_ktt[dns.ioutnum//2,0:N//2]),'--b')
-        axs[0,4].plot(k1, np.abs(dns.Ek_ktt[-1,0:N//2]),'b')
-        axs[0,4].set_xscale('log')
+        axs1[0,4].plot(k1, np.abs(dns.Ek_ktt[0,0:N//2]),':b')
+        axs1[0,4].plot(k1, np.abs(dns.Ek_ktt[dns.ioutnum//2,0:N//2]),'--b')
+        axs1[0,4].plot(k1, np.abs(dns.Ek_ktt[-1,0:N//2]),'b')
+        axs1[0,4].set_xscale('log')
  
 #------------------------------------------------------------------------------
 
@@ -207,87 +207,78 @@ def environment( s , gridSize, numActions, episodeLength, ic, noise, seed ):
  
         idx = 1
         # Plot solution
-        axs[idx,0].contourf(base.x, base.tt, base.uu, ulevels)
+        axs1[idx,0].contourf(base.x, base.tt, base.uu, ulevels)
   
         # Plot difference to dns
-        axs[idx,1].contourf(base.x, base.tt, errBaseU, elevels)
+        axs1[idx,1].contourf(base.x, base.tt, errBaseU, elevels)
 
         # Plot instanteneous energy and time averaged energy
-        axs[idx,2].plot(time, base.Ek_t)
-        axs[idx,2].plot(time, base.Ek_tt)
+        axs1[idx,2].plot(time, base.Ek_t)
+        axs1[idx,2].plot(time, base.Ek_tt)
      
         # Plot energy and field differences
-        #axs[idx,3].plot(time, errBaseEk_t)
-        #axs[idx,3].plot(time, errBaseEk_tt)
-        axs[idx,3].plot(time, mseBaseU_t)
-        axs[idx,3].set_yscale('log')
+        axs1[idx,3].plot(time, mseBaseU_t)
+        axs1[idx,3].set_yscale('log')
 
         # Plot energy spectrum at start, mid and end of simulation
-        axs[idx,4].plot(k2, np.abs(base.Ek_ktt[0,0:gridSize//2]),':b')
-        axs[idx,4].plot(k2, np.abs(base.Ek_ktt[dns.ioutnum//2,0:gridSize//2]),'--b')
-        axs[idx,4].plot(k2, np.abs(base.Ek_ktt[-1,0:gridSize//2]),'-b')
-        axs[idx,4].set_xscale('log')
-        axs[idx,4].set_yscale('log')
+        axs1[idx,4].plot(k2, np.abs(base.Ek_ktt[0,0:gridSize//2]),':b')
+        axs1[idx,4].plot(k2, np.abs(base.Ek_ktt[dns.ioutnum//2,0:gridSize//2]),'--b')
+        axs1[idx,4].plot(k2, np.abs(base.Ek_ktt[-1,0:gridSize//2]),'-b')
+        axs1[idx,4].set_xscale('log')
+        axs1[idx,4].set_yscale('log')
   
         # Plot energy spectrum difference
-        axs[idx,4].plot(k2, np.abs(dns.Ek_ktt[0,0:gridSize//2] - base.Ek_ktt[0,0:gridSize//2]),':r')
-        axs[idx,4].plot(k2, np.abs(dns.Ek_ktt[dns.ioutnum//2,0:gridSize//2] - base.Ek_ktt[dns.ioutnum//2,0:gridSize//2]),'--r')
-        axs[idx,4].plot(k2, np.abs(dns.Ek_ktt[-1,0:gridSize//2] - base.Ek_ktt[-1,0:gridSize//2]),'-r')
+        axs1[idx,5].plot(k2, np.abs(dns.Ek_ktt[0,0:gridSize//2] - base.Ek_ktt[0,0:gridSize//2]),':r')
+        axs1[idx,5].plot(k2, np.abs(dns.Ek_ktt[dns.ioutnum//2,0:gridSize//2] - base.Ek_ktt[dns.ioutnum//2,0:gridSize//2]),'--r')
+        axs1[idx,5].plot(k2, np.abs(dns.Ek_ktt[-1,0:gridSize//2] - base.Ek_ktt[-1,0:gridSize//2]),'-r')
 
 #------------------------------------------------------------------------------
         print("plot les")
         
         idx += 1
         # Plot solution
-        axs[idx,0].contourf(les.x, les.tt, les.uu, ulevels)
+        axs1[idx,0].contourf(les.x, les.tt, les.uu, ulevels)
         
         # Plot difference to dns
-        axs[idx,1].contourf(les.x, les.tt, errU, elevels)
+        axs1[idx,1].contourf(les.x, les.tt, errU, elevels)
  
 
         # Plot instanteneous energy and time averaged energy
-        axs[idx,2].plot(time, les.Ek_t)
-        axs[idx,2].plot(time, les.Ek_tt)
+        axs1[idx,2].plot(time, les.Ek_t)
+        axs1[idx,2].plot(time, les.Ek_tt)
      
         # Plot energy differences
-        #axs[idx,3].plot(time, errEk_t)
-        #axs[idx,3].plot(time, errEk_tt)
-        axs[idx,3].plot(time, mseU_t)
-        axs[idx,3].set_yscale('log')
+        axs1[idx,3].plot(time, mseU_t)
+        axs1[idx,3].set_yscale('log')
 
         # Plot energy spectrum at start, mid and end of simulation
-        axs[idx,4].plot(k2, np.abs(les.Ek_ktt[0,0:gridSize//2]),':b')
-        axs[idx,4].plot(k2, np.abs(les.Ek_ktt[dns.ioutnum//2,0:gridSize//2]),'--b')
-        axs[idx,4].plot(k2, np.abs(les.Ek_ktt[-1,0:gridSize//2]),'-b')
-        axs[idx,4].set_xscale('log')
+        axs1[idx,4].plot(k2, np.abs(les.Ek_ktt[0,0:gridSize//2]),':b')
+        axs1[idx,4].plot(k2, np.abs(les.Ek_ktt[dns.ioutnum//2,0:gridSize//2]),'--b')
+        axs1[idx,4].plot(k2, np.abs(les.Ek_ktt[-1,0:gridSize//2]),'-b')
+        axs1[idx,4].set_xscale('log')
   
         # Plot energy spectrum difference
-        axs[idx,4].plot(k2, np.abs(dns.Ek_ktt[0,0:gridSize//2] - les.Ek_ktt[0,0:gridSize//2]),':r')
-        axs[idx,4].plot(k2, np.abs(dns.Ek_ktt[dns.ioutnum//2,0:gridSize//2] - les.Ek_ktt[dns.ioutnum//2,0:gridSize//2]),'--r')
-        axs[idx,4].plot(k2, np.abs(dns.Ek_ktt[-1,0:gridSize//2] - les.Ek_ktt[-1,0:gridSize//2]),'-r')
+        axs1[idx,5].plot(k2, np.abs(dns.Ek_ktt[0,0:gridSize//2] - les.Ek_ktt[0,0:gridSize//2]),':r')
+        axs1[idx,5].plot(k2, np.abs(dns.Ek_ktt[dns.ioutnum//2,0:gridSize//2] - les.Ek_ktt[dns.ioutnum//2,0:gridSize//2]),'--r')
+        axs1[idx,5].plot(k2, np.abs(dns.Ek_ktt[-1,0:gridSize//2] - les.Ek_ktt[-1,0:gridSize//2]),'-r')
  
-        # Plot energy spectrum at start, mid and end of simulation
-        colors = plt.cm.coolwarm(np.linspace(0,1,numActions))
-        for i in range(numActions):
-            axs[idx,5].plot(timestamps, actionHistory[:,i], color=colors[i])
-
-        figName = fileName + ".png"
-        fig.savefig(figName)
+        figName = fileName + ".pdf"
+        fig1.savefig(figName)
 
 #------------------------------------------------------------------------------
 
-        figName2 = fileName + "_evolution.png"
+        figName2 = fileName + "_evolution.pdf"
         print("Plotting {} ...".format(figName2))
         
-        fig2, axs = plt.subplots(4,4, sharex=True, sharey=False, figsize=(15,15))
+        fig2, axs2 = plt.subplots(4,4, sharex=True, sharey=False, figsize=(15,15))
         for i in range(16):
             t = i * tEnd / 16
             tidx = int(t/dt)
             k = int(i / 4)
             l = i % 4
             
-            axs[k,l].plot(dns.x, dns.uu[tidx,:], '--k')
-            axs[k,l].plot(les.x, les.uu[tidx,:], '-r')
-            axs[k,l].plot(base.x, base.uu[tidx,:], '-b')
+            axs2[k,l].plot(base.x, base.uu[tidx,:], '-b')
+            axs2[k,l].plot(les.x, les.uu[tidx,:], '-r')
+            axs2[k,l].plot(dns.x, dns.uu[tidx,:], '--k')
 
         fig2.savefig(figName2)
