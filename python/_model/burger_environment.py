@@ -261,6 +261,7 @@ def environment( s , gridSize, numActions, episodeLength, ic, noise, seed ):
         axs1[idx,5].plot(k2, np.abs(dns.Ek_ktt[0,0:gridSize//2] - les.Ek_ktt[0,0:gridSize//2]),':r')
         axs1[idx,5].plot(k2, np.abs(dns.Ek_ktt[dns.ioutnum//2,0:gridSize//2] - les.Ek_ktt[dns.ioutnum//2,0:gridSize//2]),'--r')
         axs1[idx,5].plot(k2, np.abs(dns.Ek_ktt[-1,0:gridSize//2] - les.Ek_ktt[-1,0:gridSize//2]),'-r')
+        axs1[idx,5].set_xscale('log')
  
         figName = fileName + ".pdf"
         fig1.savefig(figName)
@@ -270,7 +271,7 @@ def environment( s , gridSize, numActions, episodeLength, ic, noise, seed ):
         figName2 = fileName + "_evolution.pdf"
         print("Plotting {} ...".format(figName2))
         
-        fig2, axs2 = plt.subplots(4,4, sharex=True, sharey=False, figsize=(15,15))
+        fig2, axs2 = plt.subplots(4,4, sharex=True, sharey=True, figsize=(15,15))
         for i in range(16):
             t = i * tEnd / 16
             tidx = int(t/dt)

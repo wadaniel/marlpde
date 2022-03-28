@@ -43,3 +43,9 @@
 
 # Run 60 - Logspectral reward, N 32, Sinus
 # Run 61 - Mse reward, N 32, Sinus
+# Run 62 - Logspectral reward, N 32, Sinus, direct forcing
+
+
+
+# cmaes 0 - sinus, mse reward
+# cmaes 1 - sinus, logreward

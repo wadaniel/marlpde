@@ -6,7 +6,7 @@ parser.add_argument('--N', help='Discretization / number of grid points', requir
 parser.add_argument('--numgen', help='Number of generations', required=False, type=int, default=1000)
 parser.add_argument('--pop', help='Population size', required=False, type=int, default=8)
 parser.add_argument('--episodelength', help='Actual length of episode / number of actions', required=False, type=int, default=500)
-parser.add_argument('--ic', help='Initial condition', required=False, type=str, default='box')
+parser.add_argument('--ic', help='Initial condition', required=False, type=str, default='turbulence')
 parser.add_argument('--seed', help='Random seed', required=False, type=int, default=42)
 parser.add_argument('--run', help='Run tag', required=False, type=int, default=0)
 
