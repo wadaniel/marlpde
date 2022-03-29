@@ -56,3 +56,7 @@ _result*
 _cmaes*
 _vracer*
 *.npz
+
+# Figues
+*.png
+*.pdf
