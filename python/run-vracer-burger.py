@@ -3,15 +3,17 @@ import argparse
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--N', help='Discretization / number of grid points', required=False, type=int, default=32)
-parser.add_argument('--NA', help='Number of actions', required=False, type=int, default=1)
+parser.add_argument('--NA', help='Number of actions', required=False, type=int, default=32)
 parser.add_argument('--NE', help='Number of experiences', required=False, type=int, default=5e5)
 parser.add_argument('--width', help='Size of hidden layer', required=False, type=int, default=256)
 parser.add_argument('--iex', help='Initial exploration', required=False, type=float, default=0.01)
 parser.add_argument('--episodelength', help='Actual length of episode / number of actions', required=False, type=int, default=500)
 parser.add_argument('--noise', help='Standard deviation of IC', required=False, type=float, default=0.)
-parser.add_argument('--ic', help='Initial condition', required=False, type=str, default='turbulence')
+parser.add_argument('--ic', help='Initial condition', required=False, type=str, default='sinus')
 parser.add_argument('--dforce', help='Do direct forcing', action='store_true', required=False)
 parser.add_argument('--seed', help='Random seed', required=False, type=int, default=42)
+parser.add_argument('--dt', help='Simulator time step', required=False, type=float, default=0.001)
+parser.add_argument('--nu', help='Viscosity', required=False, type=float, default=0.02)
 parser.add_argument('--tend', help='Simulation length', required=False, type=int, default=10)
 parser.add_argument('--run', help='Run tag', required=False, type=int, default=0)
 parser.add_argument('--test', action='store_true', help='Run tag', required=False)
@@ -24,6 +26,10 @@ import sys
 sys.path.append('_model')
 import burger_environment as be
 
+dns_default = None
+### Set default if 0-noise
+if args.noise < 1e-12:
+    dns_default = be.setup_dns_default(args.dt, args.nu, args.ic, args.seed)
 
 ### Defining Korali Problem
 
@@ -33,7 +39,16 @@ e = korali.Experiment()
 
 ### Defining results folder and loading previous results, if any
 
-resultFolder = '_result_burger_{}_{}_{}_{}_{}_{}_{}/'.format(args.ic, args.N, args.NA, args.dforce, args.noise, args.seed, args.run)
+resultFolder = '_result_{}_{}_{}_{}_{}_{}_{}_{}/'.format(
+        args.ic, 
+        args.N, 
+        args.NA, 
+        args.dt, 
+        args.nu, 
+        args.noise, 
+        args.seed, 
+        args.run)
+
 found = e.loadState(resultFolder + '/latest')
 if found == True:
 	print("[Korali] Continuing execution from previous run...\n")
@@ -41,7 +56,18 @@ if found == True:
 ### Defining Problem Configuration
 e["Problem"]["Type"] = "Reinforcement Learning / Continuous"
 e["Problem"]["Custom Settings"]["Mode"] = "Testing" if args.test else "Training"
-e["Problem"]["Environment Function"] = lambda s : be.environment( s, args.N, args.NA, args.episodelength, args.ic, args.dforce, args.noise, args.seed )
+e["Problem"]["Environment Function"] = lambda s : be.environment( 
+        s, 
+        args.N, 
+        args.NA, 
+        args.dt, 
+        args.nu, 
+        args.episodelength, 
+        args.ic, 
+        args.dforce, 
+        args.noise, 
+        args.seed, 
+        dns_default )
 e["Problem"]["Testing Frequency"] = 100
 e["Problem"]["Policy Testing Episodes"] = 1
 
@@ -109,11 +135,11 @@ e["Solver"]["Termination Criteria"]["Max Experiences"] = args.NE
 e["Solver"]["Experience Replay"]["Serialize"] = True
 e["Console Output"]["Verbosity"] = "Detailed"
 e["File Output"]["Enabled"] = True
-e["File Output"]["Frequency"] = 500
+e["File Output"]["Frequency"] = 100
 e["File Output"]["Path"] = resultFolder
 
 if args.test:
-    fileName = 'test_burger_{}_{}_{}_{}_{}'.format(args.ic, args.N, args.NA, args.seed, args.run)
+    fileName = 'test_burger_{}_{}'.format(args.ic, args.run)
     e["Solver"]["Testing"]["Sample Ids"] = [0]
     e["Problem"]["Custom Settings"]["Filename"] = fileName
 

@@ -36,6 +36,11 @@
 # Run 2, sinus, log reward, laplace forcing, N 32, Na 32 (-140.0)
 # Run 3, sinus, log reward, direct forcing, N 32, Na 32 (-18.22)
 
-# Run 4, turbulence, log reward, laplace forcing, N 32, Na 32 (-12.93)
+# Run 4, turbulence, log reward, laplace forcing, N 32, Na 32 (-12.93) (STOP)
 # Run 5, turbulence, log reward, direct forcing, N 32, Na 32 
 # Run 6, turbulence, mse reward, direct forcing, N 32, Na 32 
+
+
+## New setup
+
+# Run 10, sinus, mse reward, laplace forcing, N 32, Na 32, 500k

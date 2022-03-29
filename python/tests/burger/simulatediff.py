@@ -31,9 +31,9 @@ from Burger import *
 L    = 2*np.pi
 dt   = 0.001
 tEnd = 5
-nu   = 0.02
+nu   = 0.01
 nt   = int(tEnd/dt)
-ic   = 'sinus'
+ic   = 'turbulence'
 seed = 42
 
 dns = Burger(L=L, N=N1, dt=dt, nu=nu, tend=tEnd, case=ic, seed=seed, noise=0.)
@@ -55,13 +55,10 @@ print("Simulate SGS")
 ## simulate SGS from IC
 sgs = Burger(L=L, N=N2, dt=dt, nu=nu, tend=tEnd)
 u0 = f_IC(sgs.x)
-#sgs.IC(u0 = u0)
-print(dns.v0)
-print(dns.k)
+sgs.IC(u0 = u0)
 
-
-v0 = np.concatenate((dns.v0[:((N2+1)//2)], dns.v0[-(N2-1)//2:]))
-sgs.IC(v0 = v0*N2/N1)
+#v0 = np.concatenate((dns.v0[:((N2+1)//2)], dns.v0[-(N2-1)//2:]))
+#sgs.IC(v0 = v0*N2/N1)
 sgs.setGroundTruth(dns.tt, dns.x, dns.uu)
 
 sgs.simulate()

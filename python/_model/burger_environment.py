@@ -4,9 +4,7 @@ import matplotlib.pyplot as plt
 # dns defaults
 N    = 512
 L    = 2*np.pi
-dt   = 0.001
 tEnd = 5
-nu   = 0.02
 
 # reward structure
 spectralReward = False
@@ -16,15 +14,18 @@ spectralLogReward = False
 rewardFactor = 0.001 if spectralReward else 1.
 rewardFactor = 0.001 if spectralLogReward else rewardFactor
 
-dns_default = Burger(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case='turbulence', noise=0., seed=42)
-dns_default.simulate()
-dns_default.fou2real()
-dns_default.compute_Ek()
+def setup_dns_default(dt, nu , ic, seed):
+    print("Setting up default dbs with args ({}, {}, {}, {}, {})".format(dt, nu, ic, seed, N))
+    dns = Burger(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case=ic, noise=0., seed=seed)
+    dns.simulate()
+    dns.fou2real()
+    dns.compute_Ek()
+    return dns
 
 # basis defaults
 basis = 'hat'
 
-def environment( s , gridSize, numActions, episodeLength, ic, dforce, noise, seed ):
+def environment( s , gridSize, numActions, dt, nu, episodeLength, ic, dforce, noise, seed, dns_default = None ):
  
     testing = True if s["Custom Settings"]["Mode"] == "Testing" else False
     noise = 0. if testing else noise   
