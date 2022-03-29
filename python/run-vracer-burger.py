@@ -2,7 +2,8 @@ import argparse
 ### Parsing arguments
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--N', help='Discretization / number of grid points', required=False, type=int, default=32)
+parser.add_argument('--NDNS', help='Discretization / number of grid points of DNS', required=False, type=int, default=512)
+parser.add_argument('--N', help='Discretization / number of grid points of UGS', required=False, type=int, default=32)
 parser.add_argument('--NA', help='Number of actions', required=False, type=int, default=32)
 parser.add_argument('--NE', help='Number of experiences', required=False, type=int, default=5e5)
 parser.add_argument('--width', help='Size of hidden layer', required=False, type=int, default=256)
@@ -29,7 +30,7 @@ import burger_environment as be
 dns_default = None
 ### Set default if 0-noise
 if args.noise < 1e-12:
-    dns_default = be.setup_dns_default(args.dt, args.nu, args.ic, args.seed)
+    dns_default = be.setup_dns_default(args.NDNS, args.dt, args.nu, args.ic, args.seed)
 
 ### Defining Korali Problem
 
