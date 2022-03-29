@@ -9,8 +9,8 @@ start, mid and end of the simulation.
 import math
 
 # Discretization grid
-N1 = 1024
-N2 = 512
+N1 = 512
+N2 = 32
 
 import matplotlib
 matplotlib.use('Agg')
@@ -29,13 +29,12 @@ from Burger import *
 #------------------------------------------------------------------------------
 ## set parameters and initialize simulation
 L    = 2*np.pi
-#dt   = 0.001
-dt   = 0.0001
-tEnd = 10
-nu   = 0.01
+dt   = 0.001
+tEnd = 5
+nu   = 0.02
 nt   = int(tEnd/dt)
-ic   = 'turbulence'
-seed = 31
+ic   = 'sinus'
+seed = 42
 
 dns = Burger(L=L, N=N1, dt=dt, nu=nu, tend=tEnd, case=ic, seed=seed, noise=0.)
 
@@ -57,7 +56,12 @@ print("Simulate SGS")
 sgs = Burger(L=L, N=N2, dt=dt, nu=nu, tend=tEnd)
 u0 = f_IC(sgs.x)
 #sgs.IC(u0 = u0)
-sgs.IC(v0 = dns.v0[:N2]*N2/N1)
+print(dns.v0)
+print(dns.k)
+
+
+v0 = np.concatenate((dns.v0[:((N2+1)//2)], dns.v0[-(N2-1)//2:]))
+sgs.IC(v0 = v0*N2/N1)
 sgs.setGroundTruth(dns.tt, dns.x, dns.uu)
 
 sgs.simulate()

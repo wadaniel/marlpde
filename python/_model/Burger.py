@@ -21,7 +21,7 @@ class Burger:
     # u_t + u*u_x = nu*u_xx0
     # with periodic BCs on x \in [0, L]: u(0,t) = u(L,t).
 
-    def __init__(self, L=2.*np.pi, N=512, dt=0.001, nu=0.0, nsteps=None, tend=150, u0=None, v0=None, case=None, noise=0., seed=42):
+    def __init__(self, L=2.*np.pi, N=512, dt=0.001, nu=0.0, dforce=True, nsteps=None, tend=150, u0=None, v0=None, case=None, noise=0., seed=42):
         
         # Randomness
         self.noise = noise*L
@@ -54,6 +54,9 @@ class Burger:
         # Basis
         self.M = 0
         self.basis = None
+
+        # direct forcing or not
+        self.dforce = dforce
 
         # time when field space transformed
         self.uut = -1
@@ -204,7 +207,7 @@ class Burger:
             else:
                 # check the input size
                 if (np.size(u0,0) != self.N):
-                    print("[Burger] Error: wrong IC array size")
+                    print("[Burger] Error: wrong IC array size (is {}, expected {}".format(np.size(u0,0),self.N))
                     sys.exit()
 
                 else:
@@ -218,7 +221,7 @@ class Burger:
             # the initial condition is provided in v0
             # check the input size
             if (np.size(v0,0) != self.N):
-                print("[Burger] Error: wrong IC array size")
+                print("[Burger] Error: wrong IC array size (is {}, expected {}".format(np.size(v0,0),self.N))
                 sys.exit()
 
             else:
@@ -264,13 +267,14 @@ class Burger:
 
             u = self.uu[self.ioutnum,:]
 
-            up = np.roll(u,1)
-            um = np.roll(u,-1)
-            d2udx2 = (up - 2.*u + um)/self.dx**2
-
-            Fforcing = fft( forcing*d2udx2 )
+            if self.dforce:
+                Fforcing = fft( forcing )
+            else:
+                up = np.roll(u,1)
+                um = np.roll(u,-1)
+                d2udx2 = (up - 2.*u + um)/self.dx**2
+                Fforcing = fft( forcing*d2udx2 )
             
-            #Fforcing = fft( forcing )
 
             self.v = self.v - self.dt*0.5*self.k1*fft(self.u**2) + self.dt*self.nu*self.k2*self.v + self.dt*Fforcing 
         

@@ -11,8 +11,8 @@ import math
 import numpy as np
 
 # Discretization grid
-N1 = 1024
-N2 = 64
+N1 = 512
+N2 = 32
 m = int(math.log2(N1 / N2))
 Nx = np.clip(N2*2**np.arange(0., m), a_min=0, a_max=N1).astype(int)
 
@@ -31,13 +31,14 @@ from Burger import *
 #------------------------------------------------------------------------------
 ## set parameters and initialize simulation
 L    = 2*np.pi
-dt   = 0.0001
+dt   = 0.001
 tEnd = 5
-nu   = 0.01
-ic   = 'turbulence'
-seed = 31
+nu   = 0.02
+ic   = 'sinus'
+seed = 32
+spec = False
 
-figName1 = 'simulate_energies_seq_{}_int.pdf'.format(ic)
+figName1 = 'simulate_energies_seq_{}_int.png'.format(ic)
 figName2 = 'simulate_evolution_seq_{}_int.pdf'.format(ic)
 
 dns = Burger(L=L, N=N1, dt=dt, nu=nu, tend=tEnd, case=ic, seed=seed)
@@ -62,7 +63,7 @@ print("plot DNS")
 idx = 0
 k1 = dns.k[:N1//2]
 
-fig1, axs1 = plt.subplots(m+1, 5, sharex='col', sharey='col', subplot_kw=dict(box_aspect=1), figsize=(15,15))
+fig1, axs1 = plt.subplots(m+1, 5, sharex='col', sharey='col', subplot_kw=dict(box_aspect=1), figsize=(12,12))
 # Plot solution
 axs1[idx,0].contourf(dns.x, dns.tt, dns.uu, 50)
 
@@ -77,7 +78,7 @@ axs1[idx,3].set_yscale('log')
 
 
 #------------------------------------------------------------------------------
-fig2, axs2 = plt.subplots(4,4, sharex='col', sharey='row', figsize=(6,6))
+fig2, axs2 = plt.subplots(4,4, sharex='col', sharey='row', figsize=(10,10))
 for i in range(16):
     t = i * tEnd / 16
     tidx = int(t/dt)
@@ -87,15 +88,18 @@ for i in range(16):
     axs2[k,l].plot(dns.x, dns.uu[tidx,:], '--', color=colors[idx])
 #------------------------------------------------------------------------------
 idx += 1
-for N in Nx:
+for N2 in Nx:
 
-    print("Simulate SGS (N={})".format(N))
+    print("Simulate SGS (N={})".format(N2))
     ## simulate SGS from IC
-    sgs = Burger(L=L, N=N, dt=dt, nu=nu, tend=tEnd)
+    sgs = Burger(L=L, N=N2, dt=dt, nu=nu, tend=tEnd)
 
-    u0 = f_IC(sgs.x)
-    sgs.IC(u0 = u0) # interpolation
-    #sgs.IC(v0 = dns.v0[:N] * N / N1) # spectral box filter
+    if spec == True:
+        v0 = np.concatenate((dns.v0[:((N2+1)//2)], dns.v0[-(N2-1)//2:]))
+        sgs.IC(v0 = v0 * N2 / N1) # spectral box filter
+    else:
+        u0 = f_IC(sgs.x)
+        sgs.IC(u0 = u0) # interpolation
 
     sgs.simulate()
     # convert to physical space
@@ -107,16 +111,16 @@ for N in Nx:
 
     errEk_t = dns.Ek_t - sgs.Ek_t
     errEk_tt = dns.Ek_tt - sgs.Ek_tt
-    errEk_ktt = ((dns.Ek_ktt[:, :N] - sgs.Ek_ktt[:, :N])**2).mean(axis=1)
+    errEk_ktt = ((dns.Ek_ktt[:, :N2] - sgs.Ek_ktt[:, :N2])**2).mean(axis=1)
     udns_int = f_dns(sgs.x, sgs.tt)
 
     errU = np.abs(sgs.uu-udns_int)
     errUmse = np.mean((sgs.uu-udns_int)**2, axis=1)
 
 #------------------------------------------------------------------------------
-    print("Plot SGS (N={})".format(N))
+    print("Plot SGS (N={})".format(N2))
   
-    k2 = sgs.k[:N//2]
+    k2 = sgs.k[:N2//2]
 
     # Plot solution
     axs1[idx,0].contourf(sgs.x, sgs.tt, sgs.uu, 50)
@@ -125,25 +129,27 @@ for N in Nx:
     axs1[idx,1].contourf(sgs.x, sgs.tt, errU, 50)
 
     # Plot mse
-    if N != N1:
+    if N2 != N1:
         axs1[idx,2].plot(sgs.tt, errUmse, 'r-')
         axs1[idx,2].set_yscale('log')
-        axs1[idx,2].set_ylim([1e-6,None])
+        axs1[idx,2].set_ylim([1e-8,None])
 
     # Plot energy spectrum at start, mid and end of simulation
-    axs1[idx,3].plot(k2, np.abs(sgs.Ek_ktt[0,0:N//2]),':',color=colors[idx])
-    axs1[idx,3].plot(k2, np.abs(sgs.Ek_ktt[nt//2,0:N//2]),'--',color=colors[idx])
-    axs1[idx,3].plot(k2, np.abs(sgs.Ek_ktt[-1,0:N//2]),'-',color=colors[idx])
+    axs1[idx,3].plot(k2, np.abs(sgs.Ek_ktt[0,0:N2//2]),':',color=colors[idx])
+    axs1[idx,3].plot(k2, np.abs(sgs.Ek_ktt[nt//2,0:N2//2]),'--',color=colors[idx])
+    axs1[idx,3].plot(k2, np.abs(sgs.Ek_ktt[-1,0:N2//2]),'-',color=colors[idx])
     axs1[idx,3].set_xscale('log')
     axs1[idx,3].set_yscale('log')
+    axs1[idx,3].set_ylim([1e-8,None])
     
     # Energy spectrum error
-    if N != N1:
-        axs1[idx,4].plot(k2[1:], np.abs(dns.Ek_ktt[0,1:N//2] - sgs.Ek_ktt[0,1:N//2]),'r:')
-        axs1[idx,4].plot(k2, np.abs(dns.Ek_ktt[nt//2,0:N//2] - sgs.Ek_ktt[nt//2,0:N//2]),'r--')
-        axs1[idx,4].plot(k2, np.abs(dns.Ek_ktt[-1,0:N//2] - sgs.Ek_ktt[-1,0:N//2]),'r')
+    if N2 != N1:
+        axs1[idx,4].plot(k2[1:], np.abs(dns.Ek_ktt[0,1:N2//2] - sgs.Ek_ktt[0,1:N2//2]),'r:')
+        axs1[idx,4].plot(k2, np.abs(dns.Ek_ktt[nt//2,0:N2//2] - sgs.Ek_ktt[N2//2,0:N2//2]),'r--')
+        axs1[idx,4].plot(k2, np.abs(dns.Ek_ktt[-1,0:N2//2] - sgs.Ek_ktt[-1,0:N2//2]),'r')
         axs1[idx,4].set_xscale('log')
         axs1[idx,4].set_yscale('log')
+        axs1[idx,4].set_ylim([1e-14,None])
        
     for i in range(16):
         t = i * tEnd / 16

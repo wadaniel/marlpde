@@ -1,22 +1,3 @@
-## BARRY
-
-# Run 7: offset inside IC loop, noise 0.1
-# Run 8: offset inside IC loop, noise ~0.01
-# Run 9: offset outside IC loop
-# Run 10: no noise
-# Run 11: logenergy reward, no noise
-# Run 12: energy reward, no noise
-# Run 13: d2udx2 multiplier in action (coupled burger name wrong)
-# Run 14:  coupled burger, no noise, it learns (deleted, state change)
-# Run 14:  coupled burger, noise 0.1
-
-
-# Run 0: coupled, basereward == true    (Doesnt learn, too many nans)
-# Run 1: coupled, basereward == false   (Doesnt learn, too many nans)
-# Run 2: coupled, basereward == false (seed 42 and 31), no noise
-
-
-
 ## DAINT
 
 
@@ -26,7 +7,9 @@
 # Run 16 - 20: uncoupled and coupled (base=True), noise == 0.001, seed 0..5, iex 0.1
 # Run 21 - 25: uncoupled with spectral reward, noise == 0., seed 0..5, iex 0.1
 
-## BARRY
+## BARRY 
+
+## NU 0.01
 
 # Run 42 - spectral reward
 # Run 43 - spectral reward with mean rescale
@@ -40,12 +23,19 @@
 # Run 52 - Spectral reward with mean rescale, iex 0.1, N = 32 (seed 42, 3.08 reward at start)
 # Run 53 - Instantanteous Logspectral reward with mean rescale, iex 0.1, N = 32 (seed 42, -6.13 reward at start)
 
-
 # Run 60 - Logspectral reward, N 32, Sinus
 # Run 61 - Mse reward, N 32, Sinus
 # Run 62 - Logspectral reward, N 32, Sinus, direct forcing
 
-
-
 # cmaes 0 - sinus, mse reward
 # cmaes 1 - sinus, logreward
+
+### NU 0.02
+
+# Run 1, sinus, mse reward, laplace forcing, N 32, Na 32 (-18.22)
+# Run 2, sinus, log reward, laplace forcing, N 32, Na 32 (-140.0)
+# Run 3, sinus, log reward, direct forcing, N 32, Na 32 (-18.22)
+
+# Run 4, turbulence, log reward, laplace forcing, N 32, Na 32 (-12.93)
+# Run 5, turbulence, log reward, direct forcing, N 32, Na 32 
+# Run 6, turbulence, mse reward, direct forcing, N 32, Na 32 
