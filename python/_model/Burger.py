@@ -29,9 +29,9 @@ class Burger:
         np.random.seed(None)
 
         # Initialize
-        L  = float(L); 
-        dt = float(dt); 
-        tend = float(tend)
+        self.L  = float(L); 
+        self.dt = float(dt); 
+        self.tend = float(tend)
         
         if (nsteps is None):
             nsteps = int(tend/dt)
@@ -41,12 +41,9 @@ class Burger:
             tend = dt*nsteps
         
         # save to self
-        self.L      = L
         self.N      = N
         self.dx     = L/N
-        #self.x      = np.linspace(-0.5*self.L, +0.5*self.L, N, endpoint=False)
         self.x      = np.linspace(0, self.L, N, endpoint=False)
-        self.dt     = dt
         self.nu     = nu
         self.nsteps = nsteps
         self.nout   = nsteps
@@ -54,6 +51,7 @@ class Burger:
         # Basis
         self.M = 0
         self.basis = None
+        self.actions = None
 
         # direct forcing or not
         self.dforce = dforce
@@ -116,6 +114,10 @@ class Burger:
 
     def setup_basis(self, M, kind = 'uniform'):
         self.M = M
+        
+        # Action record
+        self.actionHistory = np.zeros((self.nsteps, self.M))
+
         if M > 1:
             if kind == 'uniform':
                 self.basis = np.zeros((self.M, self.N))
@@ -263,6 +265,8 @@ class Burger:
         if (actions is not None):
             assert self.basis is not None, print("[Burger] Basis not set up (is None).")
             assert len(actions) == self.M, print("[Burger] Wrong number of actions (provided {}/{}".format(len(actions), self.M))
+            self.actionHistory[self.ioutnum,:] = actions
+
             forcing = np.matmul(actions, self.basis)
 
             u = self.uu[self.ioutnum,:]

@@ -58,7 +58,6 @@ class Burger_jax:
         self.L      = L
         self.N      = N
         self.dx     = L/N
-        #self.x      = np.linspace(-0.5*self.L, +0.5*self.L, N, endpoint=False)
         self.x      = np.linspace(0, self.L, N, endpoint=False)
         self.dt     = dt
         self.nu     = nu
@@ -68,6 +67,7 @@ class Burger_jax:
         # Basis
         self.M = 0
         self.basis = None
+        self.actionHistory = None
 
         # gradient
         self.gradient = np.zeros((self.N, self.M))
@@ -130,6 +130,10 @@ class Burger_jax:
 
     def setup_basis(self, M, kind = 'uniform'):
         self.M = M
+ 
+        # Action record
+        self.actionHistory = np.zeros(self.nsteps, self.M)
+        
         if M > 1:
             if kind == 'uniform':
                 self.basis = np.zeros((self.M, self.N))
@@ -310,6 +314,8 @@ class Burger_jax:
 
                 duda, dudu = self.grad(actions, self.u, self.v, nIntermed)
                 self.gradient = np.matmul(dudu, self.gradient) + duda
+
+                self.actionHistory[self.ioutnum,:] = actions
 
         else:
 
