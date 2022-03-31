@@ -12,6 +12,7 @@ parser.add_argument('--episodelength', help='Actual length of episode / number o
 parser.add_argument('--noise', help='Standard deviation of IC', required=False, type=float, default=0.)
 parser.add_argument('--ic', help='Initial condition', required=False, type=str, default='sinus')
 parser.add_argument('--dforce', help='Do direct forcing', action='store_true', required=False)
+parser.add_argument('--specreward', help='Use spectral reward', action='store_true', required=False)
 parser.add_argument('--seed', help='Random seed', required=False, type=int, default=42)
 parser.add_argument('--dt', help='Simulator time step', required=False, type=float, default=0.001)
 parser.add_argument('--nu', help='Viscosity', required=False, type=float, default=0.02)
@@ -65,6 +66,7 @@ e["Problem"]["Environment Function"] = lambda s : be.environment(
         args.nu, 
         args.episodelength, 
         args.ic, 
+        args.specreward, 
         args.dforce, 
         args.noise, 
         args.seed, 

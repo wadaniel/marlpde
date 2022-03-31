@@ -6,8 +6,8 @@ import argparse
 from Burger import *
  
 parser = argparse.ArgumentParser()
-parser.add_argument('--N', help='Discretization / number of grid points', required=False, type=int, default=64)
-parser.add_argument('--ic', help='Initial condition', required=False, type=str, default='box')
+parser.add_argument('--gridSize', help='Discretization / number of grid points', required=False, type=int, default=32)
+parser.add_argument('--ic', help='Initial condition', required=False, type=str, default='sinus')
 parser.add_argument('--seed', help='Random seed', required=False, type=int, default=42)
 parser.add_argument('--episodelength', help='Actual length of episode / number of actions', required=False, type=int, default=500)
 
@@ -18,7 +18,7 @@ N    = 512
 L    = 2*np.pi
 dt   = 0.001
 tEnd = 5
-nu   = 0.01
+nu   = 0.02
 noise = 0.0
 ic   = args.ic
 seed = args.seed
@@ -28,22 +28,21 @@ basis = 'hat'
 numActions = 1
 
 # les & rl defaults
-gridSize = args.N
+gridSize = args.gridSize
 episodeLength = args.episodelength
 
 # reward structure
 spectralReward = True
-spectralLogReward = False
 
 # reward defaults
-rewardFactor = 100 if spectralReward else 1.
-rewardFactor = 0.001 if spectralLogReward else rewardFactor
+rewardFactor = 0.001 if spectralReward else 1.
 
 
 # DNS baseline
 print("Setting up DNS..")
-dns = Burger(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case=ic, noise=noise, seed=seed)
+dns = Burger(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case=ic, dforce=False, noise=noise, seed=seed)
 dns.simulate()
+dns.fou2real()
 dns.compute_Ek()
 
 ## create interpolated IC
@@ -54,9 +53,10 @@ tAvgEnergy = dns.Ek_tt
 print("Done!")
 
 # Initialize LES
-les = Burger(L=L, N=gridSize, dt=dt, nu=nu, tend=tEnd, noise=noise)
-if spectralReward or spectralLogReward:
-    les.IC( v0 = dns.v0[:gridSize] * gridSize / N )
+les = Burger(L=L, N=gridSize, dt=dt, nu=nu, tend=tEnd, case=ic, dforce=False, noise=noise, seed=seed)
+if spectralReward:
+    v0 = np.concatenate((dns.v0[:((gridSize+1)//2)], dns.v0[-(gridSize-1)//2:]))
+    les.IC( v0 = v0 * gridSize / dns.N )
 else:
     les.IC( u0 = f_restart(les.x) )
 
@@ -84,14 +84,8 @@ while step < episodeLength and error == 0:
     
     # calculate reward
     if spectralReward:
-        # Time-averaged energy spectrum as a function of wavenumber
-        kMseErr = np.mean((dns.Ek_ktt[les.ioutnum,:gridSize] - les.Ek_ktt[les.ioutnum,:gridSize])**2)
-        reward = -rewardFactor*kMseErr
-    
-    elif spectralLogReward:
-        kMseLogErr = np.mean((np.log(dns.Ek_ktt[les.ioutnum,:gridSize]) - np.log(les.Ek_ktt[les.ioutnum,:gridSize]))**2)
+        kMseLogErr = np.mean((np.log(dns.Ek_kt[les.ioutnum,:gridSize]) - np.log(les.Ek_kt[les.ioutnum,:gridSize]))**2)
         reward = -rewardFactor*kMseLogErr
-
     else:
         reward = rewardFactor*les.getMseReward()
 

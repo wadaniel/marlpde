@@ -11,8 +11,8 @@ import math
 import numpy as np
 
 # Discretization grid
-N1 = 1024
-N2 = 32
+N1 = 512
+N2 = 16
 m = int(math.log2(N1 / N2))
 Nx = np.clip(N2*2**np.arange(0., m), a_min=0, a_max=N1).astype(int)
 
@@ -31,7 +31,7 @@ from Burger import *
 #------------------------------------------------------------------------------
 ## set parameters and initialize simulation
 L    = 2*np.pi
-dt   = 0.0001
+dt   = 0.001
 tEnd = 5
 nu   = 0.02
 ic   = 'turbulence'

@@ -275,14 +275,23 @@ class Burger:
                 d2udx2 = (up - 2.*u + um)/self.dx**2
                 Fforcing = fft( forcing*d2udx2 )
             
-
-            self.v = self.v - self.dt*0.5*self.k1*fft(self.u**2) + self.dt*self.nu*self.k2*self.v + self.dt*Fforcing 
+        """
+        RK3 in time
+        """
+        v1 = self.v + self.dt * (-0.5*self.k1*fft(self.u**2) + self.nu*self.k2*self.v + Fforcing)
+        u1 = np.real(ifft(v1))
         
-        else:
-            self.v = self.v - self.dt*0.5*self.k1*fft(self.u**2) + self.dt*self.nu*self.k2*self.v
+        
+        v2 = 3./4.*self.v + 1./4.*v1 + 1./4. * self.dt * (-0.5*self.k1*fft(u1**2) + self.nu*self.k2*v1 + Fforcing)
+        u2 = np.real(ifft(v2))
 
-        # Impl-expl step (TODO)
-        #self.v = (self.v - self.dt*0.5*self.k1*fft(self.u**2) + self.dt*Fforcing) / (1. - self.dt*self.nu*self.k2*self.v)
+        v3 = 1./3.*self.v + 2./3.*v2 + 2./3. * self.dt * (-0.5*self.k1*fft(u2**2) + self.nu*self.k2*v2 + Fforcing)
+        self.v = v3
+     
+        """
+        Expl Euler in time
+        """
+        #self.v = self.v - self.dt*0.5*self.k1*fft(self.u**2) + self.dt*self.nu*self.k2*self.v + self.dt*Fforcing 
         
         self.u = np.real(ifft(self.v))
         
