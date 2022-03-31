@@ -72,7 +72,7 @@ def makePlot(dns, base, sgs, fileName):
     # Plot instanteneous energy and time averaged energy
     axs1[idx,2].plot(base.tt, mseBaseU_t, 'r-')
     axs1[idx,2].set_yscale('log')
-    axs1[idx,2].set_ylim([1e-8,None])
+    #axs1[idx,2].set_ylim([1e-8,None])
 
     # Plot energy spectrum at start, mid and end of simulation
     axs1[idx,3].plot(k2, np.abs(base.Ek_ktt[0,0:gridSize//2]),':',color=colors[idx])
@@ -80,18 +80,18 @@ def makePlot(dns, base, sgs, fileName):
     axs1[idx,3].plot(k2, np.abs(base.Ek_ktt[-1,0:gridSize//2]),'-',color=colors[idx])
     axs1[idx,3].set_xscale('log')
     axs1[idx,3].set_yscale('log')
-    axs1[idx,3].set_ylim([1e-8,None])
+    axs1[idx,3].set_ylim([1e-3,None])
 
     # Plot energy spectrum difference
-    axs1[idx,4].plot(k2[1:], np.abs((dns.Ek_ktt[0,1:gridSize//2] - base.Ek_ktt[0,1:gridSize//2])/dns.Ek_ktt[0, 1:gridSize//2]),'r:')
+    axs1[idx,4].plot(k2, np.abs((dns.Ek_ktt[0,:gridSize//2] - base.Ek_ktt[0,:gridSize//2])/dns.Ek_ktt[0,:gridSize//2]),'r:')
     #axs1[idx,4].plot(k2[1:], np.abs(dns.Ek_ktt[0,1:gridSize//2] - base.Ek_ktt[0,1:gridSize//2]),'r:')
-    axs1[idx,4].plot(k2[1:], np.abs((dns.Ek_ktt[nt//2,1:gridSize//2] - base.Ek_ktt[nt//2,1:gridSize//2])/dns.Ek_ktt[nt//2, 1:gridSize//2]),'r--')
+    axs1[idx,4].plot(k2, np.abs((dns.Ek_ktt[nt//2,:gridSize//2] - base.Ek_ktt[nt//2,:gridSize//2])/dns.Ek_ktt[nt//2,:gridSize//2]),'r--')
     #axs1[idx,4].plot(k2, np.abs(dns.Ek_ktt[nt//2,0:gridSize//2] - base.Ek_ktt[gridSize//2,0:gridSize//2]),'r--')
-    axs1[idx,4].plot(k2[1:], np.abs((dns.Ek_ktt[-1,1:gridSize//2] - base.Ek_ktt[-1,1:gridSize//2])/dns.Ek_ktt[-1, 1:gridSize//2]),'r-')
+    axs1[idx,4].plot(k2, np.abs((dns.Ek_ktt[-1,:gridSize//2] - base.Ek_ktt[-1,:gridSize//2])/dns.Ek_ktt[-1,:gridSize//2]),'r-')
     #axs1[idx,4].plot(k2, np.abs(dns.Ek_ktt[-1,0:gridSize//2] - base.Ek_ktt[-1,0:gridSize//2]),'r')
     axs1[idx,4].set_xscale('log')
     axs1[idx,4].set_yscale('log')
-    axs1[idx,4].set_ylim([1e-8,None])
+    #axs1[idx,4].set_ylim([1e-4,None])
 
 #------------------------------------------------------------------------------
 
@@ -107,7 +107,6 @@ def makePlot(dns, base, sgs, fileName):
     # Plot instanteneous energy and time averaged energy
     axs1[idx,2].plot(sgs.tt, mseU_t, 'r-')
     axs1[idx,2].set_yscale('log')
-    axs1[idx,2].set_ylim([1e-8,None])
 
     # Plot time averaged energy spectrum at start, mid and end of simulation
     axs1[idx,3].plot(k2, np.abs(sgs.Ek_ktt[0,0:gridSize//2]),':',color=colors[idx])
@@ -117,11 +116,11 @@ def makePlot(dns, base, sgs, fileName):
     axs1[idx,3].set_yscale('log')
 
     # Plot time averaged energy spectrum difference
-    axs1[idx,4].plot(k2[1:], np.abs((dns.Ek_ktt[0,1:gridSize//2] - sgs.Ek_ktt[0,1:gridSize//2])/dns.Ek_ktt[0, 1:gridSize//2]),'r:')
+    axs1[idx,4].plot(k2, np.abs((dns.Ek_ktt[0,:gridSize//2] - sgs.Ek_ktt[0,:gridSize//2])/dns.Ek_ktt[0,:gridSize//2]),'r:')
     #axs1[idx,4].plot(k2[1:], np.abs(dns.Ek_ktt[0,1:gridSize//2] - sgs.Ek_ktt[0,1:gridSize//2]),'r:')
-    axs1[idx,4].plot(k2[1:], np.abs((dns.Ek_ktt[nt//2,1:gridSize//2] - sgs.Ek_ktt[nt//2,1:gridSize//2])/dns.Ek_ktt[nt//2, 1:gridSize//2]),'r--')
+    axs1[idx,4].plot(k2, np.abs((dns.Ek_ktt[nt//2,:gridSize//2] - sgs.Ek_ktt[nt//2,:gridSize//2])/dns.Ek_ktt[nt//2,:gridSize//2]),'r--')
     #axs1[idx,4].plot(k2, np.abs(dns.Ek_ktt[nt//2,0:gridSize//2] - sgs.Ek_ktt[gridSize//2,0:gridSize//2]),'r--')
-    axs1[idx,4].plot(k2[1:], np.abs((dns.Ek_ktt[-1,1:gridSize//2] - sgs.Ek_ktt[-1,1:gridSize//2])/dns.Ek_ktt[-1, 1:gridSize//2]),'r-')
+    axs1[idx,4].plot(k2, np.abs((dns.Ek_ktt[-1,:gridSize//2] - sgs.Ek_ktt[-1,:gridSize//2])/dns.Ek_ktt[-1,:gridSize//2]),'r-')
     #axs1[idx,4].plot(k2, np.abs(dns.Ek_ktt[-1,0:gridSize//2] - sgs.Ek_ktt[-1,0:gridSize//2]),'r')
     axs1[idx,4].set_xscale('log')
     axs1[idx,4].set_yscale('log')

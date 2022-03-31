@@ -12,7 +12,7 @@ from jax import grad, jit, vmap, jacfwd, jacrev, random
 
 import argparse
 parser = argparse.ArgumentParser()
-parser.add_argument('--N', help='Discretization / number of grid points', required=False, type=int, default=32)
+parser.add_argument('--gridSize', help='Discretization / number of grid points', required=False, type=int, default=32)
 parser.add_argument('--ic', help='Initial condition', required=False, type=str, default='sinus')
 parser.add_argument('--seed', help='Random seed', required=False, type=int, default=42)
 parser.add_argument('--episodelength', help='Actual length of episode / number of actions', required=False, type=int, default=500)
@@ -26,12 +26,12 @@ nu   = 0.02
 noise = 0.0
 ic   = args.ic
 seed = args.seed
+gridSize = args.gridSize
 
 # action defaults
 basis = 'hat'
 numActions = 16
 
-gridSize = N
 episodeLength = args.episodelength
 
 # reward structure
@@ -43,7 +43,7 @@ rewardFactor = 1 if spectralReward else 1.
 # DNS baseline
 
 print("Setting up DNS..")
-dns = Burger_jax(L=L, N=gridSize, dt=dt, nu=nu, tend=tEnd)
+dns = Burger_jax(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case=ic)
 dns.setup_basis(numActions, basis)
 dns.simulate()
 dns.compute_Ek()
@@ -78,17 +78,21 @@ while step < episodeLength and error == 0:
 
     # apply action and advance environment
     #actions = jnp.asarray(np.random.normal(loc=0., scale=1e-2, size=numActions))
-    actions = jnp.ones(numActions)
+    actions = jnp.zeros(numActions)
     print(step)
-    #try:
-    sgs.step(actions, nIntermediate)
-    sgs.compute_Ek()
-    #except Exception as e:
-    #    print("Exception occured:")
-    #    print(str(e))
-    #    error = 1
-    #    break
+    try:
+        sgs.step(actions, nIntermediate)
+        sgs.compute_Ek()
+    except Exception as e:
+        print("Exception occured:")
+        print(str(e))
+        error = 1
+        break
 
+    print(sgs.gradient)
+    print(np.max(sgs.gradient))
+    print(np.min(sgs.gradient))
+    print(np.min(np.abs(sgs.gradient)))
     # calculate reward
     if spectralReward:
         #kMseLogErr = np.mean((np.log(dns.Ek_kt[sgs.ioutnum,:gridSize]) - np.log(sgs.Ek_kt[sgs.ioutnum,:gridSize]))**2)

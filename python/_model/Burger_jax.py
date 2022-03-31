@@ -18,10 +18,16 @@ def hat( x, mean, dx ):
     return left + right - 1.
 
 @jit
-def jexpl_euler(Fforcing, u, v, dt, nu, k1, k2):
+def jexpl_euler(actions, u, v, dt, dx, nu, basis, k1, k2):
     """
     Explicit Euler in time
     """
+    
+    forcing = jnp.matmul(actions, basis)
+    up = jnp.roll(u,1)
+    um = jnp.roll(u,-1)
+    d2udx2 = (up - 2.*u + um)/dx**2
+    Fforcing = jnp.fft.fft( forcing*d2udx2 )
 
     v = v - dt*0.5*k1*jnp.fft.fft(u*u) + dt*nu*k2*v + dt*Fforcing
     u = jnp.real(jnp.fft.ifft(v))
@@ -297,15 +303,9 @@ class Burger_jax:
         print("[Burger_jax] TODO.. exit")
         sys.exit()
 
-    def expl_euler(self, actions, u, v, n):
-
-        forcing = np.matmul(actions, self.basis)
-        Fforcing = fft( forcing )
-
-        for _ in range(n):
-
-            v = v - self.dt*0.5*self.k1*fft(u*u) + self.dt*self.nu*self.k2*v + self.dt*Fforcing
-            u = np.real(ifft(v))
+    def expl_euler(self, Fforcing, u, v):
+        v = v - self.dt*0.5*self.k1*fft(u*u) + self.dt*self.nu*self.k2*v + self.dt*Fforcing
+        u = np.real(ifft(v))
 
         return (u, v)
  
@@ -485,36 +485,15 @@ class Burger_jax:
 
 
     def getGrad(self, nAgens = None):
-        #print(np.max(self.gradient)) #, axis=0))
-        #print(np.min(self.gradient)) #, axis=0))
-
-
         return self.gradient
 
-        """
-        # laplace operator applied to gradient for diffusion
-        gl = np.roll(self.gradient, shift = 1, axis = 0)
-        gr = np.roll(self.gradient, shift = -1, axis = 0)
-        d2gdx2 = (gl -2.*self.gradient + gr)/self.dx**2
-        #print(np.max(d2gdx2, axis=0))
-        #print(np.min(d2gdx2, axis=0))
-
-        return d2gdx2
-        """
-
     def getState(self, nAgents = None):
-
-        # Extract state
         u = self.uu[self.ioutnum,:]
-
-        return self.u
-        
-        """
+             
         up = np.roll(u,1)
         um = np.roll(u,-1)
         d2udx2 = (up - 2.*u + um)/self.dx**2
-
+        
         state = d2udx2
-
-        return state
-        """
+       
+        return state   
