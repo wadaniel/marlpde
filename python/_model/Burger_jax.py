@@ -18,12 +18,37 @@ def hat( x, mean, dx ):
     return left + right - 1.
 
 @jit
-def jexpl_euler(actions, u, v,  n, basis, dt, nu, k1, k2):
-
-    forcing = jnp.matmul(actions, basis)
-    Fforcing = jnp.fft.fft( forcing )
+def jexpl_euler(Fforcing, u, v, dt, nu, k1, k2):
+    """
+    Explicit Euler in time
+    """
 
     v = v - dt*0.5*k1*jnp.fft.fft(u*u) + dt*nu*k2*v + dt*Fforcing
+    u = jnp.real(jnp.fft.ifft(v))
+
+    return (u, v)
+
+@jit
+def jexpl_RK3( actions, u, v, dt, dx, nu, basis, k1, k2):
+    """
+    RK3 in time
+    """
+    
+    forcing = jnp.matmul(actions, basis)
+    up = jnp.roll(u,1)
+    um = jnp.roll(u,-1)
+    d2udx2 = (up - 2.*u + um)/dx**2
+    Fforcing = jnp.fft.fft( forcing*d2udx2 )
+
+    v1 = v + dt * (-0.5*k1*jnp.fft.fft(u**2) + nu*k2*v + Fforcing)
+    u1 = jnp.real(jnp.fft.ifft(v1))
+    
+    
+    v2 = 3./4.*v + 1./4.*v1 + 1./4. * dt * (-0.5*k1*jnp.fft.fft(u1**2) + nu*k2*v1 + Fforcing)
+    u2 = jnp.real(jnp.fft.ifft(v2))
+
+    v3 = 1./3.*v + 2./3.*v2 + 2./3. * dt * (-0.5*k1*jnp.fft.fft(u2**2) + nu*k2*v2 + Fforcing)
+    v = v3
     u = jnp.real(jnp.fft.ifft(v))
 
     return (u, v)
@@ -35,7 +60,7 @@ class Burger_jax:
     # u_t + u*u_x = nu*u_xx0
     # with periodic BCs on x \in [0, L]: u(0,t) = u(L,t).
 
-    def __init__(self, L=2.*np.pi, N=512, dt=0.001, nu=0.0, nsteps=None, tend=150, u0=None, v0=None, case=None, noise=0., seed=42):
+    def __init__(self, L=2.*np.pi, N=512, dt=0.001, nu=0.0, dforce=True, nsteps=None, tend=5., u0=None, v0=None, case=None, noise=0., seed=42):
 
         # Randomness
         self.noise = noise*L
@@ -43,9 +68,9 @@ class Burger_jax:
         np.random.seed(None)
 
         # Initialize
-        L  = float(L);
-        dt = float(dt);
-        tend = float(tend)
+        self.L  = float(L)
+        self.dt = float(dt)
+        self.tend = float(tend)
 
         if (nsteps is None):
             nsteps = int(tend/dt)
@@ -55,11 +80,9 @@ class Burger_jax:
             tend = dt*nsteps
 
         # save to self
-        self.L      = L
         self.N      = N
         self.dx     = L/N
         self.x      = np.linspace(0, self.L, N, endpoint=False)
-        self.dt     = dt
         self.nu     = nu
         self.nsteps = nsteps
         self.nout   = nsteps
@@ -68,6 +91,7 @@ class Burger_jax:
         self.M = 0
         self.basis = None
         self.actionHistory = None
+        self.dforce = dforce
 
         # gradient
         self.gradient = np.zeros((self.N, self.M))
@@ -132,7 +156,7 @@ class Burger_jax:
         self.M = M
  
         # Action record
-        self.actionHistory = np.zeros(self.nsteps, self.M)
+        self.actionHistory = np.zeros([self.nsteps, self.M])
         
         if M > 1:
             if kind == 'uniform':
@@ -195,7 +219,6 @@ class Burger_jax:
                         A = 1
                         u0 = np.ones(self.N)
                         for k in range(1, self.N):
-                            #offset = np.random.uniform(low=0., high=2.*np.pi) if self.noise > 0 else 0.
                             offset = np.random.normal(loc=0., scale=self.noise) if self.noise > 0 else 0.
                             rng = (a * rng + c) % m
                             phase = rng/m*2.*np.pi
@@ -285,55 +308,61 @@ class Burger_jax:
             u = np.real(ifft(v))
 
         return (u, v)
+ 
+    def expl_RK3(self, Fforcing, u, v):
 
-    def grad(self, actions, u, v, n):
-        return jacfwd(jexpl_euler, has_aux=True, argnums=(0,1))(actions, u, v, n, self.basis, self.dt, self.nu, self.k1, self.k2)[0]
+        v1 = self.v + self.dt * (-0.5*self.k1*fft(self.u**2) + self.nu*self.k2*self.v + Fforcing)
+        u1 = np.real(ifft(v1))
+        
+        v2 = 3./4.*self.v + 1./4.*v1 + 1./4. * self.dt * (-0.5*self.k1*fft(u1**2) + self.nu*self.k2*v1 + Fforcing)
+        u2 = np.real(ifft(v2))
+
+        v3 = 1./3.*self.v + 2./3.*v2 + 2./3. * self.dt * (-0.5*self.k1*fft(u2**2) + self.nu*self.k2*v2 + Fforcing)
+        u3 = np.real(ifft(v3))
+
+        return (u3, v3)
+
+
+    def grad(self, actions, u, v):
+        return jacfwd(jexpl_RK3, has_aux=True, argnums=(0,1))( actions, u, v, self.dt, self.dx, self.nu, self.basis, self.k1, self.k2)[0]
  
     def step( self, actions=None, nIntermed=1 ):
 
+        Fforcing = np.zeros(self.N)
+        self.gradient = np.zeros((self.N, self.M))
+
         if (actions is not None):
 
-            actions = np.array(actions)
             forcing = np.matmul(actions, self.basis)
             Fforcing = fft( forcing )
-
-            self.gradient = np.zeros((self.N, self.M))
+            if self.dforce:
+                Fforcing = fft( forcing )
+            else:
+                up = np.roll(u,1)
+                um = np.roll(u,-1)
+                d2udx2 = (up - 2.*u + um)/self.dx**2
+                Fforcing = fft( forcing*d2udx2 )
             
-            for _ in range(nIntermed):
+        for _ in range(nIntermed):
 
-                self.v = self.v - self.dt*0.5*self.k1*fft(self.u**2) + self.dt*self.nu*self.k2*self.v + self.dt*Fforcing
-                self.u = np.real(ifft(self.v))
+            u, v = self.expl_RK3( Fforcing, self.u, self.v) 
 
-                self.stepnum += 1
-                self.t       += self.dt
+            self.stepnum += 1
+            self.t       += self.dt
 
-                self.ioutnum += 1
-                self.uu[self.ioutnum,:] = self.u
-                self.vv[self.ioutnum,:] = self.v
-                self.tt[self.ioutnum]   = self.t
-
-                duda, dudu = self.grad(actions, self.u, self.v, nIntermed)
+            if (actions is not None):
+                duda, dudu = self.grad(actions, self.u, self.v)
                 self.gradient = np.matmul(dudu, self.gradient) + duda
-
                 self.actionHistory[self.ioutnum,:] = actions
 
-        else:
+            # update after grads computed
+            self.u = u
+            self.v = v
 
-            for _ in range(nIntermed):
-
-                self.v = self.v - self.dt*0.5*self.k1*fft(self.u**2) + self.dt*self.nu*self.k2*self.v
-                self.u = np.real(ifft(self.v))
-
-                self.stepnum += 1
-                self.t       += self.dt
-
-                self.ioutnum += 1
-                self.uu[self.ioutnum,:] = self.u
-                self.vv[self.ioutnum,:] = self.v
-                self.tt[self.ioutnum]   = self.t
-
-        # Impl-expl step (TODO)
-        #self.v = (self.v - self.dt*0.5*self.k1*fft(self.u**2) + self.dt*Fforcing) / (1. - self.dt*self.nu*self.k2*self.v)
+            self.ioutnum += 1
+            self.uu[self.ioutnum,:] = u
+            self.vv[self.ioutnum,:] = v
+            self.tt[self.ioutnum]   = self.t
 
     def simulate(self, nsteps=None, restart=False, correction=[]):
         #

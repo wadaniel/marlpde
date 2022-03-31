@@ -4,6 +4,7 @@ sys.path.append('./../../_model/')
 
 import argparse
 from Burger import *
+from plotting import *
  
 parser = argparse.ArgumentParser()
 parser.add_argument('--gridSize', help='Discretization / number of grid points', required=False, type=int, default=32)
@@ -27,7 +28,7 @@ seed = args.seed
 basis = 'hat'
 numActions = 1
 
-# les & rl defaults
+# sgs & rl defaults
 gridSize = args.gridSize
 episodeLength = args.episodelength
 
@@ -35,7 +36,7 @@ episodeLength = args.episodelength
 spectralReward = True
 
 # reward defaults
-rewardFactor = 0.001 if spectralReward else 1.
+rewardFactor = 1. if spectralReward else 1.
 
 
 # DNS baseline
@@ -53,20 +54,24 @@ tAvgEnergy = dns.Ek_tt
 print("Done!")
 
 # Initialize LES
-les = Burger(L=L, N=gridSize, dt=dt, nu=nu, tend=tEnd, case=ic, dforce=False, noise=noise, seed=seed)
+sgs = Burger(L=L, N=gridSize, dt=dt, nu=nu, tend=tEnd, case=ic, dforce=False, noise=noise, seed=seed)
 if spectralReward:
     v0 = np.concatenate((dns.v0[:((gridSize+1)//2)], dns.v0[-(gridSize-1)//2:]))
-    les.IC( v0 = v0 * gridSize / dns.N )
+    sgs.IC( v0 = v0 * gridSize / dns.N )
 else:
-    les.IC( u0 = f_restart(les.x) )
+    sgs.IC( u0 = f_restart(sgs.x) )
 
-les.setup_basis(numActions, basis)
-les.setGroundTruth(dns.tt, dns.x, dns.uu)
+sgs.setup_basis(numActions, basis)
+sgs.setGroundTruth(dns.tt, dns.x, dns.uu)
 
 ## run controlled simulation
 error = 0
 step = 0
 nIntermediate = int(tEnd / dt / episodeLength)
+
+prevkMseLogErr = 0.
+kMseLogErr = 0.
+reward = 0.
 cumreward = 0.
 while step < episodeLength and error == 0:
     
@@ -74,8 +79,8 @@ while step < episodeLength and error == 0:
     actions = [0.]
     try:
         for _ in range(nIntermediate):
-            les.step(actions)
-        les.compute_Ek()
+            sgs.step(actions)
+        sgs.compute_Ek()
     except Exception as e:
         print("Exception occured:")
         print(str(e))
@@ -84,10 +89,12 @@ while step < episodeLength and error == 0:
     
     # calculate reward
     if spectralReward:
-        kMseLogErr = np.mean((np.log(dns.Ek_kt[les.ioutnum,:gridSize]) - np.log(les.Ek_kt[les.ioutnum,:gridSize]))**2)
-        reward = -rewardFactor*kMseLogErr
+        #kMseLogErr = np.mean((np.log(dns.Ek_kt[sgs.ioutnum,:gridSize]) - np.log(sgs.Ek_kt[sgs.ioutnum,:gridSize]))**2)
+        kMseLogErr = np.mean((np.log(dns.Ek_ktt[sgs.ioutnum-nIntermediate:sgs.ioutnum,:gridSize]) - np.log(sgs.Ek_ktt[sgs.ioutnum-nIntermediate:sgs.ioutnum,:gridSize]))**2)
+        reward = rewardFactor*(prevkMseLogErr-kMseLogErr)
+        prevkMseLogErr = kMseLogErr
     else:
-        reward = rewardFactor*les.getMseReward()
+        reward = rewardFactor*sgs.getMseReward()
 
     cumreward += reward
     if (np.isnan(reward)):
@@ -97,4 +104,7 @@ while step < episodeLength and error == 0:
     
     step += 1
 
+
 print(cumreward)
+
+makePlot(dns, sgs, sgs, "loop")

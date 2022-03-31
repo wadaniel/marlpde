@@ -29,9 +29,7 @@ sys.path.append('_model')
 import burger_environment as be
 
 dns_default = None
-### Set default if 0-noise
-if args.noise < 1e-12:
-    dns_default = be.setup_dns_default(args.NDNS, args.dt, args.nu, args.ic, args.seed)
+dns_default = be.setup_dns_default(args.NDNS, args.dt, args.nu, args.ic, args.seed)
 
 ### Defining Korali Problem
 
@@ -60,6 +58,7 @@ e["Problem"]["Type"] = "Reinforcement Learning / Continuous"
 e["Problem"]["Custom Settings"]["Mode"] = "Testing" if args.test else "Training"
 e["Problem"]["Environment Function"] = lambda s : be.environment( 
         s, 
+        args.NDNS, 
         args.N, 
         args.NA, 
         args.dt, 
@@ -105,8 +104,8 @@ e["Solver"]["Experience Replay"]["Off Policy"]["Annealing Rate"] = 5.0e-8
 e["Solver"]["Experience Replay"]["Off Policy"]["Cutoff Scale"] = 4.0
 e["Solver"]["Experience Replay"]["Off Policy"]["REFER Beta"] = 0.3
 e["Solver"]["Experience Replay"]["Off Policy"]["Target"] = 0.1
-e["Solver"]["Experience Replay"]["Start Size"] = 16384
-e["Solver"]["Experience Replay"]["Maximum Size"] = 524288
+e["Solver"]["Experience Replay"]["Start Size"] = 20000 * args.episodelength // 500
+e["Solver"]["Experience Replay"]["Maximum Size"] = 100000 * args.episodelength // 500
 
 e["Solver"]["Policy"]["Distribution"] = "Clipped Normal"
 e["Solver"]["State Rescaling"]["Enabled"] = True

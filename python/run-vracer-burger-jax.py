@@ -51,7 +51,8 @@ if found == True:
 e["Problem"]["Type"] = "Reinforcement Learning / Continuous"
 e["Problem"]["Custom Settings"]["Mode"] = "Testing" if args.test else "Training"
 e["Problem"]["Environment Function"] = lambda s : bje.environment( 
-        s, 
+        s,
+        args.NDNS,
         args.N, 
         args.NA, 
         args.dt, 

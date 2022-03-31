@@ -14,13 +14,13 @@ def setup_dns_default(N, dt, nu , ic, seed):
     dns.compute_Ek()
     return dns
 
-def environment( s , gridSize, numActions, dt, nu, episodeLength, ic, spectralReward, dforce, noise, seed, dns_default = None ):
+def environment( s , N, gridSize, numActions, dt, nu, episodeLength, ic, spectralReward, dforce, noise, seed, dns_default = None ):
  
     testing = True if s["Custom Settings"]["Mode"] == "Testing" else False
     noise = 0. if testing else noise   
     
     if noise > 0.:
-        dns = Burger(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case=ic, dforce=dforce, noise=noise, seed=seed)
+        dns = Burger(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case=ic, noise=noise, seed=seed)
         dns.simulate()
         dns.fou2real()
         dns.compute_Ek()
@@ -28,7 +28,7 @@ def environment( s , gridSize, numActions, dt, nu, episodeLength, ic, spectralRe
         dns = dns_default
     
     # reward defaults
-    rewardFactor = 0.001 if spectralReward else 1.
+    rewardFactor = 1. if spectralReward else 1.
 
     ## create interpolated IC
     f_restart = interpolate.interp1d(dns.x, dns.u0, kind='cubic')
@@ -52,6 +52,9 @@ def environment( s , gridSize, numActions, dt, nu, episodeLength, ic, spectralRe
     error = 0
     step = 0
     nIntermediate = int(tEnd / dt / episodeLength)
+    prevkMseLogErr = 0.
+    kMseLogErr = 0.
+    reward = 0.
     cumreward = 0.
 
     while step < episodeLength and error == 0:
@@ -87,8 +90,13 @@ def environment( s , gridSize, numActions, dt, nu, episodeLength, ic, spectralRe
     
         # calculate reward
         if spectralReward:
-            kMseLogErr = np.mean((np.log(dns.Ek_kt[sgs.ioutnum,:gridSize]) - np.log(sgs.Ek_kt[sgs.ioutnum,:gridSize]))**2)
-            reward = -rewardFactor*kMseLogErr
+            #kMseLogErr = np.mean((np.log(dns.Ek_kt[sgs.ioutnum,:gridSize]) - np.log(sgs.Ek_kt[sgs.ioutnum,:gridSize]))**2)
+            #kMseLogErr = np.mean((np.log(dns.Ek_kt[sgs.ioutnum-nIntermediate:sgs.ioutnum,:gridSize]) - np.log(sgs.Ek_kt[sgs.ioutnum-nIntermediate:sgs.ioutnum,:gridSize]))**2)
+            #reward = -rewardFactor*kMseLogErr
+            kMseLogErr = np.mean((np.log(dns.Ek_ktt[sgs.ioutnum,:gridSize]) - np.log(sgs.Ek_ktt[sgs.ioutnum,:gridSize]))**2)
+            reward = rewardFactor*(prevkMseLogErr-kMseLogErr)
+            prevkMseLogErr = kMseLogErr
+
         else:
             reward = rewardFactor*sgs.getMseReward()
 

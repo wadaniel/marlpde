@@ -83,12 +83,15 @@ def makePlot(dns, base, sgs, fileName):
     axs1[idx,3].set_ylim([1e-8,None])
 
     # Plot energy spectrum difference
-    axs1[idx,4].plot(k2[1:], np.abs(dns.Ek_ktt[0,1:gridSize//2] - base.Ek_ktt[0,1:gridSize//2]),'r:')
-    axs1[idx,4].plot(k2, np.abs(dns.Ek_ktt[nt//2,0:gridSize//2] - base.Ek_ktt[gridSize//2,0:gridSize//2]),'r--')
-    axs1[idx,4].plot(k2, np.abs(dns.Ek_ktt[-1,0:gridSize//2] - base.Ek_ktt[-1,0:gridSize//2]),'r')
+    axs1[idx,4].plot(k2[1:], np.abs((dns.Ek_ktt[0,1:gridSize//2] - base.Ek_ktt[0,1:gridSize//2])/dns.Ek_ktt[0, 1:gridSize//2]),'r:')
+    #axs1[idx,4].plot(k2[1:], np.abs(dns.Ek_ktt[0,1:gridSize//2] - base.Ek_ktt[0,1:gridSize//2]),'r:')
+    axs1[idx,4].plot(k2[1:], np.abs((dns.Ek_ktt[nt//2,1:gridSize//2] - base.Ek_ktt[nt//2,1:gridSize//2])/dns.Ek_ktt[nt//2, 1:gridSize//2]),'r--')
+    #axs1[idx,4].plot(k2, np.abs(dns.Ek_ktt[nt//2,0:gridSize//2] - base.Ek_ktt[gridSize//2,0:gridSize//2]),'r--')
+    axs1[idx,4].plot(k2[1:], np.abs((dns.Ek_ktt[-1,1:gridSize//2] - base.Ek_ktt[-1,1:gridSize//2])/dns.Ek_ktt[-1, 1:gridSize//2]),'r-')
+    #axs1[idx,4].plot(k2, np.abs(dns.Ek_ktt[-1,0:gridSize//2] - base.Ek_ktt[-1,0:gridSize//2]),'r')
     axs1[idx,4].set_xscale('log')
     axs1[idx,4].set_yscale('log')
-    axs1[idx,4].set_ylim([1e-14,None])
+    axs1[idx,4].set_ylim([1e-8,None])
 
 #------------------------------------------------------------------------------
 
@@ -112,15 +115,16 @@ def makePlot(dns, base, sgs, fileName):
     axs1[idx,3].plot(k2, np.abs(sgs.Ek_ktt[-1,0:gridSize//2]),'-',color=colors[idx])
     axs1[idx,3].set_xscale('log')
     axs1[idx,3].set_yscale('log')
-    axs1[idx,3].set_ylim([1e-8,None])
 
     # Plot time averaged energy spectrum difference
-    axs1[idx,4].plot(k2[1:], np.abs(dns.Ek_ktt[0,1:gridSize//2] - sgs.Ek_ktt[0,1:gridSize//2]),'r:')
-    axs1[idx,4].plot(k2, np.abs(dns.Ek_ktt[nt//2,0:gridSize//2] - sgs.Ek_ktt[gridSize//2,0:gridSize//2]),'r--')
-    axs1[idx,4].plot(k2, np.abs(dns.Ek_ktt[-1,0:gridSize//2] - sgs.Ek_ktt[-1,0:gridSize//2]),'r')
+    axs1[idx,4].plot(k2[1:], np.abs((dns.Ek_ktt[0,1:gridSize//2] - sgs.Ek_ktt[0,1:gridSize//2])/dns.Ek_ktt[0, 1:gridSize//2]),'r:')
+    #axs1[idx,4].plot(k2[1:], np.abs(dns.Ek_ktt[0,1:gridSize//2] - sgs.Ek_ktt[0,1:gridSize//2]),'r:')
+    axs1[idx,4].plot(k2[1:], np.abs((dns.Ek_ktt[nt//2,1:gridSize//2] - sgs.Ek_ktt[nt//2,1:gridSize//2])/dns.Ek_ktt[nt//2, 1:gridSize//2]),'r--')
+    #axs1[idx,4].plot(k2, np.abs(dns.Ek_ktt[nt//2,0:gridSize//2] - sgs.Ek_ktt[gridSize//2,0:gridSize//2]),'r--')
+    axs1[idx,4].plot(k2[1:], np.abs((dns.Ek_ktt[-1,1:gridSize//2] - sgs.Ek_ktt[-1,1:gridSize//2])/dns.Ek_ktt[-1, 1:gridSize//2]),'r-')
+    #axs1[idx,4].plot(k2, np.abs(dns.Ek_ktt[-1,0:gridSize//2] - sgs.Ek_ktt[-1,0:gridSize//2]),'r')
     axs1[idx,4].set_xscale('log')
     axs1[idx,4].set_yscale('log')
-    axs1[idx,4].set_ylim([1e-14,None])
 
     acolors = plt.cm.coolwarm(np.linspace(0,1,numActions))
     for i in range(numActions):
