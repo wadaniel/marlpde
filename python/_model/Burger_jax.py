@@ -5,8 +5,11 @@ from scipy import interpolate
 from scipy.fftpack import fft, ifft, fftfreq
 import numpy as np
 
+import os
 import jax.numpy as jnp
 from jax import grad, jit, vmap, jacfwd, jacrev, random
+
+os.environ["XLA_FLAGS"] = ("--xla_cpu_multi_thread_eigen=false intra_op_parallelism_threads=1")
 
 np.seterr(over='raise', invalid='raise')
 def gaussian( x, mean, sigma ):
