@@ -41,7 +41,7 @@ e = korali.Experiment()
 
 ### Defining results folder and loading previous results, if any
 
-resultFolder = '_result_jax_{}'.format(run)
+resultFolder = '_result_jax_{}'.format(args.run)
 
 found = e.loadState(resultFolder + '/latest')
 if found == True:

@@ -7,7 +7,7 @@ tEnd = 5
 basis = 'hat'
 
 def setup_dns_default(N, dt, nu , ic, seed):
-    print("Setting up default dbs with args ({}, {}, {}, {}, {})".format(N, dt, nu, ic, seed))
+    print("[burger_jax_env] Setting up default dbs with args ({}, {}, {}, {}, {})".format(N, dt, nu, ic, seed))
     dns = Burger_jax(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case=ic, noise=0., seed=seed)
     dns.simulate()
     dns.fou2real()
@@ -67,9 +67,7 @@ def environment( s , N, gridSize, numActions, dt, nu, episodeLength, ic, spectra
 
         # apply action and advance environment
         actions = s["Action"]
-        actionHistory.append(actions)
-        timestamps.append(sgs.t)
-
+        
         try:
             sgs.step(actions, nIntermediate)
             sgs.compute_Ek()
@@ -97,8 +95,6 @@ def environment( s , N, gridSize, numActions, dt, nu, episodeLength, ic, spectra
         
         # calculate reward
         if spectralReward:
-            #kMseLogErr = np.mean((np.log(dns.Ek_kt[sgs.ioutnum,:gridSize]) - np.log(sgs.Ek_kt[sgs.ioutnum,:gridSize]))**2)
-            #reward = -rewardFactor*kMseLogErr
             kMseLogErr = np.mean((np.log(dns.Ek_ktt[sgs.ioutnum,:gridSize]) - np.log(sgs.Ek_ktt[sgs.ioutnum,:gridSize]))**2)
             reward = rewardFactor*(prevkMseLogErr-kMseLogErr)
             prevkMseLogErr = kMseLogErr
@@ -139,12 +135,12 @@ def environment( s , N, gridSize, numActions, dt, nu, episodeLength, ic, spectra
         print("[burger_jax_env] Running uncontrolled SGS..")
         base = Burger_jax(L=L, N=gridSize, dt=dt, nu=nu, tend=tEnd, noise=0.)
         if spectralReward:
-            print("[burger_env] Init spectrum.")
+            print("[burger_jax_env] Init spectrum.")
             v0 = np.concatenate((dns.v0[:((gridSize+1)//2)], dns.v0[-(gridSize-1)//2:]))
             base.IC( v0 = v0 * gridSize / dns.N )
 
         else:
-            print("[burger_env] Init interpolation.")
+            print("[burger_jax_env] Init interpolation.")
             base.IC( u0 = f_restart(base.x) )
 
         base.simulate()

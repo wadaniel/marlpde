@@ -57,7 +57,7 @@ tAvgEnergy = dns.Ek_tt
 print("Done!")
 
 
-# Initialize LES
+# Initialize SGS
 sgs = Burger_jax(L=L, N=gridSize, dt=dt, nu=nu, tend=tEnd)
 if spectralReward:
     v0 = np.concatenate((dns.v0[:((gridSize+1)//2)], dns.v0[-(gridSize-1)//2:]))
@@ -66,6 +66,7 @@ else:
     sgs.IC( u0 = f_restart(sgs.x) )
 sgs.setup_basis(numActions, basis)
 sgs.setGroundTruth(dns.tt, dns.x, dns.uu)
+
 ## run controlled simulation
 error = 0
 step = 0
@@ -77,8 +78,10 @@ cumreward = 0.
 while step < episodeLength and error == 0:
 
     # apply action and advance environment
-    #actions = jnp.asarray(np.random.normal(loc=0., scale=1e-2, size=numActions))
-    actions = jnp.zeros(numActions)
+    actions = jnp.asarray(np.random.normal(loc=0., scale=1e-2, size=numActions))
+    #actions = jnp.zeros(numActions)
+
+    print("step")
     print(step)
     try:
         sgs.step(actions, nIntermediate)
@@ -89,13 +92,14 @@ while step < episodeLength and error == 0:
         error = 1
         break
 
-    print(sgs.gradient)
+    print("grad")
+    #print(sgs.gradient)
     print(np.max(sgs.gradient))
     print(np.min(sgs.gradient))
     print(np.min(np.abs(sgs.gradient)))
+    
     # calculate reward
     if spectralReward:
-        #kMseLogErr = np.mean((np.log(dns.Ek_kt[sgs.ioutnum,:gridSize]) - np.log(sgs.Ek_kt[sgs.ioutnum,:gridSize]))**2)
         #reward = -rewardFactor*kMseLogErr
         kMseLogErr = np.mean((np.log(dns.Ek_ktt[sgs.ioutnum,:gridSize]) - np.log(sgs.Ek_ktt[sgs.ioutnum,:gridSize]))**2)
         reward = rewardFactor*(prevkMseLogErr-kMseLogErr)
@@ -111,8 +115,8 @@ while step < episodeLength and error == 0:
         break
 
     step += 1
-print(jnp.shape(sgs.gradient))
-print(sgs.gradient)
+
+print("cumreward")
 print(cumreward)
 
 makePlot(dns, sgs, sgs, "grads")

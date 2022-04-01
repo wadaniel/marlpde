@@ -160,6 +160,7 @@ class Burger_jax:
 
     def setup_basis(self, M, kind = 'uniform'):
         self.M = M
+        assert self.M <= self.N, "[Burger_jax] reduce size of basis / number of actions" 
  
         # Action record
         self.actionHistory = np.zeros([self.nsteps, self.M])
@@ -332,7 +333,8 @@ class Burger_jax:
         self.gradient = np.zeros((self.N, self.M))
 
         if (actions is not None):
-
+        
+            actions = np.array(actions)
             forcing = np.matmul(actions, self.basis)
             Fforcing = fft( forcing )
             if self.dforce:
