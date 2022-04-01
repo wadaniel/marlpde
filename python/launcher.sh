@@ -1,5 +1,5 @@
-IC='turbulence'
-run='12'
+IC='sinus'
+run='13'
 NEX=2000000
 N=32
 NA=32

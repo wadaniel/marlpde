@@ -7,7 +7,7 @@ tEnd = 5
 basis = 'hat'
 
 def setup_dns_default(N, dt, nu , ic, seed):
-    print("Setting up default dbs with args ({}, {}, {}, {}, {})".format(N, dt, nu, ic, seed))
+    print("Setting up default dns with args ({}, {}, {}, {}, {})".format(N, dt, nu, ic, seed))
     dns = Burger(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case=ic, noise=0., seed=seed)
     dns.simulate()
     dns.fou2real()
@@ -90,15 +90,14 @@ def environment( s , N, gridSize, numActions, dt, nu, episodeLength, ic, spectra
     
         # calculate reward
         if spectralReward:
-            #kMseLogErr = np.mean((np.log(dns.Ek_kt[sgs.ioutnum,:gridSize]) - np.log(sgs.Ek_kt[sgs.ioutnum,:gridSize]))**2)
-            #kMseLogErr = np.mean((np.log(dns.Ek_kt[sgs.ioutnum-nIntermediate:sgs.ioutnum,:gridSize]) - np.log(sgs.Ek_kt[sgs.ioutnum-nIntermediate:sgs.ioutnum,:gridSize]))**2)
-            #reward = -rewardFactor*kMseLogErr
             kMseLogErr = np.mean((np.log(dns.Ek_ktt[sgs.ioutnum,:gridSize]) - np.log(sgs.Ek_ktt[sgs.ioutnum,:gridSize]))**2)
             reward = rewardFactor*(prevkMseLogErr-kMseLogErr)
             prevkMseLogErr = kMseLogErr
 
         else:
-            reward = rewardFactor*sgs.getMseReward()
+            uTruthToCoarse = sgs.mapGroundTruth()
+            uDiffMse = ((uTruthToCoarse[sgs.ioutnum-nIntermediate:sgs.ioutnum,:] - sgs.uu[sgs.ioutnum-nIntermediate:sgs.ioutnum,:])**2).mean()
+            reward = -rewardFactor*uDiffMse
 
         # accumulat reward
         cumreward += reward
