@@ -11,11 +11,12 @@ iex=0.1
 seed=42
 esteps=500
 
-mkdir -p ./runs/
+cp jax_launcher.sh "./jax_launcher${run}.sh"
 
-cp jax_launcher.sh "./runs/jax_launcher${run}.sh"
+git diff > "./jax_gitdiff${run}.txt"
 
-git diff > "./runs/jax_gitdiff${run}.txt"
+pushd .
+cd ..
 
 python run-vracer-burger-jax.py --ic $IC --run $run --NE $NEX \
     --N $N --NA $NA --dt $dt --nu $nu \
@@ -29,3 +30,5 @@ python run-vracer-burger-jax.py --ic $IC --run $run --NE $NEX \
     --test
 
 python -m korali.rlview --dir "_result_jax_${run}" --out "vracer_jax${run}.png"
+
+popd
