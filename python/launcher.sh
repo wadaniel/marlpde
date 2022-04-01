@@ -1,8 +1,8 @@
-IC='sinus'
-run='14'
+IC='turbulence'
+run='15'
 NEX=1000000
-N=32
-NA=32
+N=16
+NA=16
 NDNS=512
 dt=0.001
 noise=0.0

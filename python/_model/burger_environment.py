@@ -6,6 +6,7 @@ L    = 2*np.pi
 tEnd = 5
 basis = 'hat'
 
+
 def setup_dns_default(N, dt, nu , ic, seed):
     print("Setting up default dns with args ({}, {}, {}, {}, {})".format(N, dt, nu, ic, seed))
     dns = Burger(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case=ic, noise=0., seed=seed)
