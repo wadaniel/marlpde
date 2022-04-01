@@ -30,8 +30,7 @@ import burger_jax_environment as bje
 
 dns_default = None
 ### Set default if 0-noise
-if args.noise < 1e-12:
-    dns_default = bje.setup_dns_default(args.NDNS, args.dt, args.nu, args.ic, args.seed)
+dns_default = bje.setup_dns_default(args.NDNS, args.dt, args.nu, args.ic, args.seed)
 
 ### Defining Korali Problem
 

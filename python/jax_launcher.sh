@@ -1,11 +1,11 @@
 IC='turbulence'
 run='1'
-NEX=2000000
+NEX=500000
 N=16
 NA=16
 NDNS=512
 dt=0.001
-noise=0.01
+noise=0.0
 nu=0.02
 iex=0.1
 seed=42

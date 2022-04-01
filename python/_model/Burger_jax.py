@@ -59,6 +59,9 @@ def jexpl_RK3( actions, u, v, dt, dx, nu, basis, k1, k2):
 
     return (u, v)
 
+jexpl_RK3_grad = jit(jacfwd(jexpl_RK3, has_aux=True, argnums=(0,1)))
+
+
 
 class Burger_jax:
     #
@@ -325,7 +328,7 @@ class Burger_jax:
 
 
     def grad(self, actions, u, v):
-        return jacfwd(jexpl_RK3, has_aux=True, argnums=(0,1))( actions, u, v, self.dt, self.dx, self.nu, self.basis, self.k1, self.k2)[0]
+        return jexpl_RK3_grad(actions, u, v, self.dt, self.dx, self.nu, self.basis, self.k1, self.k2)[0]
  
     def step( self, actions=None, nIntermed=1 ):
 
