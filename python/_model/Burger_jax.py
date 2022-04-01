@@ -37,6 +37,8 @@ def jexpl_euler(actions, u, v, dt, dx, nu, basis, k1, k2):
 
     return (u, v)
 
+jexpl_euler = jit(jacfwd(jexpl_euler, has_aux=True, argnums=(0,1)))
+
 @jit
 def jexpl_RK3( actions, u, v, dt, dx, nu, basis, k1, k2):
     """

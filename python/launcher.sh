@@ -1,11 +1,11 @@
 IC='sinus'
-run='13'
-NEX=2000000
+run='14'
+NEX=1000000
 N=32
 NA=32
 NDNS=512
 dt=0.001
-noise=0.01
+noise=0.0
 nu=0.02
 iex=0.1
 seed=42
@@ -28,5 +28,5 @@ python run-vracer-burger.py --ic $IC --run $run --NE $NEX \
     --episodelength $esteps --NDNS $NDNS \
     --test
 
-python -m korali.rlview --dir "_result_${IC}_${N}_${NA}_${dt}_${nu}_${noise}_${seed}_${run}" --out "vracer${run}.png"
+python -m korali.rlview --dir "_result_${IC}_${run}" --out "vracer${run}.png"
 

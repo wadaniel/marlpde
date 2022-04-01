@@ -135,7 +135,7 @@ e["File Output"]["Frequency"] = 100
 e["File Output"]["Path"] = resultFolder
 
 if args.test:
-    fileName = 'test_burger_{}_{}'.format(args.ic, args.run)
+    fileName = 'test_jax_burger_{}_{}'.format(args.ic, args.run)
     e["Solver"]["Testing"]["Sample Ids"] = [0]
     e["Problem"]["Custom Settings"]["Filename"] = fileName
 

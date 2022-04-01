@@ -125,9 +125,9 @@ def makePlot(dns, base, sgs, fileName):
     axs1[idx,4].set_xscale('log')
     axs1[idx,4].set_yscale('log')
 
-    acolors = plt.cm.coolwarm(np.linspace(0,1,numActions))
+    actioncolors = plt.cm.coolwarm(np.linspace(0,1,numActions))
     for i in range(numActions):
-        axs1[idx,5].plot(sgs.tt[1:], sgs.actionHistory[:,i], color=acolors[i])
+        axs1[idx,5].plot(sgs.tt[1:], sgs.actionHistory[:,i], color=actioncolors[i])
 
     plt.tight_layout()
     figName = fileName + ".png"
@@ -145,8 +145,8 @@ def makePlot(dns, base, sgs, fileName):
         k = int(i / 4)
         l = i % 4
         
-        axs2[k,l].plot(base.x, base.uu[tidx,:], '-b')
-        axs2[k,l].plot(sgs.x, sgs.uu[tidx,:], '-r')
-        axs2[k,l].plot(dns.x, dns.uu[tidx,:], '--k')
+        axs2[k,l].plot(base.x, base.uu[tidx,:], '--', color=colors[1])
+        axs2[k,l].plot(sgs.x, sgs.uu[tidx,:], '-', color=colors[2])
+        axs2[k,l].plot(dns.x, dns.uu[tidx,:], '--', color=colors[0])
 
     fig2.savefig(figName2)

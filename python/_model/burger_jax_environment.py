@@ -100,8 +100,9 @@ def environment( s , N, gridSize, numActions, dt, nu, episodeLength, ic, spectra
             prevkMseLogErr = kMseLogErr
 
         else:
-            reward = rewardFactor*sgs.getMseReward()
-        
+            uTruthToCoarse = sgs.mapGroundTruth()
+            uDiffMse = ((uTruthToCoarse[sgs.ioutnum-nIntermediate:sgs.ioutnum,:] - sgs.uu[sgs.ioutnum-nIntermediate:sgs.ioutnum,:])**2).mean()
+            reward = -rewardFactor*uDiffMse
 
         cumreward += reward
 
