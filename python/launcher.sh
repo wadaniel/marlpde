@@ -1,11 +1,11 @@
-IC='sinus'
+IC='turbulence'
 run='12'
 NEX=2000000
 N=32
 NA=32
 NDNS=512
 dt=0.001
-noise=0.00
+noise=0.01
 nu=0.02
 iex=0.1
 seed=42
