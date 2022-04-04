@@ -46,12 +46,14 @@ def makePlot(dns, base, sgs, fileName):
     udns_int = f_dns(base.x, base.tt)
     errBaseU = np.abs(base.uu-udns_int)
     mseBaseU_t = np.mean(errBaseU**2, axis=1)
+    mseBaseU = np.cumsum(mseBaseU_t)/np.arange(1, len(mseBaseU_t)+1)
     
     errEk_t = dns.Ek_t - sgs.Ek_t
     errEk_tt = dns.Ek_tt - sgs.Ek_tt
     
     errU = np.abs(sgs.uu-udns_int)
     mseU_t = np.mean(errU**2, axis=1)
+    mseU = np.cumsum(mseU_t)/np.arange(1, len(mseU_t)+1)
 
 #------------------------------------------------------------------------------
 
@@ -70,7 +72,8 @@ def makePlot(dns, base, sgs, fileName):
     axs1[idx,1].contourf(base.x, base.tt, errBaseU, elevels)
 
     # Plot instanteneous energy and time averaged energy
-    axs1[idx,2].plot(base.tt, mseBaseU_t, 'r-')
+    axs1[idx,2].plot(base.tt, mseBaseU_t, 'r:')
+    axs1[idx,2].plot(base.tt, mseBaseU, 'r-')
     axs1[idx,2].set_yscale('log')
     #axs1[idx,2].set_ylim([1e-8,None])
 
@@ -105,6 +108,7 @@ def makePlot(dns, base, sgs, fileName):
     axs1[idx,1].contourf(sgs.x, sgs.tt, errU, elevels)
 
     # Plot instanteneous energy and time averaged energy
+    axs1[idx,2].plot(sgs.tt, mseU, 'r:')
     axs1[idx,2].plot(sgs.tt, mseU_t, 'r-')
     axs1[idx,2].set_yscale('log')
 
@@ -145,7 +149,7 @@ def makePlot(dns, base, sgs, fileName):
         k = int(i / 4)
         l = i % 4
         
-        axs2[k,l].plot(base.x, base.uu[tidx,:], '--', color=colors[1])
+        axs2[k,l].plot(base.x, base.uu[tidx,:], '-', color=colors[1])
         axs2[k,l].plot(sgs.x, sgs.uu[tidx,:], '-', color=colors[2])
         axs2[k,l].plot(dns.x, dns.uu[tidx,:], '--', color=colors[0])
 

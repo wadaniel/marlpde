@@ -1,5 +1,7 @@
+#!/bin/bash
+
 IC='turbulence'
-run='16'
+run='18'
 NEX=1000000
 N=16
 NA=16
@@ -28,7 +30,7 @@ python run-vracer-burger.py --ic $IC --run $run --NE $NEX \
     --N $N --NA $NA --dt $dt --nu $nu \
     --iex $iex --noise $noise --seed $seed \
     --episodelength $esteps --NDNS $NDNS \
-    --specreward
+    --specreward \
     --test
 
 python -m korali.rlview --dir "_result_${IC}_${run}" --out "vracer${run}.png"
