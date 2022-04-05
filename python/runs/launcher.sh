@@ -2,7 +2,7 @@
 
 IC='turbulence'
 run='18'
-NEX=1000000
+NEX=2000000
 N=16
 NA=16
 NDNS=512

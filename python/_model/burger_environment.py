@@ -128,7 +128,9 @@ def environment( s , N, gridSize, numActions, dt, nu, episodeLength, ic, spectra
         print("[burger_env] Storing sgs to file {}".format(fileName))
         np.savez(fileName, x = sgs.x, t = sgs.tt, uu = sgs.uu, vv = sgs.vv, L=L, N=gridSize, dt=dt, nu=nu, tEnd=tEnd, actions=sgs.actionHistory)
          
-        print("[burger_env] Running uncontrolled SGS..")
+#------------------------------------------------------------------------------
+
+        print("[burger_env] Running UGS..")
         base = Burger(L=L, N=gridSize, dt=dt, nu=nu, tend=tEnd, noise=0.)
         if spectralReward:
             print("[burger_env] Init spectrum.")
@@ -138,9 +140,59 @@ def environment( s , N, gridSize, numActions, dt, nu, episodeLength, ic, spectra
         else:
             print("[burger_env] Init interpolation.")
             base.IC( u0 = f_restart(base.x) )
+    
+        base.setup_basis(numActions, basis)
+        base.setGroundTruth(dns.tt, dns.x, dns.uu)
 
-        base.simulate()
-        base.fou2real()
-        base.compute_Ek()
- 
-        makePlot(dns, base, sgs, fileName)
+        # reinit vars
+        error = 0
+        step = 0
+        prevkMseLogErr = 0.
+        kMseLogErr = 0.
+        reward = 0.
+        cumreward = 0.
+
+        actions = np.zeros(numActions)
+
+        while step < episodeLength and error == 0:
+        
+
+            # apply action and advance environment
+            try:
+                for _ in range(nIntermediate):
+                    base.step(actions)
+
+                base.compute_Ek()
+                base.fou2real()
+            except Exception as e:
+                print("[burger_environment] Exception occured:")
+                print(str(e))
+                error = 1
+                break
+            
+
+            # calculate reward
+            if spectralReward:
+                kMseLogErr = np.mean((np.log(dns.Ek_ktt[base.ioutnum,:gridSize]) - np.log(base.Ek_ktt[base.ioutnum,:gridSize]))**2)
+                reward = rewardFactor*(prevkMseLogErr-kMseLogErr)
+                prevkMseLogErr = kMseLogErr
+
+            else:
+                uTruthToCoarse = base.mapGroundTruth()
+                uDiffMse = ((uTruthToCoarse[base.ioutnum-nIntermediate:base.ioutnum,:] - base.uu[base.ioutnum-nIntermediate:base.ioutnum,:])**2).mean()
+                reward = -rewardFactor*uDiffMse
+
+            # accumulat reward
+            cumreward += reward
+
+            if (np.isfinite(reward) == False):
+                print("[burger_environment] Nan reward detected")
+                error = 1
+                break
+     
+            step += 1
+
+        print("[burger_environment] uncontrolled cumreward")
+        print(cumreward)
+        
+        makePlot(dns, base, sgs, fileName, spectralReward)
