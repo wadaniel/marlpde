@@ -1,10 +1,10 @@
 #!/bin/bash
 
 IC='turbulence'
-run='18'
-NEX=2000000
-N=16
-NA=16
+run=19
+NEX=5000000
+N=32
+NA=32
 NDNS=512
 dt=0.001
 noise=0.0
@@ -13,7 +13,8 @@ iex=0.1
 seed=42
 esteps=500
 
-cp launcher.sh "./launcher${run}.sh"
+launchname="${0##*/}"
+cp $launchname "./launcher${run}.sh"
 
 git diff > "./gitdiff${run}.txt"
 
@@ -24,13 +25,11 @@ python run-vracer-burger.py --ic $IC --run $run --NE $NEX \
     --N $N --NA $NA --dt $dt --nu $nu \
     --iex $iex --noise $noise --seed $seed \
     --episodelength $esteps --NDNS $NDNS \
-    --specreward
 
 python run-vracer-burger.py --ic $IC --run $run --NE $NEX \
     --N $N --NA $NA --dt $dt --nu $nu \
     --iex $iex --noise $noise --seed $seed \
     --episodelength $esteps --NDNS $NDNS \
-    --specreward \
     --test
 
 python -m korali.rlview --dir "_result_${IC}_${run}" --out "vracer${run}.png"

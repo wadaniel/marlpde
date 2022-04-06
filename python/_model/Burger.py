@@ -178,7 +178,6 @@ class Burger:
                         A = 1
                         u0 = np.ones(self.N)
                         for k in range(1, self.N):
-                            #offset = np.random.uniform(low=0., high=2.*np.pi) if self.noise > 0 else 0.
                             offset = np.random.normal(loc=0., scale=self.noise) if self.noise > 0 else 0.
                             rng = (a * rng + c) % m
                             phase = rng/m*2.*np.pi

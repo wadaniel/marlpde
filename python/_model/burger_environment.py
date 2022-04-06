@@ -21,10 +21,14 @@ def environment( s , N, gridSize, numActions, dt, nu, episodeLength, ic, spectra
     noise = 0. if testing else noise   
     
     if noise > 0.:
-        dns = Burger(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case=ic, noise=noise, seed=seed)
-        dns.simulate()
-        dns.fou2real()
-        dns.compute_Ek()
+        #dns = Burger(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case=ic, noise=noise, seed=seed)
+        #dns.simulate()
+        #dns.fou2real()
+        #dns.compute_Ek()
+        
+        specobj = np.load('spec_2048.npz')
+        s = specobj['meanSpec']
+
     else:
         dns = dns_default
     
