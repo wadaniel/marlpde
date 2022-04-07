@@ -21,12 +21,13 @@ class Burger:
     # u_t + u*u_x = nu*u_xx0
     # with periodic BCs on x \in [0, L]: u(0,t) = u(L,t).
 
-    def __init__(self, L=2.*np.pi, N=512, dt=0.001, nu=0.0, dforce=True, nsteps=None, tend=5., u0=None, v0=None, case=None, noise=0., seed=42):
+    def __init__(self, L=2.*np.pi, N=512, dt=0.001, nu=0.0, dforce=True, nsteps=None, tend=5., u0=None, v0=None, case=None, forcing=False, noise=0., seed=42):
         
         # Randomness
+        np.random.seed(None)
         self.noise = noise*L
         self.seed = seed
-        np.random.seed(None)
+        self.forcing = forcing
 
         # Initialize
         self.L  = float(L); 
@@ -48,6 +49,9 @@ class Burger:
         self.nsteps = nsteps
         self.nout   = nsteps
  
+        # random factors for forcing
+        self.randfac = np.random.normal(loc=0., scale=1., size=(32,nsteps))
+        
         # Basis
         self.M = 0
         self.basis = None
@@ -259,25 +263,33 @@ class Burger:
  
     def step( self, actions=None ):
 
-        Fforcing = np.zeros(self.N)
+        forcing = np.zeros(self.N)
+        Fforcing = np.zeros(self.N, dtype=np.complex64)
 
+        if self.forcing:
+            A = 1.
+            for k in range(0,32):
+                r = self.randfac[k, self.ioutnum]
+                forcing += r*A*np.sin(2.*np.pi*(k*self.x/self.L+np.cos(r*100)))
+            
+            Fforcing += fft( forcing )
+            
         if (actions is not None):
             assert self.basis is not None, print("[Burger] Basis not set up (is None).")
             assert len(actions) == self.M, print("[Burger] Wrong number of actions (provided {}/{}".format(len(actions), self.M))
             self.actionHistory[self.ioutnum,:] = actions
 
             forcing = np.matmul(actions, self.basis)
-
-            u = self.uu[self.ioutnum,:]
-
+            
             if self.dforce:
-                Fforcing = fft( forcing )
+                Fforcing += fft( forcing )
             else:
+                u = self.uu[self.ioutnum,:]
                 up = np.roll(u,1)
                 um = np.roll(u,-1)
                 d2udx2 = (up - 2.*u + um)/self.dx**2
-                Fforcing = fft( forcing*d2udx2 )
-            
+                Fforcing += fft( forcing*d2udx2 )
+           
         """
         RK3 in time
         """

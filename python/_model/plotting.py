@@ -55,6 +55,7 @@ def makePlot(dns, base, sgs, fileName, spectralReward=False):
     errEk_t = dns.Ek_t - sgs.Ek_t
     errEk_tt = dns.Ek_tt - sgs.Ek_tt
     
+    udns_int = f_dns(sgs.x, sgs.tt)
     errU = np.abs(sgs.uu-udns_int)
     mseU_t = np.mean(errU**2, axis=1)
     mseU = np.cumsum(mseU_t)/np.arange(1, len(mseU_t)+1)

@@ -7,27 +7,24 @@ tEnd = 5
 basis = 'hat'
 
 
-def setup_dns_default(N, dt, nu , ic, seed):
-    print("Setting up default dns with args ({}, {}, {}, {}, {})".format(N, dt, nu, ic, seed))
-    dns = Burger(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case=ic, noise=0., seed=seed)
+def setup_dns_default(N, dt, nu , ic, forcing, seed):
+    print("Setting up default dns with args ({}, {}, {}, {}, {}, {})".format(N, dt, nu, ic, forcing, seed))
+    dns = Burger(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case=ic, forcing=forcing, noise=0., seed=seed)
     dns.simulate()
     dns.fou2real()
     dns.compute_Ek()
     return dns
 
-def environment( s , N, gridSize, numActions, dt, nu, episodeLength, ic, spectralReward, dforce, noise, seed, dns_default = None ):
+def environment( s , N, gridSize, numActions, dt, nu, episodeLength, ic, spectralReward, forcing, dforce, noise, seed, dns_default = None):
  
     testing = True if s["Custom Settings"]["Mode"] == "Testing" else False
-    noise = 0. if testing else noise   
+    noise = 0. if testing else noise
     
     if noise > 0.:
-        #dns = Burger(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case=ic, noise=noise, seed=seed)
-        #dns.simulate()
-        #dns.fou2real()
-        #dns.compute_Ek()
-        
-        specobj = np.load('spec_2048.npz')
-        s = specobj['meanSpec']
+        dns = Burger(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case=ic, forcing=forcing, noise=noise, seed=seed)
+        dns.simulate()
+        dns.fou2real()
+        dns.compute_Ek()
 
     else:
         dns = dns_default
@@ -39,13 +36,14 @@ def environment( s , N, gridSize, numActions, dt, nu, episodeLength, ic, spectra
     f_restart = interpolate.interp1d(dns.x, dns.u0, kind='cubic')
 
     # Initialize LES
-    sgs = Burger(L=L, N=gridSize, dt=dt, nu=nu, tend=tEnd, noise=0.)
+    sgs = Burger(L=L, N=gridSize, dt=dt, nu=nu, tend=tEnd, forcing=forcing, dforce=dforce, noise=0.)
     if spectralReward:
         v0 = np.concatenate((dns.v0[:((gridSize+1)//2)], dns.v0[-(gridSize-1)//2:]))
         sgs.IC( v0 = v0 * gridSize / dns.N )
     else:
         sgs.IC( u0 = f_restart(sgs.x) )
-
+ 
+    sgs.randfac = dns.randfac
     sgs.setup_basis(numActions, basis)
     sgs.setGroundTruth(dns.tt, dns.x, dns.uu)
 
@@ -135,7 +133,7 @@ def environment( s , N, gridSize, numActions, dt, nu, episodeLength, ic, spectra
 #------------------------------------------------------------------------------
 
         print("[burger_env] Running UGS..")
-        base = Burger(L=L, N=gridSize, dt=dt, nu=nu, tend=tEnd, noise=0.)
+        base = Burger(L=L, N=gridSize, dt=dt, nu=nu, tend=tEnd, forcing=forcing, noise=0.)
         if spectralReward:
             print("[burger_env] Init spectrum.")
             v0 = np.concatenate((dns.v0[:((gridSize+1)//2)], dns.v0[-(gridSize-1)//2:]))
@@ -144,7 +142,8 @@ def environment( s , N, gridSize, numActions, dt, nu, episodeLength, ic, spectra
         else:
             print("[burger_env] Init interpolation.")
             base.IC( u0 = f_restart(base.x) )
-    
+
+        base.randfac = dns.randfac
         base.setup_basis(numActions, basis)
         base.setGroundTruth(dns.tt, dns.x, dns.uu)
 

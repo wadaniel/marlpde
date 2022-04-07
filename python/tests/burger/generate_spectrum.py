@@ -31,6 +31,7 @@ nu      = 0.02
 ic      = 'turbulence'
 noise   = 3.
 seed    = 42
+forcing = True
 
 ntimestep = int(tEnd / dt)
 spectra = np.zeros((NRUNS, ntimestep+1, N))
@@ -40,7 +41,7 @@ spectra = np.zeros((NRUNS, ntimestep+1, N))
 for i in range(NRUNS):
     print("Simulate ({}/{}) ..".format(i,NRUNS))
     
-    dns = Burger(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case=ic, noise=noise, seed=seed)
+    dns = Burger(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case=ic, forcing=forcing, noise=noise, seed=seed)
     dns.simulate()
     dns.fou2real()
     dns.compute_Ek()
@@ -67,7 +68,7 @@ np.savez(file=fname, meanSpec=meanSpec, sdevSpec=sdevSpec, N=N, dt=dt, nu=nu)
 
 figname = "mean_spectrum_{}.png".format(N)
 fig, ax = plt.subplots(1,1)
-ax.plot(k, meanSpec[k])
+ax.plot(k, meanSpec[-1,k])
 ax.fill_between(k, lb, ub, alpha=0.25)
 ax.set_xscale('log')
 ax.set_yscale('log')

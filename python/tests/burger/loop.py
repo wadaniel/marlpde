@@ -8,7 +8,8 @@ from plotting import *
  
 parser = argparse.ArgumentParser()
 parser.add_argument('--gridSize', help='Discretization / number of grid points', required=False, type=int, default=32)
-parser.add_argument('--ic', help='Initial condition', required=False, type=str, default='sinus')
+parser.add_argument('--ic', help='Initial condition', required=False, type=str, default='turbulence')
+parser.add_argument('--dt', help='Time step', required=False, type=float, default=0.001)
 parser.add_argument('--seed', help='Random seed', required=False, type=int, default=42)
 parser.add_argument('--episodelength', help='Actual length of episode / number of actions', required=False, type=int, default=500)
 
@@ -23,10 +24,12 @@ nu   = 0.02
 noise = 0.0
 ic   = args.ic
 seed = args.seed
+forcing = True
+dforce = False
 
 # action defaults
 basis = 'hat'
-numActions = 1
+numActions = 1 #args.gridSize
 
 # sgs & rl defaults
 gridSize = args.gridSize
@@ -41,7 +44,7 @@ rewardFactor = 1. if spectralReward else 1.
 
 # DNS baseline
 print("Setting up DNS..")
-dns = Burger(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case=ic, dforce=False, noise=noise, seed=seed)
+dns = Burger(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case=ic, forcing=forcing, dforce=dforce, noise=noise, seed=seed)
 dns.simulate()
 dns.fou2real()
 dns.compute_Ek()
@@ -54,13 +57,15 @@ tAvgEnergy = dns.Ek_tt
 print("Done!")
 
 # Initialize LES
-sgs = Burger(L=L, N=gridSize, dt=dt, nu=nu, tend=tEnd, case=ic, dforce=False, noise=noise, seed=seed)
+sgs = Burger(L=L, N=gridSize, dt=dt, nu=nu, tend=tEnd, forcing=forcing, dforce=dforce, noise=0.)
+sgs.randfac = dns.randfac
+
 if spectralReward:
     v0 = np.concatenate((dns.v0[:((gridSize+1)//2)], dns.v0[-(gridSize-1)//2:]))
     sgs.IC( v0 = v0 * gridSize / dns.N )
 else:
     sgs.IC( u0 = f_restart(sgs.x) )
-
+ 
 sgs.setup_basis(numActions, basis)
 sgs.setGroundTruth(dns.tt, dns.x, dns.uu)
 
@@ -76,7 +81,7 @@ cumreward = 0.
 while step < episodeLength and error == 0:
     
     # apply action and advance environment
-    actions = [0.]
+    actions = np.zeros(numActions)
     try:
         for _ in range(nIntermediate):
             sgs.step(actions)
@@ -89,7 +94,6 @@ while step < episodeLength and error == 0:
     
     # calculate reward
     if spectralReward:
-        #kMseLogErr = np.mean((np.log(dns.Ek_kt[sgs.ioutnum,:gridSize]) - np.log(sgs.Ek_kt[sgs.ioutnum,:gridSize]))**2)
         kMseLogErr = np.mean((np.log(dns.Ek_ktt[sgs.ioutnum-nIntermediate:sgs.ioutnum,:gridSize]) - np.log(sgs.Ek_ktt[sgs.ioutnum-nIntermediate:sgs.ioutnum,:gridSize]))**2)
         reward = rewardFactor*(prevkMseLogErr-kMseLogErr)
         prevkMseLogErr = kMseLogErr
