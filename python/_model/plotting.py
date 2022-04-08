@@ -48,7 +48,7 @@ def makePlot(dns, base, sgs, fileName, spectralReward=False):
     mseBaseU_t = np.mean(errBaseU**2, axis=1)
     mseBaseU = np.cumsum(mseBaseU_t)/np.arange(1, len(mseBaseU_t)+1)
   
-    errBaseK_t = np.mean((np.log(dns.Ek_ktt[:,:gridSize//2]) - np.log(base.Ek_ktt[:,:gridSize//2]))**2, axis=1)
+    errBaseK_t = np.mean((np.log(np.abs(dns.Ek_ktt[:,:gridSize//2] - base.Ek_ktt[:,:gridSize//2])/dns.Ek_ktt[:,:gridSize//2]))**2, axis=1)
     errBaseK = np.cumsum(errBaseK_t)/np.arange(1, len(errBaseK_t)+1)
 
    
@@ -60,7 +60,7 @@ def makePlot(dns, base, sgs, fileName, spectralReward=False):
     mseU_t = np.mean(errU**2, axis=1)
     mseU = np.cumsum(mseU_t)/np.arange(1, len(mseU_t)+1)
 
-    errK_t = np.mean((np.log(dns.Ek_ktt[:,:gridSize//2]) - np.log(sgs.Ek_ktt[:,:gridSize//2]))**2, axis=1)
+    errBaseK_t = np.mean((np.log(np.abs(dns.Ek_ktt[:,:gridSize//2] - sgs.Ek_ktt[:,:gridSize//2])/dns.Ek_ktt[:,:gridSize//2]))**2, axis=1)
     errK = np.cumsum(errK_t)/np.arange(1, len(errK_t)+1)
 
 #------------------------------------------------------------------------------
@@ -90,7 +90,7 @@ def makePlot(dns, base, sgs, fileName, spectralReward=False):
         axs1[idx,2].plot(base.tt, mseBaseU, 'r-')
     
     axs1[idx,2].set_yscale('log')
-    axs1[idx,2].set_ylim([1e-8,None])
+    axs1[idx,2].set_ylim([1e-4,1e1])
     
     # Plot energy spectrum at start, mid and end of simulation
     axs1[idx,3].plot(k2, np.abs(base.Ek_ktt[0,0:gridSize//2]),':',color=colors[idx])
@@ -165,3 +165,47 @@ def makePlot(dns, base, sgs, fileName, spectralReward=False):
         axs2[k,l].plot(dns.x, dns.uu[tidx,:], '--', color=colors[0])
 
     fig2.savefig(figName2)
+
+
+#------------------------------------------------------------------------------
+
+    figName3 = fileName + "_action.png"
+    print("Plotting {} ...".format(figName3))
+    
+    fig3, axs3 = plt.subplots(3, 6, sharex='col', sharey='col', subplot_kw=dict(box_aspect=1), figsize=(15,15))
+    
+
+    up = np.roll(dns.uu,-1,axis=1)
+    um = np.roll(dns.uu,1,axis=1)
+    ldns = dns.nu*(up - 2*dns.uu + um)/dns.dx**2
+ 
+    up = np.roll(base.uu,-1,axis=1)
+    um = np.roll(base.uu,1,axis=1)
+    lbase = base.nu*(up - 2*base.uu + um)/base.dx**2
+    
+    up = np.roll(sgs.uu,-1,axis=1)
+    um = np.roll(sgs.uu,1,axis=1)
+    lsgs = sgs.nu*(up - 2*sgs.uu + um)/sgs.dx**2
+
+    lmax = max(ldns.max(), lbase.max(), lsgs.max())
+    lmin = min(ldns.min(), lbase.min(), lsgs.min())
+
+    print(lmin, lmax)
+    llevels = np.linspace(lmin, lmax, 10)
+
+    # Plot diffusion
+    idx = 0
+    axs3[idx,0].contourf(dns.x, dns.tt, ldns) #, llevels)
+
+    # Plot diffusion
+    idx += 1
+    axs3[idx,0].contourf(base.x, base.tt, lbase) #, llevels)
+
+    # Plot diffusion
+    idx += 1
+    axs3[idx,0].contourf(sgs.x, sgs.tt, lsgs) #, llevels)
+    
+    # Plot actions
+    axs3[idx,1].contourf(sgs.x, sgs.tt, sgs.actionHistory)
+    
+    fig3.savefig(figName3)

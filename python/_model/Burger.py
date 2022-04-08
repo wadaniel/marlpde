@@ -96,6 +96,7 @@ class Burger:
         self.uu = np.zeros([self.nout+1, self.N])
         self.vv = np.zeros([self.nout+1, self.N], dtype=np.complex64)
         self.tt = np.zeros(self.nout+1)
+        self.actionHistory = np.zeros([self.nout+1, self.N])
         
         self.tt[0]   = 0.
 
@@ -120,8 +121,6 @@ class Burger:
         self.M = M
         
         # Action record
-        self.actionHistory = np.zeros((self.nsteps, self.M))
-
         if M > 1:
             if kind == 'uniform':
                 self.basis = np.zeros((self.M, self.N))
@@ -277,9 +276,9 @@ class Burger:
         if (actions is not None):
             assert self.basis is not None, print("[Burger] Basis not set up (is None).")
             assert len(actions) == self.M, print("[Burger] Wrong number of actions (provided {}/{}".format(len(actions), self.M))
-            self.actionHistory[self.ioutnum,:] = actions
 
             forcing = np.matmul(actions, self.basis)
+            self.actionHistory[self.ioutnum,:] = forcing
             
             if self.dforce:
                 Fforcing += fft( forcing )
