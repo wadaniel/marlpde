@@ -34,15 +34,15 @@ def fBurger( s , N, gridSize, dt, nu, episodeLength, ic, spectralReward, noise, 
     f_restart = interpolate.interp1d(dns.x, dns.u0, kind='cubic')
 
     # Initialize LES
-    les = Burger(L=L, N=gridSize, dt=dt, nu=nu, tend=tEnd, noise=0.)
+    sgs = Burger(L=L, N=gridSize, dt=dt, nu=nu, tend=tEnd, noise=0.)
     if spectralReward:
         v0 = np.concatenate((dns.v0[:((gridSize+1)//2)], dns.v0[-(gridSize-1)//2:]))
-        les.IC( v0 = v0 * gridSize / N )
+        sgs.IC( v0 = v0 * gridSize / N )
     else:
-        les.IC( u0 = f_restart(les.x) )
+        sgs.IC( u0 = f_restart(sgs.x) )
  
-    les.setup_basis(gridSize, basis)
-    les.setGroundTruth(dns.tt, dns.x, dns.uu)
+    sgs.setup_basis(gridSize, basis)
+    sgs.setGroundTruth(dns.tt, dns.x, dns.uu)
 
     ## get initial state
     cs = s["Parameters"][0]
@@ -59,25 +59,21 @@ def fBurger( s , N, gridSize, dt, nu, episodeLength, ic, spectralReward, noise, 
         try:
             for _ in range(nIntermediate):
                 
-                dx = les.dx
-                dx2 = dx*dx
+                dx = sgs.dx
+                dx2 = sgs.dx**2
 
-                idx = les.ioutnum
-                u = les.uu[les.ioutnum,:] 
-                um = np.roll(u, 1)
-                up = np.roll(u, -1)
+                um = np.roll(sgs.u, 1)
+                up = np.roll(sgs.u, -1)
                 
                 dudx = (u - um)/dx
                 d2udx2 = (up - 2*u + um)/dx2
 
-                absolute = np.ones(gridSize)
-                absolute[dudx<0.] = -1.
+                nuSSM = cs**2*dx2*np.abs(dudx)
+                sgs = nuSSM*d2udx2
 
-                #sgs = cs*cs*dx2*(d2udx2*dudx+dudx*d2udx2)*absolute
-                sgs = cs*cs*dx2*(d2udx2*d2udx2)
-                les.step(sgs)
+                sgs.step(sgs)
 
-            les.compute_Ek()
+            sgs.compute_Ek()
         
         except Exception as e:
             print("Exception occured:")
@@ -86,7 +82,7 @@ def fBurger( s , N, gridSize, dt, nu, episodeLength, ic, spectralReward, noise, 
             break
 
         # get new state
-        newstate = les.getState().flatten().tolist()
+        newstate = sgs.getState().flatten().tolist()
         if(np.isfinite(newstate).all() == False):
             print("Nan state detected")
             error = 1
@@ -96,15 +92,15 @@ def fBurger( s , N, gridSize, dt, nu, episodeLength, ic, spectralReward, noise, 
  
         # calculate reward
         if spectralReward:
-            kMseLogErr = np.mean((np.log(dns.Ek_ktt[les.ioutnum,:gridSize]) - np.log(les.Ek_ktt[les.ioutnum,:gridSize]))**2)
+            kMseLogErr = np.mean((np.log(np.abs(dns.Ek_ktt[base.ioutnum,:gridSize] - base.Ek_ktt[base.ioutnum,:gridSize])/dns.Ek_ktt[base.ioutnum:gridSize]))**2)
             reward = rewardFactor*(prevkMseLogErr-kMseLogErr)
             prevkMseLogErr = kMseLogErr
 
-        else:
-            uTruthToCoarse = les.mapGroundTruth()
-            uDiffMse = ((uTruthToCoarse[les.ioutnum-nIntermediate:les.ioutnum,:] - les.uu[les.ioutnum-nIntermediate:les.ioutnum,:])**2).mean()
-            reward = -rewardFactor*uDiffMse
 
+        else:
+            uTruthToCoarse = sgs.mapGroundTruth()
+            uDiffMse = ((uTruthToCoarse[sgs.ioutnum-nIntermediate:sgs.ioutnum,:] - sgs.uu[sgs.ioutnum-nIntermediate:sgs.ioutnum,:])**2).mean()
+            reward = -rewardFactor*uDiffMse
 
         cumreward += reward
 

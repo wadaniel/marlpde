@@ -48,7 +48,7 @@ def makePlot(dns, base, sgs, fileName, spectralReward=False):
     mseBaseU_t = np.mean(errBaseU**2, axis=1)
     mseBaseU = np.cumsum(mseBaseU_t)/np.arange(1, len(mseBaseU_t)+1)
   
-    errBaseK_t = np.mean((np.log(np.abs(dns.Ek_ktt[:,:gridSize//2] - base.Ek_ktt[:,:gridSize//2])/dns.Ek_ktt[:,:gridSize//2]))**2, axis=1)
+    errBaseK_t = np.mean(((np.abs(dns.Ek_ktt[:,:gridSize//2] - base.Ek_ktt[:,:gridSize//2])/dns.Ek_ktt[:,:gridSize//2]))**2, axis=1)
     errBaseK = np.cumsum(errBaseK_t)/np.arange(1, len(errBaseK_t)+1)
 
    
@@ -60,7 +60,7 @@ def makePlot(dns, base, sgs, fileName, spectralReward=False):
     mseU_t = np.mean(errU**2, axis=1)
     mseU = np.cumsum(mseU_t)/np.arange(1, len(mseU_t)+1)
 
-    errBaseK_t = np.mean((np.log(np.abs(dns.Ek_ktt[:,:gridSize//2] - sgs.Ek_ktt[:,:gridSize//2])/dns.Ek_ktt[:,:gridSize//2]))**2, axis=1)
+    errK_t = np.mean(((np.abs(dns.Ek_ktt[:,:gridSize//2] - sgs.Ek_ktt[:,:gridSize//2])/dns.Ek_ktt[:,:gridSize//2]))**2, axis=1)
     errK = np.cumsum(errK_t)/np.arange(1, len(errK_t)+1)
 
 #------------------------------------------------------------------------------
@@ -104,6 +104,7 @@ def makePlot(dns, base, sgs, fileName, spectralReward=False):
     axs1[idx,4].plot(k2, np.abs((dns.Ek_ktt[0,:gridSize//2] - base.Ek_ktt[0,:gridSize//2])/dns.Ek_ktt[0,:gridSize//2]),'r:')
     axs1[idx,4].plot(k2, np.abs((dns.Ek_ktt[nt//2,:gridSize//2] - base.Ek_ktt[nt//2,:gridSize//2])/dns.Ek_ktt[nt//2,:gridSize//2]),'r--')
     axs1[idx,4].plot(k2, np.abs((dns.Ek_ktt[-1,:gridSize//2] - base.Ek_ktt[-1,:gridSize//2])/dns.Ek_ktt[-1,:gridSize//2]),'r-')
+    print(np.mean(np.abs((dns.Ek_ktt[-1,:gridSize//2] - base.Ek_ktt[-1,:gridSize//2])/dns.Ek_ktt[-1,:gridSize//2])**2))
     
     axs1[idx,4].set_xscale('log')
     axs1[idx,4].set_yscale('log')
@@ -139,10 +140,11 @@ def makePlot(dns, base, sgs, fileName, spectralReward=False):
     axs1[idx,4].plot(k2, np.abs((dns.Ek_ktt[0,:gridSize//2] - sgs.Ek_ktt[0,:gridSize//2])/dns.Ek_ktt[0,:gridSize//2]),'r:')
     axs1[idx,4].plot(k2, np.abs((dns.Ek_ktt[nt//2,:gridSize//2] - sgs.Ek_ktt[nt//2,:gridSize//2])/dns.Ek_ktt[nt//2,:gridSize//2]),'r--')
     axs1[idx,4].plot(k2, np.abs((dns.Ek_ktt[-1,:gridSize//2] - sgs.Ek_ktt[-1,:gridSize//2])/dns.Ek_ktt[-1,:gridSize//2]),'r-')
+    print(np.mean(np.abs((dns.Ek_ktt[-1,:gridSize//2] - sgs.Ek_ktt[-1,:gridSize//2])/dns.Ek_ktt[-1,:gridSize//2])**2))
 
     actioncolors = plt.cm.coolwarm(np.linspace(0,1,numActions))
     for i in range(numActions):
-        axs1[idx,5].plot(sgs.tt[1:], sgs.actionHistory[:,i], color=actioncolors[i])
+        axs1[idx,5].plot(sgs.tt[1:], sgs.actionHistory[1:,i], color=actioncolors[i])
 
     plt.tight_layout()
     figName = fileName + ".png"
@@ -165,7 +167,6 @@ def makePlot(dns, base, sgs, fileName, spectralReward=False):
         axs2[k,l].plot(dns.x, dns.uu[tidx,:], '--', color=colors[0])
 
     fig2.savefig(figName2)
-
 
 #------------------------------------------------------------------------------
 

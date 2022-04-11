@@ -94,7 +94,7 @@ while step < episodeLength and error == 0:
     
     # calculate reward
     if spectralReward:
-        kMseLogErr = np.mean((np.log(np.abs(dns.Ek_ktt[sgs.ioutnum,:gridSize//2] - sgs.Ek_ktt[sgs.ioutnum,:gridSize//2]))-np.log(dns.Ek_ktt[sgs.ioutnum,:gridSize//2]))**2)
+        kMseLogErr = np.mean((np.abs(dns.Ek_ktt[sgs.ioutnum,:gridSize] - sgs.Ek_ktt[sgs.ioutnum,:gridSize])/dns.Ek_ktt[sgs.ioutnum,:gridSize])**2)
         reward = rewardFactor*(prevkMseLogErr-kMseLogErr)
         prevkMseLogErr = kMseLogErr
     else:

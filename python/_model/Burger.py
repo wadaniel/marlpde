@@ -21,7 +21,7 @@ class Burger:
     # u_t + u*u_x = nu*u_xx0
     # with periodic BCs on x \in [0, L]: u(0,t) = u(L,t).
 
-    def __init__(self, L=2.*np.pi, N=512, dt=0.001, nu=0.0, dforce=True, nsteps=None, tend=5., u0=None, v0=None, case=None, forcing=False, noise=0., seed=42):
+    def __init__(self, L=2.*np.pi, N=512, dt=0.001, nu=0.0, dforce=True, nsteps=None, tend=5., u0=None, v0=None, case=None, forcing=False, ssm=False, dsm=False, noise=0., seed=42):
         
         # Randomness
         np.random.seed(None)
@@ -56,6 +56,11 @@ class Burger:
         self.M = 0
         self.basis = None
         self.actions = None
+
+        # Static Smagorinsky Constant
+        self.cs = 0.1
+        self.ssm = ssm
+        self.dsm = dsm
 
         # direct forcing or not
         self.dforce = dforce
@@ -264,6 +269,49 @@ class Burger:
 
         forcing = np.zeros(self.N)
         Fforcing = np.zeros(self.N, dtype=np.complex64)
+        
+        if self.ssm == True:
+                
+            dx2 = les.dx**2
+
+            um = np.roll(self.u, 1)
+            up = np.roll(self.u, -1)
+            
+            dudx = (u - um)/self.dx
+            d2udx2 = (up - 2*u + um)/dx2
+
+            nuSSM = self.cs**2*dx2*np.abs(dudx)
+            sgs = nuSSM*d2udx2 
+
+        if self.dsm == True:
+            
+            dx2 = les.dx**2
+            
+            w2 = fft(self.u**2)
+            L1 = 0.5*np.real(ifft(np.concatenate((w2[:gridSize//4], w2[-gridSize//4:])) * 1/2))
+
+            uff = np.real(ifft(np.concatenate(self.v[:gridSize//4], self.v[-gridSize//4:]))) * 0.5
+            L2 = 0.5*uff**2
+            L = L1-L2
+
+            um = np.roll(self.u, 1)
+            up = np.roll(self.u, -1)
+            
+            dudx = (u - um)/dx
+            d2udx2 = (up - 2*u + um)/dx2
+            
+            ww2 = fft(np.abs(dudx)*dudx)
+            M1 = dx2*np.real(ifft(no.concatenate((ww2[:gridSize//4], ww2[-gridSize//4] * 1/2))))
+
+            uffm = np.roll(uff, 1)
+            duffdx = (uff - uffm)/self.dx
+            M2 = 0.25*dx2*np.abs(duffdx)*duffdx
+
+            M = M1 - M2
+            csd = L/M
+            
+            nuSSM = csd**2*dx2*np.abs(dudx)
+            sgs = nuSSM*d2udx2
 
         if self.forcing:
             A = 1.
@@ -288,7 +336,8 @@ class Burger:
                 um = np.roll(u,-1)
                 d2udx2 = (up - 2.*u + um)/self.dx**2
                 Fforcing += fft( forcing*d2udx2 )
-           
+
+
         """
         RK3 in time
         """

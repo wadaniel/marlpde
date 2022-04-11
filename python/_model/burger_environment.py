@@ -93,7 +93,7 @@ def environment( s , N, gridSize, numActions, dt, nu, episodeLength, ic, spectra
     
         # calculate reward
         if spectralReward:
-            kMseLogErr = np.mean((np.log(np.abs(dns.Ek_ktt[sgs.ioutnum,:gridSize] - sgs.Ek_ktt[sgs.ioutnum,:gridSize])/dns.Ek_ktt[sgs.ioutnum,:gridSize]))**2)
+            kMseLogErr = np.mean((np.abs(dns.Ek_ktt[sgs.ioutnum,:gridSize//2] - sgs.Ek_ktt[sgs.ioutnum,:gridSize//2])/dns.Ek_ktt[sgs.ioutnum,:gridSize//2])**2)
             reward = rewardFactor*(prevkMseLogErr-kMseLogErr)
             prevkMseLogErr = kMseLogErr
 
@@ -176,7 +176,7 @@ def environment( s , N, gridSize, numActions, dt, nu, episodeLength, ic, spectra
 
             # calculate reward
             if spectralReward:
-                kMseLogErr = np.mean((np.log(np.abs(dns.Ek_ktt[base.ioutnum,:gridSize] - base.Ek_ktt[base.ioutnum,:gridSize])/dns.Ek_ktt[base.ioutnum:gridSize]))**2)
+                kMseLogErr = np.mean((np.abs(dns.Ek_ktt[base.ioutnum,:gridSize//2] - base.Ek_ktt[base.ioutnum,:gridSize//2])/dns.Ek_ktt[base.ioutnum,:gridSize//2])**2)
                 reward = rewardFactor*(prevkMseLogErr-kMseLogErr)
                 prevkMseLogErr = kMseLogErr
 
