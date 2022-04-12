@@ -64,14 +64,14 @@ def fBurger( s , N, gridSize, dt, nu, episodeLength, ic, spectralReward, noise, 
 
                 um = np.roll(sgs.u, 1)
                 up = np.roll(sgs.u, -1)
-                
-                dudx = (u - um)/dx
-                d2udx2 = (up - 2*u + um)/dx2
+                 
+                dudx = (sgs.u - um)/dx
+                d2udx2 = (up - 2*sgs.u + um)/dx2
 
                 nuSSM = cs**2*dx2*np.abs(dudx)
-                sgs = nuSSM*d2udx2
-
-                sgs.step(sgs)
+                a = nuSSM*d2udx2 
+            
+                sgs.step(a)
 
             sgs.compute_Ek()
         
@@ -92,7 +92,7 @@ def fBurger( s , N, gridSize, dt, nu, episodeLength, ic, spectralReward, noise, 
  
         # calculate reward
         if spectralReward:
-            kMseLogErr = np.mean((np.log(np.abs(dns.Ek_ktt[base.ioutnum,:gridSize] - base.Ek_ktt[base.ioutnum,:gridSize])/dns.Ek_ktt[base.ioutnum:gridSize]))**2)
+            kMseLogErr = np.mean((np.abs(dns.Ek_ktt[sgs.ioutnum,:gridSize//2] - sgs.Ek_ktt[sgs.ioutnum,:gridSize//2])/dns.Ek_ktt[sgs.ioutnum,:gridSize//2])**2)
             reward = rewardFactor*(prevkMseLogErr-kMseLogErr)
             prevkMseLogErr = kMseLogErr
 

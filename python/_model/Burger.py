@@ -267,7 +267,6 @@ class Burger:
  
     def step( self, actions=None ):
 
-        forcing = np.zeros(self.N)
         Fforcing = np.zeros(self.N, dtype=np.complex64)
         
         if self.ssm == True:
@@ -282,16 +281,26 @@ class Burger:
 
             nuSSM = self.cs**2*dx2*np.abs(dudx)
             sgs = nuSSM*d2udx2 
+            
+            Fforcing += fft( sgs )
 
         if self.dsm == True:
+
             
             dx2 = les.dx**2
-            
-            w2 = fft(self.u**2)
-            L1 = 0.5*np.real(ifft(np.concatenate((w2[:gridSize//4], w2[-gridSize//4:])) * 1/2))
+            hidx = np.abs(self.k)>self.gridSize//4
 
-            uff = np.real(ifft(np.concatenate(self.v[:gridSize//4], self.v[-gridSize//4:]))) * 0.5
-            L2 = 0.5*uff**2
+            w2 = fft(self.u**2)
+
+            w2h = w2
+            w2h[hidx] = 0
+            L1 = 0.5*np.real(ifft(w2h))
+
+            vh = self.v
+            vh[hidx] = 0
+
+            uh = np.real(ifft(vh))
+            L2 = 0.5*uh**2
             L = L1-L2
 
             um = np.roll(self.u, 1)
@@ -300,20 +309,27 @@ class Burger:
             dudx = (u - um)/dx
             d2udx2 = (up - 2*u + um)/dx2
             
-            ww2 = fft(np.abs(dudx)*dudx)
-            M1 = dx2*np.real(ifft(no.concatenate((ww2[:gridSize//4], ww2[-gridSize//4] * 1/2))))
+            w2 = fft(np.abs(dudx)*dudx)
+            w2h = w2
+            w2h[hidx] = 0
+            M1 = dx2*np.real(ifft(w2h))
 
-            uffm = np.roll(uff, 1)
-            duffdx = (uff - uffm)/self.dx
-            M2 = 0.25*dx2*np.abs(duffdx)*duffdx
+            uhm = np.roll(uh, 1)
+            duhdx = (uh - uhm)/self.dx
+            M2 = dx2*np.abs(duhdx)*duhdx
 
             M = M1 - M2
             csd = L/M
             
             nuSSM = csd**2*dx2*np.abs(dudx)
             sgs = nuSSM*d2udx2
+            
+            Fforcing += fft( sgs )
 
         if self.forcing:
+        
+            forcing = np.zeros(self.N)
+            
             A = 1.
             for k in range(0,32):
                 r = self.randfac[k, self.ioutnum]
@@ -336,7 +352,6 @@ class Burger:
                 um = np.roll(u,-1)
                 d2udx2 = (up - 2.*u + um)/self.dx**2
                 Fforcing += fft( forcing*d2udx2 )
-
 
         """
         RK3 in time
