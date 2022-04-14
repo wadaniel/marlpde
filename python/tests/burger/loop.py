@@ -12,6 +12,8 @@ parser.add_argument('--ic', help='Initial condition', required=False, type=str, 
 parser.add_argument('--dt', help='Time step', required=False, type=float, default=0.001)
 parser.add_argument('--seed', help='Random seed', required=False, type=int, default=42)
 parser.add_argument('--episodelength', help='Actual length of episode / number of actions', required=False, type=int, default=500)
+parser.add_argument('--dsm', help='Run with dynamic Smagorinsky model', action='store_true')
+parser.add_argument('--ssm', help='Run with dynamic Smagorinsky model', action='store_true')
 
 args = parser.parse_args()
 
@@ -57,7 +59,7 @@ tAvgEnergy = dns.Ek_tt
 print("Done!")
 
 # Initialize LES
-sgs = Burger(L=L, N=gridSize, dt=dt, nu=nu, tend=tEnd, forcing=forcing, dforce=dforce, noise=0.)
+sgs = Burger(L=L, N=gridSize, dt=dt, nu=nu, tend=tEnd, forcing=forcing, dforce=dforce, noise=0., ssm=args.ssm, dsm=args.dsm)
 sgs.randfac = dns.randfac
 
 if spectralReward:

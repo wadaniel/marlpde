@@ -134,6 +134,7 @@ class Burger:
                     idx1 = i * self.N//self.M
                     idx2 = (i+1) * self.N//self.M
                     self.basis[i,idx1:idx2] = 1.
+
             elif kind == 'hat':
                 self.basis = np.ones((self.M, self.N))
                 dx = self.L/(self.M-1)
@@ -271,30 +272,35 @@ class Burger:
         
         if self.ssm == True:
                 
-            dx2 = les.dx**2
+            delta  = 2*np.pi/self.N
+            dx2 = self.dx**2
 
             um = np.roll(self.u, 1)
             up = np.roll(self.u, -1)
             
-            dudx = (u - um)/self.dx
-            d2udx2 = (up - 2*u + um)/dx2
+            dudx = (self.u - um)/self.dx
+            d2udx2 = (up - 2*self.u + um)/dx2
 
-            nuSSM = self.cs**2*dx2*np.abs(dudx)
+            nuSSM = (self.cs*delta)**2*np.abs(dudx)
             sgs = nuSSM*d2udx2 
+            print(sgs)
             
             Fforcing += fft( sgs )
 
         if self.dsm == True:
 
+         
+            delta  = 2*np.pi/self.N
+            deltah = 4*np.pi/self.N
             
-            dx2 = les.dx**2
-            hidx = np.abs(self.k)>self.gridSize//4
+            hidx = np.abs(self.k)>self.N//4
+            dx2 = self.dx**2
 
-            w2 = fft(self.u**2)
+            v2 = fft(self.u**2)
 
-            w2h = w2
-            w2h[hidx] = 0
-            L1 = 0.5*np.real(ifft(w2h))
+            v2h = v2
+            v2h[hidx] = 0
+            L1 = 0.5*np.real(ifft(v2h))
 
             vh = self.v
             vh[hidx] = 0
@@ -302,29 +308,42 @@ class Burger:
             uh = np.real(ifft(vh))
             L2 = 0.5*uh**2
             L = L1-L2
+            #print("L")
+            #print(L)
 
             um = np.roll(self.u, 1)
             up = np.roll(self.u, -1)
             
-            dudx = (u - um)/dx
-            d2udx2 = (up - 2*u + um)/dx2
+            dudx = (self.u - um)/self.dx
+            d2udx2 = (up - 2*self.u + um)/dx2
             
             w2 = fft(np.abs(dudx)*dudx)
             w2h = w2
             w2h[hidx] = 0
-            M1 = dx2*np.real(ifft(w2h))
+            M1 = delta**2*np.real(ifft(w2h))
 
             uhm = np.roll(uh, 1)
             duhdx = (uh - uhm)/self.dx
-            M2 = dx2*np.abs(duhdx)*duhdx
+            M2 = deltah**2*np.abs(duhdx)*duhdx
 
             M = M1 - M2
+            #print("M")
+            #print(M)
             csd = L/M
+
+            H = -L
+            malt = 4./deltah**2*M2 - 1./delta**2*M1
+            Malt = (malt-np.roll(malt,1))/self.dx
+            csd2alt = np.mean(H*Malt)/np.mean(Malt*Malt)
+            nuDSMalt = csd2alt*np.abs(dudx)
+            sgsalt = nuDSMalt*d2udx2
             
-            nuSSM = csd**2*dx2*np.abs(dudx)
-            sgs = nuSSM*d2udx2
+            nuDSM = (csd*delta)**2*np.abs(dudx)
+            sgs = nuDSM*d2udx2
+            print(sgs)
             
-            Fforcing += fft( sgs )
+            #Fforcing += fft( sgs )
+            Fforcing += fft( sgsalt )
 
         if self.forcing:
         
