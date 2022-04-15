@@ -172,7 +172,12 @@ def makePlot(dns, base, sgs, fileName, spectralReward=False):
 
     figName3 = fileName + "_action.png"
     print("Plotting {} ...".format(figName3))
-    
+  
+    smax = max(dns.uu.max(), dns.sgsHistory.max(), sgs.sgsHistory.max())
+    smin = min(dns.uu.min(), dns.sgsHistory.min(), sgs.sgsHistory.min())
+    slevels = np.linspace(smin, smax, 50)
+
+   
     fig3, axs3 = plt.subplots(3, 6, sharex='col', sharey='col', subplot_kw=dict(box_aspect=1), figsize=(15,15))
     
 
@@ -190,13 +195,12 @@ def makePlot(dns, base, sgs, fileName, spectralReward=False):
 
     lmax = max(ldns.max(), lbase.max(), lsgs.max())
     lmin = min(ldns.min(), lbase.min(), lsgs.min())
-
-    print(lmin, lmax)
-    llevels = np.linspace(lmin, lmax, 10)
+    llevels = np.linspace(lmin, lmax, 50)
 
     # Plot diffusion
     idx = 0
     axs3[idx,0].contourf(dns.x, dns.tt, ldns) #, llevels)
+    axs3[idx,1].contourf(dns.x, dns.tt, dns.sgsHistory, slevels)
 
     # Plot diffusion
     idx += 1
@@ -207,6 +211,6 @@ def makePlot(dns, base, sgs, fileName, spectralReward=False):
     axs3[idx,0].contourf(sgs.x, sgs.tt, lsgs) #, llevels)
     
     # Plot actions
-    axs3[idx,1].contourf(sgs.x, sgs.tt, sgs.actionHistory)
+    axs3[idx,1].contourf(sgs.x, sgs.tt, sgs.sgsHistory, slevels)
     
     fig3.savefig(figName3)

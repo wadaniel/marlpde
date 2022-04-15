@@ -26,13 +26,13 @@ from Burger import *
 L       = 2*np.pi
 dt      = 0.001
 tEnd    = 5
-nu      = 0.02
+nu      = 0.005
 ic      = 'turbulence'
-noise   = 0.0
+noise   = 0.01
 seed    = 42
 
 dns = Burger(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case=ic, noise=noise, seed=seed, forcing=True)
-sgs0 = Burger(L=L, N=N2, dt=dt, nu=nu, tend=tEnd, case=ic, noise=noise, seed=seed, forcing=False)
+sgs0 = Burger(L=L, N=N2, dt=dt, nu=nu, tend=tEnd, case=ic, noise=noise, seed=seed, forcing=True)
 sgs = Burger(L=L, N=N2, dt=dt, nu=nu, tend=tEnd, case=ic, noise=noise, seed=seed, forcing=True)
 
 v0 = np.concatenate((dns.v0[:((N2+1)//2)], dns.v0[-(N2-1)//2:]))
@@ -47,11 +47,12 @@ sgs.randfac = dns.randfac
 print("Simulate DNS ..")
 ## simulate
 dns.simulate()
-# convert to physical space
 dns.fou2real()
 dns.compute_Ek()
+print("Compute SGS ..")
+dns.compute_Sgs(N2)
 
-print("Simulate (unforced) SGS..")
+print("Simulate SGS..")
 ## simulate
 sgs0.simulate()
 # convert to physical space

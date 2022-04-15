@@ -46,6 +46,8 @@ class Burger:
         self.dx     = L/N
         self.x      = np.linspace(0, self.L, N, endpoint=False)
         self.nu     = nu
+        if noise > 0.:
+            self.nu = 0.005+0.025*np.random.uniform()
         self.nsteps = nsteps
         self.nout   = nsteps
  
@@ -101,6 +103,7 @@ class Burger:
         self.uu = np.zeros([self.nout+1, self.N])
         self.vv = np.zeros([self.nout+1, self.N], dtype=np.complex64)
         self.tt = np.zeros(self.nout+1)
+        self.sgsHistory = np.zeros([self.nout+1, self.N])
         self.actionHistory = np.zeros([self.nout+1, self.N])
         
         self.tt[0]   = 0.
@@ -269,7 +272,7 @@ class Burger:
     def step( self, actions=None ):
 
         Fforcing = np.zeros(self.N, dtype=np.complex64)
-        
+
         if self.ssm == True:
                 
             delta  = 2*np.pi/self.N
@@ -365,12 +368,16 @@ class Burger:
             
             if self.dforce:
                 Fforcing += fft( forcing )
+
             else:
                 u = self.uu[self.ioutnum,:]
                 up = np.roll(u,1)
                 um = np.roll(u,-1)
                 d2udx2 = (up - 2.*u + um)/self.dx**2
-                Fforcing += fft( forcing*d2udx2 )
+                forcing *= d2udx2
+            
+            self.sgsHistory[self.ioutnum,:] = forcing
+            Fforcing += fft( forcing )
 
         """
         RK3 in time
@@ -532,3 +539,37 @@ class Burger:
         state = d2udx2
        
         return state
+
+    def compute_Sgs(self, nURG):
+        hidx = np.abs(self.k)>nURG//2
+        self.sgsHistory = np.zeros(self.uu.shape)
+
+        for idx in range(self.uu.shape[0]):
+            dtidx = idx+1 if idx < self.uu.shape[0]-1 else idx-1
+
+            # calc uhat(t+1)
+            upt = self.uu[dtidx,:]
+            vpt = fft(upt)
+            vpth = vpt
+            vpth[hidx] = 0 #filter
+            uhpt = np.real(ifft(vpth))
+    
+            # calc uhat(t)
+            u = self.uu[idx,:]
+            v = fft(u)
+            vh = v
+            vh[hidx] = 0 #filter
+            uh = np.real(ifft(vh))
+
+            duhdt = (uhpt-uh)/self.dt
+            if (idx == self.uu.shape[0]-1):
+                duhdt *= -1
+
+            uhp = np.roll(uh,-1)
+            uhm = np.roll(uh,+1)
+
+            # calc latteral derivatives
+            duhdx = (uh - uhm)/self.dx
+            d2uhdx2 = (uhp-2.*uh+uhm)/self.dx**2
+            
+            self.sgsHistory[idx,:] = duhdt + uh*duhdx - self.nu*d2uhdx2

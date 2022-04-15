@@ -18,6 +18,8 @@ parser.add_argument('--seed', help='Random seed', required=False, type=int, defa
 parser.add_argument('--dt', help='Simulator time step', required=False, type=float, default=0.001)
 parser.add_argument('--nu', help='Viscosity', required=False, type=float, default=0.02)
 parser.add_argument('--tend', help='Simulation length', required=False, type=int, default=10)
+parser.add_argument('--nt', help='Number of testing runs', required=False, type=int, default=1)
+parser.add_argument('--tf', help='Testing frequenct in episodes', required=False, type=int, default=100)
 parser.add_argument('--run', help='Run tag', required=False, type=int, default=0)
 parser.add_argument('--test', action='store_true', help='Run tag', required=False)
 
@@ -64,8 +66,8 @@ e["Problem"]["Environment Function"] = lambda s : be.environment(
         noise = args.noise, 
         seed = args.seed, 
         dns_default = dns_default )
-e["Problem"]["Testing Frequency"] = 100
-e["Problem"]["Policy Testing Episodes"] = 1
+e["Problem"]["Testing Frequency"] = args.tf
+e["Problem"]["Policy Testing Episodes"] = args.nt
 
 ### Defining Agent Configuration 
 

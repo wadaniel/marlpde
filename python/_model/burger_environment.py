@@ -18,7 +18,7 @@ def setup_dns_default(N, dt, nu , ic, forcing, seed):
 def environment( s , N, gridSize, numActions, dt, nu, episodeLength, ic, spectralReward, forcing, dforce, noise, seed, dns_default = None):
  
     testing = True if s["Custom Settings"]["Mode"] == "Testing" else False
-    noise = 0. if testing else noise
+    #noise = 0. if testing else noise
     
     if noise > 0.:
         dns = Burger(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case=ic, forcing=forcing, noise=noise, seed=seed)
@@ -131,6 +131,9 @@ def environment( s , N, gridSize, numActions, dt, nu, episodeLength, ic, spectra
         np.savez(fileName, x = sgs.x, t = sgs.tt, uu = sgs.uu, vv = sgs.vv, L=L, N=gridSize, dt=dt, nu=nu, tEnd=tEnd, actions=sgs.actionHistory)
          
 #------------------------------------------------------------------------------
+        
+        print("[burger_env] Calculating SGS terms from DNS..")
+        dns.compute_Sgs(gridSize)
 
         print("[burger_env] Running UGS..")
         base = Burger(L=L, N=gridSize, dt=dt, nu=nu, tend=tEnd, forcing=forcing, noise=0.)
