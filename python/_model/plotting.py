@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy import interpolate
 
-def makePlot(dns, base, sgs, fileName):
+def makePlot(dns, base, sgs, fileName, spectralReward=False):
       
     N  = dns.N
     gridSize = sgs.N
@@ -46,12 +46,22 @@ def makePlot(dns, base, sgs, fileName):
     udns_int = f_dns(base.x, base.tt)
     errBaseU = np.abs(base.uu-udns_int)
     mseBaseU_t = np.mean(errBaseU**2, axis=1)
-    
+    mseBaseU = np.cumsum(mseBaseU_t)/np.arange(1, len(mseBaseU_t)+1)
+  
+    errBaseK_t = np.mean(((np.abs(dns.Ek_ktt[:,:gridSize//2] - base.Ek_ktt[:,:gridSize//2])/dns.Ek_ktt[:,:gridSize//2]))**2, axis=1)
+    errBaseK = np.cumsum(errBaseK_t)/np.arange(1, len(errBaseK_t)+1)
+
+   
     errEk_t = dns.Ek_t - sgs.Ek_t
     errEk_tt = dns.Ek_tt - sgs.Ek_tt
     
+    udns_int = f_dns(sgs.x, sgs.tt)
     errU = np.abs(sgs.uu-udns_int)
     mseU_t = np.mean(errU**2, axis=1)
+    mseU = np.cumsum(mseU_t)/np.arange(1, len(mseU_t)+1)
+
+    errK_t = np.mean(((np.abs(dns.Ek_ktt[:,:gridSize//2] - sgs.Ek_ktt[:,:gridSize//2])/dns.Ek_ktt[:,:gridSize//2]))**2, axis=1)
+    errK = np.cumsum(errK_t)/np.arange(1, len(errK_t)+1)
 
 #------------------------------------------------------------------------------
 
@@ -69,26 +79,33 @@ def makePlot(dns, base, sgs, fileName):
     # Plot difference to dns
     axs1[idx,1].contourf(base.x, base.tt, errBaseU, elevels)
 
-    # Plot instanteneous energy and time averaged energy
-    axs1[idx,2].plot(base.tt, mseBaseU_t, 'r-')
+    # Plot instanteneous spec err and cumulative spec err
+    if spectralReward:
+        axs1[idx,2].plot(base.tt, errBaseK_t, 'r:')
+        axs1[idx,2].plot(base.tt, errBaseK, 'r-')
+   
+    # Plot instanteneous mse and cumulative mse
+    else:
+        axs1[idx,2].plot(base.tt, mseBaseU_t, 'r:')
+        axs1[idx,2].plot(base.tt, mseBaseU, 'r-')
+    
     axs1[idx,2].set_yscale('log')
-    #axs1[idx,2].set_ylim([1e-8,None])
-
+    axs1[idx,2].set_ylim([1e-4,1e1])
+    
     # Plot energy spectrum at start, mid and end of simulation
     axs1[idx,3].plot(k2, np.abs(base.Ek_ktt[0,0:gridSize//2]),':',color=colors[idx])
     axs1[idx,3].plot(k2, np.abs(base.Ek_ktt[nt//2,0:gridSize//2]),'--',color=colors[idx])
     axs1[idx,3].plot(k2, np.abs(base.Ek_ktt[-1,0:gridSize//2]),'-',color=colors[idx])
     axs1[idx,3].set_xscale('log')
     axs1[idx,3].set_yscale('log')
-    axs1[idx,3].set_ylim([1e-3,None])
+    axs1[idx,3].set_ylim([1e-4,None])
 
     # Plot energy spectrum difference
     axs1[idx,4].plot(k2, np.abs((dns.Ek_ktt[0,:gridSize//2] - base.Ek_ktt[0,:gridSize//2])/dns.Ek_ktt[0,:gridSize//2]),'r:')
-    #axs1[idx,4].plot(k2[1:], np.abs(dns.Ek_ktt[0,1:gridSize//2] - base.Ek_ktt[0,1:gridSize//2]),'r:')
     axs1[idx,4].plot(k2, np.abs((dns.Ek_ktt[nt//2,:gridSize//2] - base.Ek_ktt[nt//2,:gridSize//2])/dns.Ek_ktt[nt//2,:gridSize//2]),'r--')
-    #axs1[idx,4].plot(k2, np.abs(dns.Ek_ktt[nt//2,0:gridSize//2] - base.Ek_ktt[gridSize//2,0:gridSize//2]),'r--')
     axs1[idx,4].plot(k2, np.abs((dns.Ek_ktt[-1,:gridSize//2] - base.Ek_ktt[-1,:gridSize//2])/dns.Ek_ktt[-1,:gridSize//2]),'r-')
-    #axs1[idx,4].plot(k2, np.abs(dns.Ek_ktt[-1,0:gridSize//2] - base.Ek_ktt[-1,0:gridSize//2]),'r')
+    print(np.mean(np.abs((dns.Ek_ktt[-1,:gridSize//2] - base.Ek_ktt[-1,:gridSize//2])/dns.Ek_ktt[-1,:gridSize//2])**2))
+    
     axs1[idx,4].set_xscale('log')
     axs1[idx,4].set_yscale('log')
     #axs1[idx,4].set_ylim([1e-4,None])
@@ -103,31 +120,31 @@ def makePlot(dns, base, sgs, fileName):
 
     # Plot difference to dns
     axs1[idx,1].contourf(sgs.x, sgs.tt, errU, elevels)
-
-    # Plot instanteneous energy and time averaged energy
-    axs1[idx,2].plot(sgs.tt, mseU_t, 'r-')
-    axs1[idx,2].set_yscale('log')
+ 
+    # Plot instanteneous spec err and cumulative spec err
+    if spectralReward:
+        axs1[idx,2].plot(base.tt, errK_t, 'r:')
+        axs1[idx,2].plot(base.tt, errK, 'r-')
+    
+    else:
+        # Plot instanteneous energy and time averaged energy
+        axs1[idx,2].plot(sgs.tt, mseU, 'r:')
+        axs1[idx,2].plot(sgs.tt, mseU_t, 'r-')
 
     # Plot time averaged energy spectrum at start, mid and end of simulation
     axs1[idx,3].plot(k2, np.abs(sgs.Ek_ktt[0,0:gridSize//2]),':',color=colors[idx])
     axs1[idx,3].plot(k2, np.abs(sgs.Ek_ktt[nt//2,0:gridSize//2]),'--',color=colors[idx])
     axs1[idx,3].plot(k2, np.abs(sgs.Ek_ktt[-1,0:gridSize//2]),'-',color=colors[idx])
-    axs1[idx,3].set_xscale('log')
-    axs1[idx,3].set_yscale('log')
 
     # Plot time averaged energy spectrum difference
     axs1[idx,4].plot(k2, np.abs((dns.Ek_ktt[0,:gridSize//2] - sgs.Ek_ktt[0,:gridSize//2])/dns.Ek_ktt[0,:gridSize//2]),'r:')
-    #axs1[idx,4].plot(k2[1:], np.abs(dns.Ek_ktt[0,1:gridSize//2] - sgs.Ek_ktt[0,1:gridSize//2]),'r:')
     axs1[idx,4].plot(k2, np.abs((dns.Ek_ktt[nt//2,:gridSize//2] - sgs.Ek_ktt[nt//2,:gridSize//2])/dns.Ek_ktt[nt//2,:gridSize//2]),'r--')
-    #axs1[idx,4].plot(k2, np.abs(dns.Ek_ktt[nt//2,0:gridSize//2] - sgs.Ek_ktt[gridSize//2,0:gridSize//2]),'r--')
     axs1[idx,4].plot(k2, np.abs((dns.Ek_ktt[-1,:gridSize//2] - sgs.Ek_ktt[-1,:gridSize//2])/dns.Ek_ktt[-1,:gridSize//2]),'r-')
-    #axs1[idx,4].plot(k2, np.abs(dns.Ek_ktt[-1,0:gridSize//2] - sgs.Ek_ktt[-1,0:gridSize//2]),'r')
-    axs1[idx,4].set_xscale('log')
-    axs1[idx,4].set_yscale('log')
+    print(np.mean(np.abs((dns.Ek_ktt[-1,:gridSize//2] - sgs.Ek_ktt[-1,:gridSize//2])/dns.Ek_ktt[-1,:gridSize//2])**2))
 
     actioncolors = plt.cm.coolwarm(np.linspace(0,1,numActions))
     for i in range(numActions):
-        axs1[idx,5].plot(sgs.tt[1:], sgs.actionHistory[:,i], color=actioncolors[i])
+        axs1[idx,5].plot(sgs.tt[1:], sgs.actionHistory[1:,i], color=actioncolors[i])
 
     plt.tight_layout()
     figName = fileName + ".png"
@@ -145,8 +162,55 @@ def makePlot(dns, base, sgs, fileName):
         k = int(i / 4)
         l = i % 4
         
-        axs2[k,l].plot(base.x, base.uu[tidx,:], '--', color=colors[1])
+        axs2[k,l].plot(base.x, base.uu[tidx,:], '-', color=colors[1])
         axs2[k,l].plot(sgs.x, sgs.uu[tidx,:], '-', color=colors[2])
         axs2[k,l].plot(dns.x, dns.uu[tidx,:], '--', color=colors[0])
 
     fig2.savefig(figName2)
+
+#------------------------------------------------------------------------------
+
+    figName3 = fileName + "_action.png"
+    print("Plotting {} ...".format(figName3))
+  
+    smax = max(dns.uu.max(), dns.sgsHistory.max(), sgs.sgsHistory.max())
+    smin = min(dns.uu.min(), dns.sgsHistory.min(), sgs.sgsHistory.min())
+    slevels = np.linspace(smin, smax, 50)
+
+   
+    fig3, axs3 = plt.subplots(3, 6, sharex='col', sharey='col', subplot_kw=dict(box_aspect=1), figsize=(15,15))
+    
+
+    up = np.roll(dns.uu,-1,axis=1)
+    um = np.roll(dns.uu,1,axis=1)
+    ldns = dns.nu*(up - 2*dns.uu + um)/dns.dx**2
+ 
+    up = np.roll(base.uu,-1,axis=1)
+    um = np.roll(base.uu,1,axis=1)
+    lbase = base.nu*(up - 2*base.uu + um)/base.dx**2
+    
+    up = np.roll(sgs.uu,-1,axis=1)
+    um = np.roll(sgs.uu,1,axis=1)
+    lsgs = sgs.nu*(up - 2*sgs.uu + um)/sgs.dx**2
+
+    lmax = max(ldns.max(), lbase.max(), lsgs.max())
+    lmin = min(ldns.min(), lbase.min(), lsgs.min())
+    llevels = np.linspace(lmin, lmax, 50)
+
+    # Plot diffusion
+    idx = 0
+    axs3[idx,0].contourf(dns.x, dns.tt, ldns) #, llevels)
+    axs3[idx,1].contourf(dns.x, dns.tt, dns.sgsHistory, slevels)
+
+    # Plot diffusion
+    idx += 1
+    axs3[idx,0].contourf(base.x, base.tt, lbase) #, llevels)
+
+    # Plot diffusion
+    idx += 1
+    axs3[idx,0].contourf(sgs.x, sgs.tt, lsgs) #, llevels)
+    
+    # Plot actions
+    axs3[idx,1].contourf(sgs.x, sgs.tt, sgs.sgsHistory, slevels)
+    
+    fig3.savefig(figName3)

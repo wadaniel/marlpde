@@ -21,12 +21,13 @@ class Burger:
     # u_t + u*u_x = nu*u_xx0
     # with periodic BCs on x \in [0, L]: u(0,t) = u(L,t).
 
-    def __init__(self, L=2.*np.pi, N=512, dt=0.001, nu=0.0, dforce=True, nsteps=None, tend=5., u0=None, v0=None, case=None, noise=0., seed=42):
+    def __init__(self, L=2.*np.pi, N=512, dt=0.001, nu=0.0, dforce=True, nsteps=None, tend=5., u0=None, v0=None, case=None, forcing=False, ssm=False, dsm=False, noise=0., seed=42):
         
         # Randomness
+        np.random.seed(None)
         self.noise = noise*L
         self.seed = seed
-        np.random.seed(None)
+        self.forcing = forcing
 
         # Initialize
         self.L  = float(L); 
@@ -45,13 +46,23 @@ class Burger:
         self.dx     = L/N
         self.x      = np.linspace(0, self.L, N, endpoint=False)
         self.nu     = nu
+        if noise > 0.:
+            self.nu = 0.005+0.025*np.random.uniform()
         self.nsteps = nsteps
         self.nout   = nsteps
  
+        # random factors for forcing
+        self.randfac = np.random.normal(loc=0., scale=1., size=(32,nsteps))
+        
         # Basis
         self.M = 0
         self.basis = None
         self.actions = None
+
+        # Static Smagorinsky Constant
+        self.cs = 0.1
+        self.ssm = ssm
+        self.dsm = dsm
 
         # direct forcing or not
         self.dforce = dforce
@@ -92,6 +103,8 @@ class Burger:
         self.uu = np.zeros([self.nout+1, self.N])
         self.vv = np.zeros([self.nout+1, self.N], dtype=np.complex64)
         self.tt = np.zeros(self.nout+1)
+        self.sgsHistory = np.zeros([self.nout+1, self.N])
+        self.actionHistory = np.zeros([self.nout+1, self.N])
         
         self.tt[0]   = 0.
 
@@ -116,8 +129,6 @@ class Burger:
         self.M = M
         
         # Action record
-        self.actionHistory = np.zeros((self.nsteps, self.M))
-
         if M > 1:
             if kind == 'uniform':
                 self.basis = np.zeros((self.M, self.N))
@@ -126,6 +137,7 @@ class Burger:
                     idx1 = i * self.N//self.M
                     idx2 = (i+1) * self.N//self.M
                     self.basis[i,idx1:idx2] = 1.
+
             elif kind == 'hat':
                 self.basis = np.ones((self.M, self.N))
                 dx = self.L/(self.M-1)
@@ -178,7 +190,6 @@ class Burger:
                         A = 1
                         u0 = np.ones(self.N)
                         for k in range(1, self.N):
-                            #offset = np.random.uniform(low=0., high=2.*np.pi) if self.noise > 0 else 0.
                             offset = np.random.normal(loc=0., scale=self.noise) if self.noise > 0 else 0.
                             rng = (a * rng + c) % m
                             phase = rng/m*2.*np.pi
@@ -260,25 +271,114 @@ class Burger:
  
     def step( self, actions=None ):
 
-        Fforcing = np.zeros(self.N)
+        Fforcing = np.zeros(self.N, dtype=np.complex64)
 
+        if self.ssm == True:
+                
+            delta  = 2*np.pi/self.N
+            dx2 = self.dx**2
+
+            um = np.roll(self.u, 1)
+            up = np.roll(self.u, -1)
+            
+            dudx = (self.u - um)/self.dx
+            d2udx2 = (up - 2*self.u + um)/dx2
+
+            nuSSM = (self.cs*delta)**2*np.abs(dudx)
+            sgs = nuSSM*d2udx2 
+            print(sgs)
+            
+            Fforcing += fft( sgs )
+
+        if self.dsm == True:
+
+         
+            delta  = 2*np.pi/self.N
+            deltah = 4*np.pi/self.N
+            
+            hidx = np.abs(self.k)>self.N//4
+            dx2 = self.dx**2
+
+            v2 = fft(self.u**2)
+
+            v2h = v2
+            v2h[hidx] = 0
+            L1 = 0.5*np.real(ifft(v2h))
+
+            vh = self.v
+            vh[hidx] = 0
+
+            uh = np.real(ifft(vh))
+            L2 = 0.5*uh**2
+            L = L1-L2
+            #print("L")
+            #print(L)
+
+            um = np.roll(self.u, 1)
+            up = np.roll(self.u, -1)
+            
+            dudx = (self.u - um)/self.dx
+            d2udx2 = (up - 2*self.u + um)/dx2
+            
+            w2 = fft(np.abs(dudx)*dudx)
+            w2h = w2
+            w2h[hidx] = 0
+            M1 = delta**2*np.real(ifft(w2h))
+
+            uhm = np.roll(uh, 1)
+            duhdx = (uh - uhm)/self.dx
+            M2 = deltah**2*np.abs(duhdx)*duhdx
+
+            M = M1 - M2
+            #print("M")
+            #print(M)
+            csd = L/M
+
+            H = -L
+            malt = 4./deltah**2*M2 - 1./delta**2*M1
+            Malt = (malt-np.roll(malt,1))/self.dx
+            csd2alt = np.mean(H*Malt)/np.mean(Malt*Malt)
+            nuDSMalt = csd2alt*np.abs(dudx)
+            sgsalt = nuDSMalt*d2udx2
+            
+            nuDSM = (csd*delta)**2*np.abs(dudx)
+            sgs = nuDSM*d2udx2
+            print(sgs)
+            
+            #Fforcing += fft( sgs )
+            Fforcing += fft( sgsalt )
+
+        if self.forcing:
+        
+            forcing = np.zeros(self.N)
+            
+            A = 1.
+            for k in range(0,32):
+                r = self.randfac[k, self.ioutnum]
+                forcing += r*A*np.sin(2.*np.pi*(k*self.x/self.L+np.cos(r*100)))
+            
+            Fforcing += fft( forcing )
+            
         if (actions is not None):
             assert self.basis is not None, print("[Burger] Basis not set up (is None).")
             assert len(actions) == self.M, print("[Burger] Wrong number of actions (provided {}/{}".format(len(actions), self.M))
-            self.actionHistory[self.ioutnum,:] = actions
 
             forcing = np.matmul(actions, self.basis)
-
-            u = self.uu[self.ioutnum,:]
-
+            self.actionHistory[self.ioutnum,:] = forcing
+            
             if self.dforce:
-                Fforcing = fft( forcing )
+                Fforcing += fft( forcing )
+
             else:
+                u = self.uu[self.ioutnum,:]
                 up = np.roll(u,1)
                 um = np.roll(u,-1)
                 d2udx2 = (up - 2.*u + um)/self.dx**2
-                Fforcing = fft( forcing*d2udx2 )
+                forcing *= d2udx2
             
+            self.sgsHistory[self.ioutnum,:] = forcing
+            Fforcing += fft( forcing )
+
         """
         RK3 in time
         """
@@ -439,3 +539,37 @@ class Burger:
         state = d2udx2
        
         return state
+
+    def compute_Sgs(self, nURG):
+        hidx = np.abs(self.k)>nURG//2
+        self.sgsHistory = np.zeros(self.uu.shape)
+
+        for idx in range(self.uu.shape[0]):
+            dtidx = idx+1 if idx < self.uu.shape[0]-1 else idx-1
+
+            # calc uhat(t+1)
+            upt = self.uu[dtidx,:]
+            vpt = fft(upt)
+            vpth = vpt
+            vpth[hidx] = 0 #filter
+            uhpt = np.real(ifft(vpth))
+    
+            # calc uhat(t)
+            u = self.uu[idx,:]
+            v = fft(u)
+            vh = v
+            vh[hidx] = 0 #filter
+            uh = np.real(ifft(vh))
+
+            duhdt = (uhpt-uh)/self.dt
+            if (idx == self.uu.shape[0]-1):
+                duhdt *= -1
+
+            uhp = np.roll(uh,-1)
+            uhm = np.roll(uh,+1)
+
+            # calc latteral derivatives
+            duhdx = (uh - uhm)/self.dx
+            d2uhdx2 = (uhp-2.*uh+uhm)/self.dx**2
+            
+            self.sgsHistory[idx,:] = duhdt + uh*duhdx - self.nu*d2uhdx2

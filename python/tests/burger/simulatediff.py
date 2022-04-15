@@ -10,7 +10,7 @@ import math
 
 # Discretization grid
 N1 = 512
-N2 = 32
+N2 = 16
 
 import matplotlib
 matplotlib.use('Agg')

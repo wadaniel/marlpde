@@ -13,10 +13,13 @@ parser.add_argument('--noise', help='Standard deviation of IC', required=False, 
 parser.add_argument('--ic', help='Initial condition', required=False, type=str, default='sinus')
 parser.add_argument('--dforce', help='Do direct forcing', action='store_true', required=False)
 parser.add_argument('--specreward', help='Use spectral reward', action='store_true', required=False)
+parser.add_argument('--forcing', help='Use forcing term in equation', action='store_true', required=False)
 parser.add_argument('--seed', help='Random seed', required=False, type=int, default=42)
 parser.add_argument('--dt', help='Simulator time step', required=False, type=float, default=0.001)
 parser.add_argument('--nu', help='Viscosity', required=False, type=float, default=0.02)
 parser.add_argument('--tend', help='Simulation length', required=False, type=int, default=10)
+parser.add_argument('--nt', help='Number of testing runs', required=False, type=int, default=1)
+parser.add_argument('--tf', help='Testing frequenct in episodes', required=False, type=int, default=100)
 parser.add_argument('--run', help='Run tag', required=False, type=int, default=0)
 parser.add_argument('--test', action='store_true', help='Run tag', required=False)
 
@@ -29,7 +32,7 @@ sys.path.append('_model')
 import burger_environment as be
 
 dns_default = None
-dns_default = be.setup_dns_default(args.NDNS, args.dt, args.nu, args.ic, args.seed)
+dns_default = be.setup_dns_default(args.NDNS, args.dt, args.nu, args.ic, args.forcing, args.seed)
 
 ### Defining Korali Problem
 
@@ -50,20 +53,21 @@ e["Problem"]["Type"] = "Reinforcement Learning / Continuous"
 e["Problem"]["Custom Settings"]["Mode"] = "Testing" if args.test else "Training"
 e["Problem"]["Environment Function"] = lambda s : be.environment( 
         s, 
-        args.NDNS, 
-        args.N, 
-        args.NA, 
-        args.dt, 
-        args.nu, 
-        args.episodelength, 
-        args.ic, 
-        args.specreward, 
-        args.dforce, 
-        args.noise, 
-        args.seed, 
-        dns_default )
-e["Problem"]["Testing Frequency"] = 100
-e["Problem"]["Policy Testing Episodes"] = 1
+        N = args.NDNS, 
+        gridSize = args.N, 
+        numActions = args.NA, 
+        dt = args.dt, 
+        nu = args.nu, 
+        episodeLength = args.episodelength, 
+        ic = args.ic, 
+        spectralReward = args.specreward,
+        forcing = args.forcing,
+        dforce = args.dforce, 
+        noise = args.noise, 
+        seed = args.seed, 
+        dns_default = dns_default )
+e["Problem"]["Testing Frequency"] = args.tf
+e["Problem"]["Policy Testing Episodes"] = args.nt
 
 ### Defining Agent Configuration 
 
