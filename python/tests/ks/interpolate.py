@@ -9,10 +9,10 @@ KS of fine grid interpolated on coarse crid vs KS on coarse grid.
 """
 
 # Discretization fine grid (DNS)
-N1 = 1024
+N1 = 2048
 
 # Discretization coarse grid
-N2 = 32
+N2 = 16
 
 import matplotlib
 matplotlib.use('Agg')
@@ -25,20 +25,37 @@ sys.path.append('./../../_model/')
 from scipy import interpolate
 import numpy as np
 from KS import *
+from plotting import *
 
 #------------------------------------------------------------------------------
 ## set parameters and initialize simulation
-L    = 22/(2*np.pi)
-dt   = 0.05
+L    = 22
+nu   = 1
+dt   = 0.25
 tTransient = 50
-tEnd = 50
-nu   = 1.0
+tEnd       = 550
+tSim       = tEnd-tTransient
 dns = KS(L=L, N=N1, dt=dt, nu=nu, tend=tTransient)
 
-## simulate
+## simulate transient period
 dns.simulate()
 # convert to physical space
 dns.fou2real()
+
+u_restart = dns.uu[-1,:].copy()
+v_restart = dns.vv[-1,:].copy()
+
+## simulate rest
+dns.IC( v0 = v_restart )
+dns.simulate( nsteps=int(tSim/dt), restart=True )
+
+# convert to physical space
+dns.fou2real()
+dns.compute_Ek()
+dns.compute_Sgs(N2)
+
+# get solution
+u1 = dns.uu.copy()
 
 ## for plotting
 uTruth = dns.uu
@@ -46,39 +63,39 @@ tTruth = dns.tt
 xTruth = dns.x
 sTruth, nTruth = np.meshgrid(np.arange(uTruth.shape[0])*dt, 2*np.pi*L/N1*(np.array(range(N1))+1))
 
-u_restart = dns.uu[-1,:].copy()
-
-
 #------------------------------------------------------------------------------
 ## restart
 f_restart = interpolate.interp1d(xTruth, u_restart)
 
 # restart from coarse physical space
-subgrid = KS(L=L, N=N2, dt=dt, nu=1.0, tend=tEnd)
-
-subgrid.setGroundTruth(tTruth, xTruth, uTruth)
+sgs = KS(L=L, N=N2, dt=dt, nu=nu, tend=tSim)
+sgs.setGroundTruth(tTruth, xTruth, uTruth)
 
 # create interpolated IC
-xCoarse = subgrid.x
+xCoarse = sgs.x
 uRestartCoarse = f_restart(xCoarse)
-subgrid.IC( u0 = uRestartCoarse)
+vRestartCoarse = np.concatenate((v_restart[:((N2+1)//2)], v_restart[-(N2-1)//2:])) * N2 / N1
+
+#sgs.IC( u0 = uRestartCoarse )
+sgs.IC( v0 = vRestartCoarse )
 
 # continue simulation
-subgrid.simulate( nsteps=int(tEnd/dt), restart=True )
+sgs.simulate()
 
 # convert to physical space
-subgrid.fou2real()
+sgs.fou2real()
+sgs.compute_Ek()
 
 # get solution
-uCoarse = subgrid.uu
+uCoarse = sgs.uu
 
 # eval truth on coarse Grid
-uTruthToCoarse = subgrid.mapGroundTruth()
+uTruthToCoarse = sgs.mapGroundTruth()
 
 #------------------------------------------------------------------------------
 ## plot comparison
 fig, axs = plt.subplots(1,3)
-s, n = np.meshgrid(subgrid.tt, subgrid.x)
+s, n = np.meshgrid(sgs.tt, sgs.x)
 
 cs0 = axs[0].contourf(sTruth, nTruth, uTruth.T, 50, cmap=plt.get_cmap("seismic"))
 cs1 = axs[1].contourf(s, n, uCoarse.T, 50, cmap=plt.get_cmap("seismic"))
@@ -94,3 +111,5 @@ plt.setp(axs[0], ylabel='$x$')
 axs[1].set_yticklabels([])
 axs[2].set_yticklabels([])
 fig.savefig('interpolate.png')
+
+makePlot(dns, sgs, sgs, "evolution", spectralReward=True)

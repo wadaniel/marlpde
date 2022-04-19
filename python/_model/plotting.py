@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy import interpolate
 
-def makePlot(dns, base, sgs, fileName, spectralReward=False):
+def makePlot(dns, base, sgs, fileName, spectralReward=True):
       
     N  = dns.N
     gridSize = sgs.N
@@ -168,14 +168,16 @@ def makePlot(dns, base, sgs, fileName, spectralReward=False):
 
     fig2.savefig(figName2)
 
+    return
 #------------------------------------------------------------------------------
 
     figName3 = fileName + "_action.png"
     print("Plotting {} ...".format(figName3))
   
-    smax = max(dns.uu.max(), dns.sgsHistory.max(), sgs.sgsHistory.max())
-    smin = min(dns.uu.min(), dns.sgsHistory.min(), sgs.sgsHistory.min())
-    slevels = np.linspace(smin, smax, 50)
+    smax = max(dns.sgsHistoryAlt.max(), sgs.sgsHistory.max())
+    smin = min(dns.sgsHistoryAlt.min(), sgs.sgsHistory.min())
+    slevels = np.linspace(np.exp(smin), np.exp(smax), 50)
+    slevels = np.log(slevels)
 
    
     fig3, axs3 = plt.subplots(3, 6, sharex='col', sharey='col', subplot_kw=dict(box_aspect=1), figsize=(15,15))
@@ -200,7 +202,9 @@ def makePlot(dns, base, sgs, fileName, spectralReward=False):
     # Plot diffusion
     idx = 0
     axs3[idx,0].contourf(dns.x, dns.tt, ldns) #, llevels)
-    axs3[idx,1].contourf(dns.x, dns.tt, dns.sgsHistory, slevels)
+    axs3[idx,1].contourf(dns.x, dns.tt, dns.sgsHistoryAlt, slevels)
+    #axs3[idx,2].contourf(dns.x, dns.tt, dns.sgsHistory, slevels)
+    #axs3[idx,3].contourf(base.x, base.tt, dns.sgsHistoryAlt2, slevels)
 
     # Plot diffusion
     idx += 1

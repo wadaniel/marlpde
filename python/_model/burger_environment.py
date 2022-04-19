@@ -38,8 +38,8 @@ def environment( s , N, gridSize, numActions, dt, nu, episodeLength, ic, spectra
     # Initialize LES
     sgs = Burger(L=L, N=gridSize, dt=dt, nu=nu, tend=tEnd, forcing=forcing, dforce=dforce, noise=0.)
     if spectralReward:
-        v0 = np.concatenate((dns.v0[:((gridSize+1)//2)], dns.v0[-(gridSize-1)//2:]))
-        sgs.IC( v0 = v0 * gridSize / dns.N )
+        v0 = np.concatenate((dns.v0[:((gridSize+1)//2)], dns.v0[-(gridSize-1)//2:])) * gridSize / dns.N
+        sgs.IC( v0 = v0 )
     else:
         sgs.IC( u0 = f_restart(sgs.x) )
  

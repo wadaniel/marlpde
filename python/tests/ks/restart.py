@@ -26,7 +26,7 @@ from KS import *
 L    = 22
 dt   = 0.05
 tTransient = 50
-tEnd       = 3000
+tEnd       = 300
 tSim       = tEnd-tTransient
 dns = KS(L=L, N=N, dt=dt, nu=1.0, tend=tTransient)
 
@@ -55,11 +55,12 @@ dns.simulate( nsteps=int(tSim/dt), restart=True )
 dns.fou2real()
 
 # get solution
-u1 = dns.uu
+u1 = dns.uu.copy()
 
 #############################
 # restart from Fourier space
 dns.IC( v0 = v_restart )
+#dns.IC( u0 = u_restart )
 
 # continue simulation
 dns.simulate( nsteps=int(tSim/dt), restart=True )
@@ -68,7 +69,7 @@ dns.simulate( nsteps=int(tSim/dt), restart=True )
 dns.fou2real()
 
 # get solution
-u2 = dns.uu
+u2 = dns.uu.copy()
 
 #------------------------------------------------------------------------------
 ## plot comparison
