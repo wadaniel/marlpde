@@ -25,7 +25,7 @@ from Burger import *
 ## set parameters and initialize simulation
 L       = 2*np.pi
 dt      = 0.001
-tEnd    = 15
+tEnd    = 5
 nu      = 0.02
 ic      = 'turbulence'
 #ic      = 'sinus'

@@ -14,6 +14,7 @@ parser.add_argument('--ic', help='Initial condition', required=False, type=str, 
 parser.add_argument('--dforce', help='Do direct forcing', action='store_true', required=False)
 parser.add_argument('--specreward', help='Use spectral reward', action='store_true', required=False)
 parser.add_argument('--forcing', help='Use forcing term in equation', action='store_true', required=False)
+parser.add_argument('--nunoise', help='Enable noisy nu', action='store_true', required=False)
 parser.add_argument('--seed', help='Random seed', required=False, type=int, default=42)
 parser.add_argument('--dt', help='Simulator time step', required=False, type=float, default=0.001)
 parser.add_argument('--nu', help='Viscosity', required=False, type=float, default=0.02)
@@ -65,6 +66,7 @@ e["Problem"]["Environment Function"] = lambda s : be.environment(
         dforce = args.dforce, 
         noise = args.noise, 
         seed = args.seed, 
+        nunoise = args.nunoise,
         dns_default = dns_default )
 e["Problem"]["Testing Frequency"] = args.tf
 e["Problem"]["Policy Testing Episodes"] = args.nt

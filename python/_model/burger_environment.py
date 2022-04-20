@@ -15,17 +15,18 @@ def setup_dns_default(N, dt, nu , ic, forcing, seed):
     dns.compute_Ek()
     return dns
 
-def environment( s , N, gridSize, numActions, dt, nu, episodeLength, ic, spectralReward, forcing, dforce, noise, seed, dns_default = None):
+def environment( s , N, gridSize, numActions, dt, nu, episodeLength, ic, spectralReward, forcing, dforce, noise, seed, nunoise=False, dns_default = None):
  
     testing = True if s["Custom Settings"]["Mode"] == "Testing" else False
-    #noise = 0. if testing else noise
+    noise = 0. if testing else noise
     
-    if noise > 0.:
-        dns = Burger(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case=ic, forcing=forcing, noise=noise, seed=seed)
+    if noise > 0. or nunoise:
+        dns = Burger(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case=ic, forcing=forcing, noise=noise, seed=seed, nunoise=nunoise)
         dns.simulate()
         dns.fou2real()
         dns.compute_Ek()
 
+        nu = dns.nu
     else:
         dns = dns_default
     
@@ -93,7 +94,7 @@ def environment( s , N, gridSize, numActions, dt, nu, episodeLength, ic, spectra
     
         # calculate reward
         if spectralReward:
-            kMseLogErr = np.mean((np.abs(dns.Ek_ktt[sgs.ioutnum,:gridSize//2] - sgs.Ek_ktt[sgs.ioutnum,:gridSize//2])/dns.Ek_ktt[sgs.ioutnum,:gridSize//2])**2)
+            kMseLogErr = np.mean((np.abs(dns.Ek_ktt[sgs.ioutnum,1:gridSize//2] - sgs.Ek_ktt[sgs.ioutnum,1:gridSize//2])/dns.Ek_ktt[sgs.ioutnum,1:gridSize//2])**2)
             reward = rewardFactor*(prevkMseLogErr-kMseLogErr)
             prevkMseLogErr = kMseLogErr
 

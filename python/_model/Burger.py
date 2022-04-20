@@ -21,7 +21,7 @@ class Burger:
     # u_t + u*u_x = nu*u_xx0
     # with periodic BCs on x \in [0, L]: u(0,t) = u(L,t).
 
-    def __init__(self, L=2.*np.pi, N=512, dt=0.001, nu=0.0, dforce=True, nsteps=None, tend=5., u0=None, v0=None, case=None, forcing=False, ssm=False, dsm=False, noise=0., seed=42):
+    def __init__(self, L=2.*np.pi, N=512, dt=0.001, nu=0.0, dforce=True, nsteps=None, tend=5., u0=None, v0=None, case=None, forcing=False, ssm=False, dsm=False, noise=0., seed=42, nunoise=False):
         
         # Randomness
         np.random.seed(None)
@@ -46,8 +46,8 @@ class Burger:
         self.dx     = L/N
         self.x      = np.linspace(0, self.L, N, endpoint=False)
         self.nu     = nu
-        if noise > 0.:
-            self.nu = 0.01+0.02*np.random.uniform()
+        if nunoise:
+            self.nu = 0.015+0.010*np.random.uniform()
         self.nsteps = nsteps
         self.nout   = nsteps
  
@@ -594,6 +594,6 @@ class Burger:
             duhdxAlt2 = (uhAlt2-uhmAlt2)/self.dx*r
             d2uhdx2Alt2 = (uhpAlt2-2.*uhAlt2+uhmAlt2)/self.dx**2*r**2
 
-            self.sgsHistory[idx,:] = duhdt + uh*duhdx - self.nu*d2uhdx2
-            self.sgsHistoryAlt[idx,:] = -uh*duhdx  + 0.5*du2hdx
+            self.sgsHistory[idx,:] = -uh*duhdx  + 0.5*du2hdx
+            self.sgsHistoryAlt[idx,:] = duhdt + uh*duhdx - self.nu*d2uhdx2
             self.sgsHistoryAlt2[idx,:] = duhdtAlt2 + uhAlt2*duhdxAlt2 - self.nu*d2uhdx2Alt2

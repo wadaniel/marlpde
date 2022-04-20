@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt 
 import numpy as np
 from scipy import interpolate
+from scipy.stats import gaussian_kde
 
 def makePlot(dns, base, sgs, fileName, spectralReward=True):
       
@@ -14,7 +15,8 @@ def makePlot(dns, base, sgs, fileName, spectralReward=True):
     k1 = dns.k[:N//2]
     k2 = sgs.k[:gridSize//2]
 
-    colors = plt.cm.jet(np.linspace(0,1,5))
+    #colors = plt.cm.jet(np.linspace(0,1,7))
+    colors = ['black','royalblue','seagreen']
 
     time = np.arange(tEnd/dt+1)*dt
 
@@ -168,19 +170,19 @@ def makePlot(dns, base, sgs, fileName, spectralReward=True):
 
     fig2.savefig(figName2)
 
-    return
 #------------------------------------------------------------------------------
 
     figName3 = fileName + "_action.png"
     print("Plotting {} ...".format(figName3))
   
-    smax = max(dns.sgsHistoryAlt.max(), sgs.sgsHistory.max())
-    smin = min(dns.sgsHistoryAlt.min(), sgs.sgsHistory.min())
-    slevels = np.linspace(np.exp(smin), np.exp(smax), 50)
-    slevels = np.log(slevels)
+    dnsSgs = dns.sgsHistory
 
+    smax = max(dnsSgs.max(), sgs.sgsHistory.max())
+    smin = min(dnsSgs.min(), sgs.sgsHistory.min())
+    slevels = np.linspace(smin, smax, 50)
+    svals = np.linspace(smin,smax,200)
    
-    fig3, axs3 = plt.subplots(3, 6, sharex='col', sharey='col', subplot_kw=dict(box_aspect=1), figsize=(15,15))
+    fig3, axs3 = plt.subplots(2, 2, sharex='col', sharey='col', subplot_kw=dict(box_aspect=1), figsize=(10,10))
     
 
     up = np.roll(dns.uu,-1,axis=1)
@@ -199,22 +201,26 @@ def makePlot(dns, base, sgs, fileName, spectralReward=True):
     lmin = min(ldns.min(), lbase.min(), lsgs.min())
     llevels = np.linspace(lmin, lmax, 50)
 
-    # Plot diffusion
     idx = 0
-    axs3[idx,0].contourf(dns.x, dns.tt, ldns) #, llevels)
-    axs3[idx,1].contourf(dns.x, dns.tt, dns.sgsHistoryAlt, slevels)
-    #axs3[idx,2].contourf(dns.x, dns.tt, dns.sgsHistory, slevels)
+    axs3[idx,0].contourf(dns.x, dns.tt, dnsSgs) #, slevels)
+    #axs3[idx,2].contourf(dns.x, dns.tt, dns.sgsHistoryAlt, slevels)
     #axs3[idx,3].contourf(base.x, base.tt, dns.sgsHistoryAlt2, slevels)
-
-    # Plot diffusion
-    idx += 1
-    axs3[idx,0].contourf(base.x, base.tt, lbase) #, llevels)
-
-    # Plot diffusion
-    idx += 1
-    axs3[idx,0].contourf(sgs.x, sgs.tt, lsgs) #, llevels)
     
-    # Plot actions
-    axs3[idx,1].contourf(sgs.x, sgs.tt, sgs.sgsHistory, slevels)
+    dnsDensity = gaussian_kde(dnsSgs.flatten())
+    axs3[idx,1].plot(svals, dnsDensity(svals), color=colors[idx])
+    axs3[idx,1].set_yscale('log')
+ 
+    #idx += 1
+    #axs3[idx,0].contourf(base.x, base.tt, base.sgsHistory) #, llevels)
+
+    #density = gaussian_kde(base.sgsHistory.flatten())
+    #axs3[idx,1].plot(svals, density(svals))
+ 
+    idx += 1
+    axs3[idx,0].contourf(sgs.x, sgs.tt, sgs.sgsHistory) #, slevels)
+     
+    density = gaussian_kde(sgs.sgsHistory.flatten())
+    axs3[idx,1].plot(svals, dnsDensity(svals), color=colors[0], linestyle='--')
+    axs3[idx,1].plot(svals, density(svals), color=colors[2])
     
     fig3.savefig(figName3)
