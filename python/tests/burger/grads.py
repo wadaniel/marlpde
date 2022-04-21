@@ -92,10 +92,12 @@ while step < episodeLength and error == 0:
         error = 1
         break
 
-    print("grad")
     #print(sgs.gradient)
+    print("max grad")
     print(np.max(sgs.gradient))
+    print("min grad")
     print(np.min(sgs.gradient))
+    print("min abs grad")
     print(np.min(np.abs(sgs.gradient)))
     
     # calculate reward
