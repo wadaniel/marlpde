@@ -26,14 +26,16 @@ from Burger import *
 L       = 2*np.pi
 dt      = 0.001
 tEnd    = 5
-nu      = 0.005
+nu      = 0.02
 ic      = 'turbulence'
-noise   = 0.01
+#ic      = 'sinus'
+noise   = 0.0
 seed    = 42
+forcing = True
 
-dns = Burger(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case=ic, noise=noise, seed=seed, forcing=True)
-sgs0 = Burger(L=L, N=N2, dt=dt, nu=nu, tend=tEnd, case=ic, noise=noise, seed=seed, forcing=True)
-sgs = Burger(L=L, N=N2, dt=dt, nu=nu, tend=tEnd, case=ic, noise=noise, seed=seed, forcing=True)
+dns = Burger(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case=ic, noise=noise, seed=seed, forcing=forcing)
+sgs0 = Burger(L=L, N=N2, dt=dt, nu=nu, tend=tEnd, case=ic, noise=noise, seed=seed, forcing=forcing)
+sgs = Burger(L=L, N=N2, dt=dt, nu=nu, tend=tEnd, case=ic, noise=noise, seed=seed, forcing=forcing)
 
 v0 = np.concatenate((dns.v0[:((N2+1)//2)], dns.v0[-(N2-1)//2:]))
 sgs0.IC( v0 = v0 * N2 / N )

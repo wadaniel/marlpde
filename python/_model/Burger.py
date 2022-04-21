@@ -21,7 +21,7 @@ class Burger:
     # u_t + u*u_x = nu*u_xx0
     # with periodic BCs on x \in [0, L]: u(0,t) = u(L,t).
 
-    def __init__(self, L=2.*np.pi, N=512, dt=0.001, nu=0.0, dforce=True, nsteps=None, tend=5., u0=None, v0=None, case=None, forcing=False, ssm=False, dsm=False, noise=0., seed=42):
+    def __init__(self, L=2.*np.pi, N=512, dt=0.001, nu=0.0, dforce=True, nsteps=None, tend=5., u0=None, v0=None, case=None, forcing=False, ssm=False, dsm=False, noise=0., seed=42, nunoise=False):
         
         # Randomness
         np.random.seed(None)
@@ -46,8 +46,8 @@ class Burger:
         self.dx     = L/N
         self.x      = np.linspace(0, self.L, N, endpoint=False)
         self.nu     = nu
-        if noise > 0.:
-            self.nu = 0.005+0.025*np.random.uniform()
+        if nunoise:
+            self.nu = 0.015+0.010*np.random.uniform()
         self.nsteps = nsteps
         self.nout   = nsteps
  
@@ -366,10 +366,7 @@ class Burger:
             forcing = np.matmul(actions, self.basis)
             self.actionHistory[self.ioutnum,:] = forcing
             
-            if self.dforce:
-                Fforcing += fft( forcing )
-
-            else:
+            if self.dforce == False:
                 u = self.uu[self.ioutnum,:]
                 up = np.roll(u,1)
                 um = np.roll(u,-1)
@@ -391,11 +388,6 @@ class Burger:
         v3 = 1./3.*self.v + 2./3.*v2 + 2./3. * self.dt * (-0.5*self.k1*fft(u2**2) + self.nu*self.k2*v2 + Fforcing)
         self.v = v3
      
-        """
-        Expl Euler in time
-        """
-        #self.v = self.v - self.dt*0.5*self.k1*fft(self.u**2) + self.dt*self.nu*self.k2*self.v + self.dt*Fforcing 
-        
         self.u = np.real(ifft(self.v))
         
         self.stepnum += 1
@@ -419,9 +411,14 @@ class Burger:
             # update nout in case nsteps or iout were changed
             nout      = nsteps
             self.nout = nout
+            self.uut  = -1
+            self.stepnum = 0
+            self.ioutnum = 0
             # reset simulation arrays with possibly updated size
             self.__setup_timeseries(nout=self.nout)
-        
+            self.vv[0,:] = self.v0
+            self.uu[0,:] = self.v0
+ 
         # advance in time for nsteps steps
         try:
             if (correction==[]):
@@ -443,7 +440,7 @@ class Burger:
 
     def fou2real(self):
         # Convert from spectral to physical space
-        if self.stepnum < self.uut:
+        if self.uut < self.stepnum:
             self.uut = self.stepnum
             self.uu = np.real(ifft(self.vv))
 
@@ -543,6 +540,10 @@ class Burger:
     def compute_Sgs(self, nURG):
         hidx = np.abs(self.k)>nURG//2
         self.sgsHistory = np.zeros(self.uu.shape)
+        self.sgsHistoryAlt = np.zeros(self.uu.shape)
+        self.sgsHistoryAlt2 = np.zeros((self.stepnum+1, nURG))
+    
+        r = nURG/self.N
 
         for idx in range(self.uu.shape[0]):
             dtidx = idx+1 if idx < self.uu.shape[0]-1 else idx-1
@@ -553,23 +554,46 @@ class Burger:
             vpth = vpt
             vpth[hidx] = 0 #filter
             uhpt = np.real(ifft(vpth))
-    
+
+            uhptAlt2 = np.real(ifft(np.concatenate((vpt[:(nURG+1)//2],vpt[-(nURG-1)//2:]))))*r
+
             # calc uhat(t)
             u = self.uu[idx,:]
+            u2 = u*u
             v = fft(u)
+            v2 = fft(u2)
             vh = v
-            vh[hidx] = 0 #filter
+            v2h = v2
+            vh[hidx] = 0
+            v2h[hidx] = 0
+
             uh = np.real(ifft(vh))
+            u2h = np.real(ifft(v2h))
+            
+            uhAlt2 = np.real(ifft(np.concatenate((v[:(nURG+1)//2],v[-(nURG-1)//2:]))))*r
 
             duhdt = (uhpt-uh)/self.dt
+            duhdtAlt2 = (uhptAlt2-uhAlt2)/self.dt
             if (idx == self.uu.shape[0]-1):
                 duhdt *= -1
+                duhdtAlt2 *= -1
 
             uhp = np.roll(uh,-1)
             uhm = np.roll(uh,+1)
+            u2hm = np.roll(u2h,+1)
+
+            uhpAlt2 = np.roll(uhAlt2,-1)
+            uhmAlt2 = np.roll(uhAlt2,+1)
 
             # calc latteral derivatives
             duhdx = (uh - uhm)/self.dx
             d2uhdx2 = (uhp-2.*uh+uhm)/self.dx**2
+
+            du2hdx = (u2h - u2hm)/self.dx
             
-            self.sgsHistory[idx,:] = duhdt + uh*duhdx - self.nu*d2uhdx2
+            duhdxAlt2 = (uhAlt2-uhmAlt2)/self.dx*r
+            d2uhdx2Alt2 = (uhpAlt2-2.*uhAlt2+uhmAlt2)/self.dx**2*r**2
+
+            self.sgsHistory[idx,:] = -uh*duhdx  + 0.5*du2hdx
+            self.sgsHistoryAlt[idx,:] = duhdt + uh*duhdx - self.nu*d2uhdx2
+            self.sgsHistoryAlt2[idx,:] = duhdtAlt2 + uhAlt2*duhdxAlt2 - self.nu*d2uhdx2Alt2

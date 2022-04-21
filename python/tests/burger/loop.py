@@ -26,7 +26,7 @@ nu   = 0.02
 noise = 0.0
 ic   = args.ic
 seed = args.seed
-forcing = True
+forcing = False
 dforce = False
 
 # action defaults
@@ -38,7 +38,7 @@ gridSize = args.gridSize
 episodeLength = args.episodelength
 
 # reward structure
-spectralReward = True
+spectralReward = False
 
 # reward defaults
 rewardFactor = 1. if spectralReward else 1.
