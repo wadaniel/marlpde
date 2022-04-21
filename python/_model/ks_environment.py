@@ -126,7 +126,7 @@ def environment( s , N, gridSize, numActions, dt, nu, episodeLength, dforce, see
         print("[ks_environment] Storing sgs to file {}".format(fileName))
         np.savez(fileName, x = sgs.x, t = sgs.tt, uu = sgs.uu, vv = sgs.vv, L=L, N=gridSize, dt=dt, nu=nu, tEnd=tSim)
          
-        print("[ks_env] Calculating SGS terms from DNS..")
+        print("[ks_environmnet] Calculating SGS terms from DNS..")
         dns.compute_Sgs(gridSize)
   
         print("[ks_environment] Running UGS..")

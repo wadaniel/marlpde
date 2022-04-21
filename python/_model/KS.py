@@ -383,7 +383,27 @@ class KS:
         return state
 
     def compute_Sgs(self, nURG):
+        hidx = np.abs(self.k)>nURG//2
         self.sgsHistory = np.zeros(self.uu.shape)
-        self.sgsHistoryAlt = np.zeros(self.uu.shape)
-        self.sgsHistoryAlt2 = np.zeros((self.stepnum+1, nURG))
-        # TODO
+
+        for idx in range(self.uu.shape[0]):
+            # calc uhat(t)
+            u = self.uu[idx,:]
+            u2 = u*u
+            v = fft(u)
+            v2 = fft(u2)
+            vh = v
+            v2h = v2
+            vh[hidx] = 0
+            v2h[hidx] = 0
+
+            uh = np.real(ifft(vh))
+            uhm = np.roll(uh,+1)
+            u2h = np.real(ifft(v2h))
+            u2hm = np.roll(u2h,+1)
+
+            # calc latteral derivatives
+            duhdx = (uh - uhm)/self.dx
+            du2hdx = (u2h - u2hm)/self.dx
+
+            self.sgsHistory[idx,:] = -uh*duhdx  + 0.5*du2hdx

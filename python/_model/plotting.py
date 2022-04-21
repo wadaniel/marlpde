@@ -13,7 +13,7 @@ def makePlot(dns, base, sgs, fileName, spectralReward=True):
 
     nt = int(tEnd/dt)
     k1 = dns.k[:N//2]
-    k2 = sgs.k[:gridSize//2]
+    k2 = sgs.k[1:gridSize//2]
 
     #colors = plt.cm.jet(np.linspace(0,1,7))
     colors = ['black','royalblue','seagreen']
@@ -50,7 +50,7 @@ def makePlot(dns, base, sgs, fileName, spectralReward=True):
     mseBaseU_t = np.mean(errBaseU**2, axis=1)
     mseBaseU = np.cumsum(mseBaseU_t)/np.arange(1, len(mseBaseU_t)+1)
   
-    errBaseK_t = np.mean(((np.abs(dns.Ek_ktt[:,:gridSize//2] - base.Ek_ktt[:,:gridSize//2])/dns.Ek_ktt[:,:gridSize//2]))**2, axis=1)
+    errBaseK_t = np.mean(((np.abs(dns.Ek_ktt[:,1:gridSize//2] - base.Ek_ktt[:,1:gridSize//2])/dns.Ek_ktt[:,1:gridSize//2]))**2, axis=1)
     errBaseK = np.cumsum(errBaseK_t)/np.arange(1, len(errBaseK_t)+1)
 
    
@@ -62,7 +62,7 @@ def makePlot(dns, base, sgs, fileName, spectralReward=True):
     mseU_t = np.mean(errU**2, axis=1)
     mseU = np.cumsum(mseU_t)/np.arange(1, len(mseU_t)+1)
 
-    errK_t = np.mean(((np.abs(dns.Ek_ktt[:,:gridSize//2] - sgs.Ek_ktt[:,:gridSize//2])/dns.Ek_ktt[:,:gridSize//2]))**2, axis=1)
+    errK_t = np.mean(((np.abs(dns.Ek_ktt[:,1:gridSize//2] - sgs.Ek_ktt[:,1:gridSize//2])/dns.Ek_ktt[:,1:gridSize//2]))**2, axis=1)
     errK = np.cumsum(errK_t)/np.arange(1, len(errK_t)+1)
 
 #------------------------------------------------------------------------------
@@ -95,18 +95,18 @@ def makePlot(dns, base, sgs, fileName, spectralReward=True):
     axs1[idx,2].set_ylim([1e-4,1e1])
     
     # Plot energy spectrum at start, mid and end of simulation
-    axs1[idx,3].plot(k2, np.abs(base.Ek_ktt[0,0:gridSize//2]),':',color=colors[idx])
-    axs1[idx,3].plot(k2, np.abs(base.Ek_ktt[nt//2,0:gridSize//2]),'--',color=colors[idx])
-    axs1[idx,3].plot(k2, np.abs(base.Ek_ktt[-1,0:gridSize//2]),'-',color=colors[idx])
+    axs1[idx,3].plot(k2, np.abs(base.Ek_ktt[0,1:gridSize//2]),':',color=colors[idx])
+    axs1[idx,3].plot(k2, np.abs(base.Ek_ktt[nt//2,1:gridSize//2]),'--',color=colors[idx])
+    axs1[idx,3].plot(k2, np.abs(base.Ek_ktt[-1,1:gridSize//2]),'-',color=colors[idx])
     axs1[idx,3].set_xscale('log')
     axs1[idx,3].set_yscale('log')
     axs1[idx,3].set_ylim([1e-4,None])
 
     # Plot energy spectrum difference
-    axs1[idx,4].plot(k2, np.abs((dns.Ek_ktt[0,:gridSize//2] - base.Ek_ktt[0,:gridSize//2])/dns.Ek_ktt[0,:gridSize//2]),'r:')
-    axs1[idx,4].plot(k2, np.abs((dns.Ek_ktt[nt//2,:gridSize//2] - base.Ek_ktt[nt//2,:gridSize//2])/dns.Ek_ktt[nt//2,:gridSize//2]),'r--')
-    axs1[idx,4].plot(k2, np.abs((dns.Ek_ktt[-1,:gridSize//2] - base.Ek_ktt[-1,:gridSize//2])/dns.Ek_ktt[-1,:gridSize//2]),'r-')
-    print(np.mean(np.abs((dns.Ek_ktt[-1,:gridSize//2] - base.Ek_ktt[-1,:gridSize//2])/dns.Ek_ktt[-1,:gridSize//2])**2))
+    axs1[idx,4].plot(k2, np.abs((dns.Ek_ktt[0,1:gridSize//2] - base.Ek_ktt[0,1:gridSize//2])/dns.Ek_ktt[0,1:gridSize//2]),'r:')
+    axs1[idx,4].plot(k2, np.abs((dns.Ek_ktt[nt//2,1:gridSize//2] - base.Ek_ktt[nt//2,1:gridSize//2])/dns.Ek_ktt[nt//2,1:gridSize//2]),'r--')
+    axs1[idx,4].plot(k2, np.abs((dns.Ek_ktt[-1,1:gridSize//2] - base.Ek_ktt[-1,1:gridSize//2])/dns.Ek_ktt[-1,1:gridSize//2]),'r-')
+    print(np.mean(np.abs((dns.Ek_ktt[-1,1:gridSize//2] - base.Ek_ktt[-1,1:gridSize//2])/dns.Ek_ktt[-1,1:gridSize//2])**2))
     
     axs1[idx,4].set_xscale('log')
     axs1[idx,4].set_yscale('log')
@@ -134,15 +134,15 @@ def makePlot(dns, base, sgs, fileName, spectralReward=True):
         axs1[idx,2].plot(sgs.tt, mseU_t, 'r-')
 
     # Plot time averaged energy spectrum at start, mid and end of simulation
-    axs1[idx,3].plot(k2, np.abs(sgs.Ek_ktt[0,0:gridSize//2]),':',color=colors[idx])
-    axs1[idx,3].plot(k2, np.abs(sgs.Ek_ktt[nt//2,0:gridSize//2]),'--',color=colors[idx])
-    axs1[idx,3].plot(k2, np.abs(sgs.Ek_ktt[-1,0:gridSize//2]),'-',color=colors[idx])
+    axs1[idx,3].plot(k2, np.abs(sgs.Ek_ktt[0,1:gridSize//2]),':',color=colors[idx])
+    axs1[idx,3].plot(k2, np.abs(sgs.Ek_ktt[nt//2,1:gridSize//2]),'--',color=colors[idx])
+    axs1[idx,3].plot(k2, np.abs(sgs.Ek_ktt[-1,1:gridSize//2]),'-',color=colors[idx])
 
     # Plot time averaged energy spectrum difference
-    axs1[idx,4].plot(k2, np.abs((dns.Ek_ktt[0,:gridSize//2] - sgs.Ek_ktt[0,:gridSize//2])/dns.Ek_ktt[0,:gridSize//2]),'r:')
-    axs1[idx,4].plot(k2, np.abs((dns.Ek_ktt[nt//2,:gridSize//2] - sgs.Ek_ktt[nt//2,:gridSize//2])/dns.Ek_ktt[nt//2,:gridSize//2]),'r--')
-    axs1[idx,4].plot(k2, np.abs((dns.Ek_ktt[-1,:gridSize//2] - sgs.Ek_ktt[-1,:gridSize//2])/dns.Ek_ktt[-1,:gridSize//2]),'r-')
-    print(np.mean(np.abs((dns.Ek_ktt[-1,:gridSize//2] - sgs.Ek_ktt[-1,:gridSize//2])/dns.Ek_ktt[-1,:gridSize//2])**2))
+    axs1[idx,4].plot(k2, np.abs((dns.Ek_ktt[0,1:gridSize//2] - sgs.Ek_ktt[0,1:gridSize//2])/dns.Ek_ktt[0,1:gridSize//2]),'r:')
+    axs1[idx,4].plot(k2, np.abs((dns.Ek_ktt[nt//2,1:gridSize//2] - sgs.Ek_ktt[nt//2,1:gridSize//2])/dns.Ek_ktt[nt//2,1:gridSize//2]),'r--')
+    axs1[idx,4].plot(k2, np.abs((dns.Ek_ktt[-1,1:gridSize//2] - sgs.Ek_ktt[-1,1:gridSize//2])/dns.Ek_ktt[-1,1:gridSize//2]),'r-')
+    print(np.mean(np.abs((dns.Ek_ktt[-1,1:gridSize//2] - sgs.Ek_ktt[-1,1:gridSize//2])/dns.Ek_ktt[-1,1:gridSize//2])**2))
 
     actioncolors = plt.cm.coolwarm(np.linspace(0,1,numActions))
     for i in range(numActions):
@@ -176,7 +176,13 @@ def makePlot(dns, base, sgs, fileName, spectralReward=True):
     print("Plotting {} ...".format(figName3))
   
     dnsSgs = dns.sgsHistory
-
+    
+    print(np.mean(dnsSgs.flatten()))
+    print(np.std(dnsSgs.flatten()))
+    
+    print(np.mean(sgs.sgsHistory.flatten()))
+    print(np.std(sgs.sgsHistory.flatten()))
+ 
     smax = max(dnsSgs.max(), sgs.sgsHistory.max())
     smin = min(dnsSgs.min(), sgs.sgsHistory.min())
     slevels = np.linspace(smin, smax, 50)
@@ -218,7 +224,7 @@ def makePlot(dns, base, sgs, fileName, spectralReward=True):
  
     idx += 1
     axs3[idx,0].contourf(sgs.x, sgs.tt, sgs.sgsHistory) #, slevels)
-     
+  
     density = gaussian_kde(sgs.sgsHistory.flatten())
     axs3[idx,1].plot(svals, dnsDensity(svals), color=colors[0], linestyle='--')
     axs3[idx,1].plot(svals, density(svals), color=colors[2])
