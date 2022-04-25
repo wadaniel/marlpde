@@ -54,7 +54,7 @@ class KS_jax:
     # Temporal discretization: exponential time differencing fourth-order Runge-Kutta
     # see AK Kassam and LN Trefethen, SISC 2005
 
-    def __init__(self, L=16, N=128, dt=0.25, nu=1.0, nsteps=None, tend=150, u0=None, v0=None, case=None, coeffs=None, noisy = False):
+    def __init__(self, L=16, N=128, dt=0.25, nu=1.0, nsteps=None, tend=150, u0=None, v0=None, case=None, coeffs=None, noisy = False, seed=42):
 
         # Initialize
         L  = float(L);
@@ -311,32 +311,75 @@ class KS_jax:
 
         return (u, v)
 
+    # def step( self, actions=None, nIntermed=1 ):
+    #
+    #     Fforcing = np.zeros(self.N)
+    #     if (actions is not None):
+    #         assert self.basis is not None, print("[KS] Basis not set up (is None).")
+    #         assert len(actions) == self.M, print("[KS] Wrong number of actions (provided {}/{}".format(len(actions), self.M))
+    #         forcing = np.matmul(actions, self.basis)
+    #
+    #         Fforcing = fft( forcing )
+    #
+    #     self.gradient = np.zeros((self.N, self.M))
+    #
+    #     for _ in range(nIntermed):
+    #
+    #         u, v = self.etdrk( Fforcing, self.u, self.v)
+    #         self.stepnum += 1
+    #         self.t       += self.dt
+    #
+    #         if (actions is not None):
+    #             duda, dudu = self.grad(actions, self.u, self.v)
+    #             self.gradient = duda + np.matmul(dudu, self.gradient)
+    #
+    #         # update after grads computed
+    #         self.u = u
+    #         self.v = v
+    #
+    #         self.stepnum += 1
+    #         self.t       += self.dt
+    #
+    #         self.ioutnum += 1
+    #         self.vv[self.ioutnum,:] = self.v
+    #         self.tt[self.ioutnum]   = self.t
+
     def step( self, actions=None, nIntermed=1 ):
 
         Fforcing = np.zeros(self.N)
-        if (actions is not None):
-            assert self.basis is not None, print("[KS] Basis not set up (is None).")
-            assert len(actions) == self.M, print("[KS] Wrong number of actions (provided {}/{}".format(len(actions), self.M))
-            forcing = np.matmul(actions, self.basis)
-
-            Fforcing = fft( forcing )
-
         self.gradient = np.zeros((self.N, self.M))
+
+        if (actions is not None):
+
+            actions = np.array(actions)
+            forcing = np.matmul(actions, self.basis)
+            Fforcing = fft( forcing )
+            # if self.dforce:
+            #     Fforcing = fft( forcing )
+            # else:
+            #     up = np.roll(u,1)
+            #     um = np.roll(u,-1)
+            #     d2udx2 = (up - 2.*u + um)/self.dx**2
+            #     Fforcing = fft( forcing*d2udx2 )
 
         for _ in range(nIntermed):
 
-            if (actions is not None):
-                duda, dudu = self.grad(actions, self.u, self.v)
-                self.gradient = duda + np.matmul(dudu, self.gradient)
-
-            # update after grads computed
-            self.u, self.v = self.etdrk( Fforcing, self.u, self.v)
+            u, v = self.etdrk( Fforcing, self.u, self.v)
 
             self.stepnum += 1
             self.t       += self.dt
 
+            if (actions is not None):
+                duda, dudu = self.grad(actions, self.u, self.v)
+                self.gradient = np.matmul(dudu, self.gradient) + duda
+
+            # update after grads computed
+            self.u = u
+            self.v = v
+
             self.ioutnum += 1
-            self.vv[self.ioutnum,:] = self.v
+            self.uu[self.ioutnum,:] = u
+            self.vv[self.ioutnum,:] = v
             self.tt[self.ioutnum]   = self.t
 
 
