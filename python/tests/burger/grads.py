@@ -26,7 +26,7 @@ nu   = 0.02
 noise = 0.0
 ic   = args.ic
 seed = args.seed
-gridSize = args.gridSize
+gridSize = 32
 
 # action defaults
 basis = 'hat'
@@ -92,33 +92,33 @@ while step < episodeLength and error == 0:
         error = 1
         break
 
-    #print(sgs.gradient)
-    print("max grad")
-    print(np.max(sgs.gradient))
-    print("min grad")
-    print(np.min(sgs.gradient))
-    print("min abs grad")
-    print(np.min(np.abs(sgs.gradient)))
-    
+    print(sgs.gradient)
+    # print("max grad")
+    # print(np.max(sgs.gradient))
+    # print("min grad")
+    # print(np.min(sgs.gradient))
+    # print("min abs grad")
+    # print(np.min(np.abs(sgs.gradient)))
+
     # calculate reward
-    if spectralReward:
-        #reward = -rewardFactor*kMseLogErr
-        kMseLogErr = np.mean((np.log(dns.Ek_ktt[sgs.ioutnum,:gridSize]) - np.log(sgs.Ek_ktt[sgs.ioutnum,:gridSize]))**2)
-        reward = rewardFactor*(prevkMseLogErr-kMseLogErr)
-        prevkMseLogErr = kMseLogErr
-
-    else:
-        reward = rewardFactor*sgs.getMseReward()
-
-    cumreward += reward
-    if (np.isnan(reward)):
-        print("Nan reward detected")
-        error = 1
-        break
+    # if spectralReward:
+    #     #reward = -rewardFactor*kMseLogErr
+    #     kMseLogErr = np.mean((np.log(dns.Ek_ktt[sgs.ioutnum,:gridSize]) - np.log(sgs.Ek_ktt[sgs.ioutnum,:gridSize]))**2)
+    #     reward = rewardFactor*(prevkMseLogErr-kMseLogErr)
+    #     prevkMseLogErr = kMseLogErr
+    #
+    # else:
+    #     reward = rewardFactor*sgs.getMseReward()
+    #
+    # cumreward += reward
+    # if (np.isnan(reward)):
+    #     print("Nan reward detected")
+    #     error = 1
+    #     break
 
     step += 1
 
-print("cumreward")
-print(cumreward)
+# print("cumreward")
+# print(cumreward)
 
-makePlot(dns, sgs, sgs, "grads")
+# makePlot(dns, sgs, sgs, "grads")

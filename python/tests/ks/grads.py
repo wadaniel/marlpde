@@ -14,7 +14,7 @@ from numpy.linalg import norm
 from KS_jax import *
 
 N    = 1024
-N_sgs = 32
+N_sgs = 64
 L    = 2*np.pi
 nu   = 1.0
 dt   = 0.25
@@ -27,7 +27,7 @@ episodeLength = 500
 #------------------------------------------------------------------------------
 # action defaults
 basis = 'hat'
-M = 4
+M = 16
 
 # Initialize LES
 # simulate transient period

@@ -23,7 +23,7 @@ def jetdrk4(actions, u, v, basis, g, E2, Q, E, f1, f2, f3):
     forcing = jnp.matmul(actions, basis)
     Fforcing = jnp.fft.fft( forcing )
     #
-    Nv = g*jnp.fft.fft(jnp.real(jnp.fft.ifft(v))**2)
+    Nv = g*jnp.fft.fft(u**2)
     a = E2*v + Q*Nv;
     Na = g*jnp.fft.fft(jnp.real(jnp.fft.ifft(a))**2)
     b = E2*v + Q*Na;
@@ -38,11 +38,32 @@ def jetdrk4(actions, u, v, basis, g, E2, Q, E, f1, f2, f3):
 
 jetdrk4 = jit(jacfwd(jetdrk4, has_aux=True, argnums=(0,1)))
 
+@jit
+def jexpl_euler(actions, u, v, dt, basis, k1, k2, k4):
+    """
+    Explicit Euler in time
+    """
+    forcing = jnp.matmul(actions, basis)
+    Fforcing = jnp.fft.fft( forcing )
+
+    # forcing = jnp.matmul(actions, basis)
+    # up = jnp.roll(u,1)
+    # um = jnp.roll(u,-1)
+    # d2udx2 = (up - 2.*u + um)/dx**2
+    # Fforcing = jnp.fft.fft( forcing*d2udx2 )
+
+    v = v - dt*0.5*k1*jnp.fft.fft(u*u) + dt*(k2 - k4)*v + dt*Fforcing
+    u = jnp.real(jnp.fft.ifft(v))
+
+    return (u, v)
+
+jexpl_euler = jit(jacfwd(jexpl_euler, has_aux=True, argnums=(0,1)))
+
 class KS_jax:
     #
     # Solution of the  KS equation
     #
-    # u_t + u_xx + u_xxxx + 0.5u_x*u_x= 0,
+    # u_t + u_xx + u_xxxx + 0.5(u*u)_x= 0,
     # with periodic BCs on x \in [0, 2*pi*L]: u(x+2*pi*L,t) = u(x,t).
     #
     # The nature of the solution depends on the system size L and on the initial
@@ -133,6 +154,9 @@ class KS_jax:
 
     def __setup_fourier(self, coeffs=None):
         self.k   = fftfreq(self.N, self.L / (2*np.pi*self.N))
+        self.k1  = 1j * self.k
+        self.k2  = self.k**2
+        self.k4  = self.k**4
         # Fourier multipliers for the linear term Lu
         if (coeffs is None):
             # normal-form equation
@@ -288,7 +312,7 @@ class KS_jax:
         t = np.arange(0, self.uu.shape[0])*self.dt
         return self.f_truth(self.x,t)
 
-    def grad(self, actions, u, v):
+    def grad_drk(self, actions, u, v):
         return jetdrk4(actions, u, v, self.basis, self.g, self.E2, self.Q, self.E, self.f1, self.f2, self.f3)[0]
 
     def etdrk(self, Fforcing, u, v):
@@ -298,7 +322,7 @@ class KS_jax:
         # (exponential time differencing - 4th order Runge Kutta)
 
         v_ = v
-        Nv = self.g*fft(np.real(ifft(v_))**2)
+        Nv = self.g*fft(u**2)
         a = self.E2*v_ + self.Q*Nv;
         Na = self.g*fft(np.real(ifft(a))**2)
         b = self.E2*v_ + self.Q*Na;
@@ -311,38 +335,14 @@ class KS_jax:
 
         return (u, v)
 
-    # def step( self, actions=None, nIntermed=1 ):
-    #
-    #     Fforcing = np.zeros(self.N)
-    #     if (actions is not None):
-    #         assert self.basis is not None, print("[KS] Basis not set up (is None).")
-    #         assert len(actions) == self.M, print("[KS] Wrong number of actions (provided {}/{}".format(len(actions), self.M))
-    #         forcing = np.matmul(actions, self.basis)
-    #
-    #         Fforcing = fft( forcing )
-    #
-    #     self.gradient = np.zeros((self.N, self.M))
-    #
-    #     for _ in range(nIntermed):
-    #
-    #         u, v = self.etdrk( Fforcing, self.u, self.v)
-    #         self.stepnum += 1
-    #         self.t       += self.dt
-    #
-    #         if (actions is not None):
-    #             duda, dudu = self.grad(actions, self.u, self.v)
-    #             self.gradient = duda + np.matmul(dudu, self.gradient)
-    #
-    #         # update after grads computed
-    #         self.u = u
-    #         self.v = v
-    #
-    #         self.stepnum += 1
-    #         self.t       += self.dt
-    #
-    #         self.ioutnum += 1
-    #         self.vv[self.ioutnum,:] = self.v
-    #         self.tt[self.ioutnum]   = self.t
+    def grad_ee(self, actions, u, v):
+        return jexpl_euler(actions, u, v, self.dt, self.basis, self.k1, self.k2, self.k4)[0]
+
+    def expl_euler(self, Fforcing, u, v):
+        v = v - self.dt*0.5*self.k1*fft(u*u) + self.dt*(self.k2 - self.k4)*v + self.dt*Fforcing
+        u = np.real(ifft(v))
+
+        return (u, v)
 
     def step( self, actions=None, nIntermed=1 ):
 
@@ -370,7 +370,11 @@ class KS_jax:
             self.t       += self.dt
 
             if (actions is not None):
-                duda, dudu = self.grad(actions, self.u, self.v)
+                duda, dudu = self.grad_drk(actions, self.u, self.v)
+                #print("duda")
+                #print(duda)
+                #print("dudu")
+                #print(dudu)
                 self.gradient = np.matmul(dudu, self.gradient) + duda
 
             # update after grads computed

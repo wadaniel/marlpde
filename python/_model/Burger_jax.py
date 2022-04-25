@@ -25,7 +25,7 @@ def jexpl_euler(actions, u, v, dt, dx, nu, basis, k1, k2):
     """
     Explicit Euler in time
     """
-    
+
     forcing = jnp.matmul(actions, basis)
     up = jnp.roll(u,1)
     um = jnp.roll(u,-1)
@@ -44,7 +44,7 @@ def jexpl_RK3( actions, u, v, dt, dx, nu, basis, k1, k2):
     """
     RK3 in time
     """
-    
+
     forcing = jnp.matmul(actions, basis)
     up = jnp.roll(u,1)
     um = jnp.roll(u,-1)
@@ -53,8 +53,8 @@ def jexpl_RK3( actions, u, v, dt, dx, nu, basis, k1, k2):
 
     v1 = v + dt * (-0.5*k1*jnp.fft.fft(u**2) + nu*k2*v + Fforcing)
     u1 = jnp.real(jnp.fft.ifft(v1))
-    
-    
+
+
     v2 = 3./4.*v + 1./4.*v1 + 1./4. * dt * (-0.5*k1*jnp.fft.fft(u1**2) + nu*k2*v1 + Fforcing)
     u2 = jnp.real(jnp.fft.ifft(v2))
 
@@ -168,11 +168,11 @@ class Burger_jax:
 
     def setup_basis(self, M, kind = 'uniform'):
         self.M = M
-        assert self.M <= self.N, "[Burger_jax] reduce size of basis / number of actions" 
- 
+        assert self.M <= self.N, "[Burger_jax] reduce size of basis / number of actions"
+
         # Action record
         self.actionHistory = np.zeros([self.nsteps, self.M])
-        
+
         if M > 1:
             if kind == 'uniform':
                 self.basis = np.zeros((self.M, self.N))
@@ -317,12 +317,12 @@ class Burger_jax:
         u = np.real(ifft(v))
 
         return (u, v)
- 
+
     def expl_RK3(self, Fforcing, u, v):
 
         v1 = self.v + self.dt * (-0.5*self.k1*fft(self.u**2) + self.nu*self.k2*self.v + Fforcing)
         u1 = np.real(ifft(v1))
-        
+
         v2 = 3./4.*self.v + 1./4.*v1 + 1./4. * self.dt * (-0.5*self.k1*fft(u1**2) + self.nu*self.k2*v1 + Fforcing)
         u2 = np.real(ifft(v2))
 
@@ -334,34 +334,35 @@ class Burger_jax:
 
     def grad(self, actions, u, v):
         return jexpl_RK3_grad(actions, u, v, self.dt, self.dx, self.nu, self.basis, self.k1, self.k2)[0]
- 
+
     def step( self, actions=None, nIntermed=1 ):
 
         Fforcing = np.zeros(self.N)
         self.gradient = np.zeros((self.N, self.M))
 
         if (actions is not None):
-        
+
             actions = np.array(actions)
             forcing = np.matmul(actions, self.basis)
             Fforcing = fft( forcing )
-            if self.dforce:
-                Fforcing = fft( forcing )
-            else:
-                up = np.roll(u,1)
-                um = np.roll(u,-1)
-                d2udx2 = (up - 2.*u + um)/self.dx**2
-                Fforcing = fft( forcing*d2udx2 )
-            
+            # if self.dforce:
+            #     Fforcing = fft( forcing )
+            # else:
+            #     up = np.roll(u,1)
+            #     um = np.roll(u,-1)
+            #     d2udx2 = (up - 2.*u + um)/self.dx**2
+            #     Fforcing = fft( forcing*d2udx2 )
+
         for _ in range(nIntermed):
 
-            u, v = self.expl_RK3( Fforcing, self.u, self.v) 
+            u, v = self.expl_RK3( Fforcing, self.u, self.v)
 
             self.stepnum += 1
             self.t       += self.dt
 
             if (actions is not None):
                 duda, dudu = self.grad(actions, self.u, self.v)
+                print(dudu)
                 self.gradient = np.matmul(dudu, self.gradient) + duda
                 self.actionHistory[self.ioutnum,:] = actions
 
@@ -499,11 +500,11 @@ class Burger_jax:
 
     def getState(self, nAgents = None):
         u = self.uu[self.ioutnum,:]
-             
+
         up = np.roll(u,1)
         um = np.roll(u,-1)
         d2udx2 = (up - 2.*u + um)/self.dx**2
-        
+
         state = d2udx2
-       
-        return state   
+
+        return state
