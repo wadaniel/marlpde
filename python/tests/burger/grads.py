@@ -24,13 +24,14 @@ dt   = 0.001
 tEnd = 5
 nu   = 0.02
 noise = 0.0
+dforce = True
 ic   = args.ic
 seed = args.seed
 gridSize = args.gridSize
 
 # action defaults
 basis = 'hat'
-numActions = 16
+numActions = 4
 
 episodeLength = args.episodelength
 
@@ -43,7 +44,7 @@ rewardFactor = 1 if spectralReward else 1.
 # DNS baseline
 
 print("Setting up DNS..")
-dns = Burger_jax(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case=ic)
+dns = Burger_jax(L=L, N=N, dt=dt, nu=nu, dforce=dforce, tend=tEnd, case=ic)
 dns.setup_basis(numActions, basis)
 dns.simulate()
 dns.compute_Ek()
@@ -94,6 +95,7 @@ while step < episodeLength and error == 0:
 
     #print(sgs.gradient)
     print("max grad")
+    print(sgs.gradient)
     print(np.max(sgs.gradient))
     print("min grad")
     print(np.min(sgs.gradient))

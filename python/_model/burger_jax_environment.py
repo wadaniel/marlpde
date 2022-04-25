@@ -36,8 +36,8 @@ def environment( s , N, gridSize, numActions, dt, nu, episodeLength, ic, spectra
     # Initialize LES
     sgs = Burger_jax(L=L, N=gridSize, dt=dt, nu=nu, tend=tEnd, noise=0.)
     if spectralReward:
-        v0 = np.concatenate((dns.v0[:((gridSize+1)//2)], dns.v0[-(gridSize-1)//2:]))
-        sgs.IC( v0 = v0 * gridSize / dns.N )
+        v0 = np.concatenate((dns.v0[:((gridSize+1)//2)], dns.v0[-(gridSize-1)//2:])) * gridSize / dns.N
+        sgs.IC( v0 = v0 )
     else:
         sgs.IC( u0 = f_restart(sgs.x) )
 
@@ -95,7 +95,7 @@ def environment( s , N, gridSize, numActions, dt, nu, episodeLength, ic, spectra
         
         # calculate reward
         if spectralReward:
-            kMseLogErr = np.mean((np.log(dns.Ek_ktt[sgs.ioutnum,:gridSize]) - np.log(sgs.Ek_ktt[sgs.ioutnum,:gridSize]))**2)
+            kMseLogErr = np.mean((np.abs(dns.Ek_ktt[sgs.ioutnum,1:gridSize//2] - sgs.Ek_ktt[sgs.ioutnum,1:gridSize//2])/dns.Ek_ktt[sgs.ioutnum,1:gridSize//2])**2)
             reward = rewardFactor*(prevkMseLogErr-kMseLogErr)
             prevkMseLogErr = kMseLogErr
 

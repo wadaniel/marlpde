@@ -98,8 +98,9 @@ e["Solver"]["Experience Replay"]["Off Policy"]["Annealing Rate"] = 5.0e-8
 e["Solver"]["Experience Replay"]["Off Policy"]["Cutoff Scale"] = 4.0
 e["Solver"]["Experience Replay"]["Off Policy"]["REFER Beta"] = 0.3
 e["Solver"]["Experience Replay"]["Off Policy"]["Target"] = 0.1
-e["Solver"]["Experience Replay"]["Start Size"] = 16384
-e["Solver"]["Experience Replay"]["Maximum Size"] = 524288
+e["Solver"]["Experience Replay"]["Start Size"] = 20000 * args.episodelength // 500
+e["Solver"]["Experience Replay"]["Maximum Size"] = 100000 * args.episodelength // 500
+
 
 e["Solver"]["Policy"]["Distribution"] = "Clipped Normal"
 e["Solver"]["State Rescaling"]["Enabled"] = True

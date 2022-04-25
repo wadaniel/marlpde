@@ -46,10 +46,9 @@ def jexpl_RK3( actions, u, v, dt, dx, nu, basis, k1, k2):
     """
     
     forcing = jnp.matmul(actions, basis)
-    up = jnp.roll(u,1)
-    um = jnp.roll(u,-1)
-    d2udx2 = (up - 2.*u + um)/dx**2
-    Fforcing = jnp.fft.fft( forcing*d2udx2 )
+
+    #forcing *= d2udx2
+    Fforcing = jnp.fft.fft( forcing )
 
     v1 = v + dt * (-0.5*k1*jnp.fft.fft(u**2) + nu*k2*v + Fforcing)
     u1 = jnp.real(jnp.fft.ifft(v1))
