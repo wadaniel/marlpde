@@ -27,7 +27,7 @@ episodeLength = 500
 #------------------------------------------------------------------------------
 # action defaults
 basis = 'hat'
-M = 16
+M = 4
 
 # Initialize LES
 # simulate transient period
@@ -60,7 +60,7 @@ sgs.IC( v0 = v0 )
 sgs.setup_basis(M, basis)
 ## run controlled simulation
 step = 0
-nIntermediate = int(tEnd / dt / episodeLength)
+nIntermediate = int(tSim / dt / episodeLength)
 #nIntermediate = 10
 error = 0
 while step < episodeLength and error == 0:
@@ -76,5 +76,6 @@ while step < episodeLength and error == 0:
         error = 1
         break
     #print(sgs.u)
+    print("grads")
     print(sgs.gradient)
     step += 1
