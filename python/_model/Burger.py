@@ -47,12 +47,13 @@ class Burger:
         self.x      = np.linspace(0, self.L, N, endpoint=False)
         self.nu     = nu
         if nunoise:
-            self.nu = 0.015+0.010*np.random.uniform()
+            self.nu = 0.01+0.02*np.random.uniform()
         self.nsteps = nsteps
         self.nout   = nsteps
  
         # random factors for forcing
-        self.randfac = np.random.normal(loc=0., scale=1., size=(32,nsteps))
+        self.randfac1 = np.random.normal(loc=0., scale=1., size=(32,nsteps)) # scale
+        self.randfac2 = np.random.normal(loc=0., scale=1., size=(32,nsteps)) # phase
         
         # Basis
         self.M = 0
@@ -195,7 +196,7 @@ class Burger:
                             phase = rng/m*2.*np.pi
 
                             Ek = A*5**(-5/3) if k <= 5 else A*k**(-5/3) 
-                            u0 += np.sqrt(2*Ek)*np.sin(k*2*np.pi*self.x/self.L+phase + offset)
+                            u0 += np.sqrt(2*Ek)*np.sin(k*2*np.pi*self.x/self.L + phase + offset)
                             
                         # rescale IC
                         idx = 0
@@ -213,6 +214,10 @@ class Burger:
                         assert( criterion < 0.8 )
                         assert( criterion > 0.6 )
 
+
+                    elif case == 'zero':
+                        u0 = np.zeros(self.N)
+             
                     else:
                         print("[Burger] Error: IC case unknown")
                         sys.exit()
@@ -353,9 +358,9 @@ class Burger:
             forcing = np.zeros(self.N)
             
             A = 1.
-            for k in range(0,32):
-                r = self.randfac[k, self.ioutnum]
-                forcing += r*A*np.sin(2.*np.pi*(k*self.x/self.L+np.cos(r*100)))
+            for k in range(1,32):
+                r = self.randfac1[k, self.ioutnum]
+                forcing += r*A*np.sin(2.*np.pi*(k*self.x/self.L+self.randfac2[k, self.ioutnum]))
             
             Fforcing += fft( forcing )
             

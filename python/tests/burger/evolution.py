@@ -26,7 +26,8 @@ from Burger import *
 L       = 2*np.pi
 dt      = 0.001
 tEnd    = 5
-nu      = 0.02
+nu      = 0.03
+#ic      = 'zero'
 ic      = 'turbulence'
 #ic      = 'sinus'
 noise   = 0.0
@@ -39,10 +40,12 @@ sgs = Burger(L=L, N=N2, dt=dt, nu=nu, tend=tEnd, case=ic, noise=noise, seed=seed
 
 v0 = np.concatenate((dns.v0[:((N2+1)//2)], dns.v0[-(N2-1)//2:]))
 sgs0.IC( v0 = v0 * N2 / N )
-sgs0.randfac = dns.randfac
+sgs0.randfac1 = dns.randfac1
+sgs0.randfac2 = dns.randfac2
 
 sgs.IC( v0 = v0 * N2 / N )
-sgs.randfac = dns.randfac
+sgs.randfac1 = dns.randfac1
+sgs.randfac2 = dns.randfac2
 
 
 #------------------------------------------------------------------------------

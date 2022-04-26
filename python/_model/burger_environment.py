@@ -44,7 +44,8 @@ def environment( s , N, gridSize, numActions, dt, nu, episodeLength, ic, spectra
     else:
         sgs.IC( u0 = f_restart(sgs.x) )
  
-    sgs.randfac = dns.randfac
+    sgs.randfac1 = dns.randfac1
+    sgs.randfac2 = dns.randfac2
     sgs.setup_basis(numActions, basis)
     sgs.setGroundTruth(dns.tt, dns.x, dns.uu)
 
@@ -147,7 +148,8 @@ def environment( s , N, gridSize, numActions, dt, nu, episodeLength, ic, spectra
             print("[burger_env] Init interpolation.")
             base.IC( u0 = f_restart(base.x) )
 
-        base.randfac = dns.randfac
+        base.randfac1 = dns.randfac1
+        base.randfac2 = dns.randfac2
         base.setup_basis(numActions, basis)
         base.setGroundTruth(dns.tt, dns.x, dns.uu)
 

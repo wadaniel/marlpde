@@ -135,7 +135,7 @@ e["Solver"]["Termination Criteria"]["Max Experiences"] = args.NE
 e["Solver"]["Experience Replay"]["Serialize"] = True
 e["Console Output"]["Verbosity"] = "Detailed"
 e["File Output"]["Enabled"] = True
-e["File Output"]["Frequency"] = 100
+e["File Output"]["Frequency"] = 10
 e["File Output"]["Path"] = resultFolder
 
 if args.test:
