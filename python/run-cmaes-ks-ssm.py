@@ -2,18 +2,20 @@ import argparse
 ### Parsing arguments
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--NDNS', help='Discretization / numker of grid points', required=False, type=int, default=512)
+parser.add_argument('--NDNS', help='Discretization / numker of grid points', required=False, type=int, default=2048)
 parser.add_argument('--gridSize', help='Discretization / number of grid points', required=False, type=int, default=32)
 parser.add_argument('--numgen', help='Number of generations', required=False, type=int, default=1000)
 parser.add_argument('--pop', help='Population size', required=False, type=int, default=8)
-parser.add_argument('--dt', help='Simulation timesteps', required=False, type=float, default=0.001)
-parser.add_argument('--nu', help='Viscosity', required=False, type=float, default=0.02)
+parser.add_argument('--dt', help='Simulation timesteps', required=False, type=float, default=0.1)
+parser.add_argument('--nu', help='Viscosity', required=False, type=float, default=1)
 parser.add_argument('--noise', help='IC noise', required=False, type=float, default=0.0)
 parser.add_argument('--specreward', help='Calculate spectral reward', required=False, action='store_true')
 parser.add_argument('--episodelength', help='Actual length of episode / number of actions', required=False, type=int, default=500)
 parser.add_argument('--ic', help='Initial condition', required=False, type=str, default='noise')
 parser.add_argument('--seed', help='Random seed', required=False, type=int, default=42)
 parser.add_argument('--run', help='Run tag', required=False, type=int, default=0)
+parser.add_argument('--ssm', help='Closure type', required=False, type=int, default=1)
+parser.add_argument('--dsm', help='Closure type', required=False, type=int, default=0)
 
 args = parser.parse_args()
 
@@ -24,7 +26,7 @@ sys.path.append('_model')
 import ks_cmaes_ssm as ke
 
 ### Import modules
-dns_default = ke.setup_dns_default(args.NDNS, args.dt, args.nu, args.ic, args.seed)
+dns_default = ke.setup_dns_default(N=args.NDNS, dt=args.dt, nu=args.nu, seed=args.seed)
 
 ### Defining Korali Problem
 
@@ -42,8 +44,19 @@ if found == True:
 # Configuring Problem
 e["Random Seed"] = 0xC0FEE
 e["Problem"]["Type"] = "Optimization"
-e["Problem"]["Objective Function"] = lambda s : ke.fKS( s , args.NDNS, args.gridSize, args.dt, args.nu, args.episodelength, args.ic, args.specreward, args.noise, args.seed, dns_default)
-
+e["Problem"]["Objective Function"] = lambda s : ke.fKS(
+        s,
+        N = args.NDNS,
+        gridSize = args.gridSize,
+        dt = args.dt,
+        nu = args.nu,
+        episodeLength = args.episodelength,
+		spectralReward = args.specreward,
+		noise = args.noise,
+        seed = args.seed,
+		ssm = args.ssm,
+		dsm = args.dsm,
+        dns_default = dns_default )
 e["Variables"][0]["Name"] = "CS"
 e["Variables"][0]["Lower Bound"] = 0.0
 e["Variables"][0]["Upper Bound"] = 1.0

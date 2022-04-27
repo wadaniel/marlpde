@@ -1,44 +1,53 @@
 from KS import *
+from KS_clos import *
 import matplotlib.pyplot as plt
 
 # dns defaults
-L    = 2*np.pi
-tEnd = 5
+N    = 1024
+L    = 22
+nu   = 1.0
+dt   = 0.25
+tTransient = 50
+tEnd = 550
+tSim = tEnd - tTransient
+nSimSteps = int(tSim/dt)
 basis = 'hat'
 
-def setup_dns_default(N, dt, nu , ic, seed):
-    print("Setting up default dns with args ({}, {}, {}, {}, {})".format(N, dt, nu, ic, seed))
-    dns = KS(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case=ic)
+def setup_dns_default(N, dt, nu , seed):
+    print("Setting up default dns with args ({}, {}, {}, {})".format(N, dt, nu, seed))
+        # simulate transient period
+    dns = KS(L=L, N=N, dt=dt, nu=nu, tend=tTransient, seed=seed)
     dns.simulate()
     dns.fou2real()
+    u_restart = dns.uu[-1,:].copy()
+    v_restart = dns.vv[-1,:].copy()
+
+    # simulate rest
+    dns.IC( u0 = u_restart)
+    dns.simulate( nsteps=int(tSim/dt), restart=True )
+    dns.fou2real()
     dns.compute_Ek()
+
     return dns
 
-def fKS( s , N, gridSize, dt, nu, episodeLength, ic, spectralReward, noise, seed, dns_default = None ):
+def fKS( s , N, gridSize, dt, nu, episodeLength, spectralReward, noise, seed, ssm, dsm, dns_default = None ):
 
-    dns = KS(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case=ic)
-    dns.simulate()
-    dns.fou2real()
-    dns.compute_Ek()
+    dns = dns_default
+
+    u_restart = dns.uu[0,:].copy()
+    v_restart = dns.vv[0,:].copy()
 
     # reward defaults
-    rewardFactor = 1. if spectralReward else 1.
-
-    ## create interpolated IC
-    f_restart = interpolate.interp1d(dns.x, dns.u0, kind='cubic')
+    rewardFactor = 1.
 
     ## create interpolated IC
     f_restart = interpolate.interp1d(dns.x, dns.u0, kind='cubic')
 
     # Initialize LES
-    les = KS(L=L, N=gridSize, dt=dt, nu=nu, tend=tEnd)
-    if spectralReward:
-        v0 = np.concatenate((dns.v0[:((gridSize+1)//2)], dns.v0[-(gridSize-1)//2:]))
-        les.IC( v0 = v0 * gridSize / N )
-    else:
-        les.IC( u0 = f_restart(les.x) )
+    les = KS_clos(L=L, N = gridSize, dt=dt, nu=nu, tend=tSim, ssm=ssm, dsm=dsm, noise=0.)
+    v0 = np.concatenate((v_restart[:((gridSize+1)//2)], v_restart[-(gridSize-1)//2:])) * gridSize / dns.N
 
-    les.setup_basis(gridSize, basis)
+    les.IC( v0 = v0 )
     les.setGroundTruth(dns.tt, dns.x, dns.uu)
 
     ## get initial state
@@ -48,7 +57,7 @@ def fKS( s , N, gridSize, dt, nu, episodeLength, ic, spectralReward, noise, seed
     ## run controlled simulation
     error = 0
     step = 0
-    nIntermediate = int(tEnd / dt / episodeLength)
+    nIntermediate = int(tSim / dt / episodeLength)
     cumreward = 0.
 
     while step < episodeLength and error == 0:
@@ -56,27 +65,7 @@ def fKS( s , N, gridSize, dt, nu, episodeLength, ic, spectralReward, noise, seed
         try:
             for _ in range(nIntermediate):
 
-                dx = les.dx
-                dx2 = dx*dx
-                dx3 = dx2*dx
-                dx4 = dx3*dx
-
-                idx = les.ioutnum
-                u = les.uu[les.ioutnum,:]
-                um = np.roll(u, 1)
-                umm = np.roll(u, 2)
-                up = np.roll(u, -1)
-                upp = np.roll(u, -2)
-
-                dudx = (u - um)/dx
-                d2udx2 = (up - 2*u + um)/dx
-                d3udx3 = (upp - 2*up + 2*um - umm)/(2*dx3)
-                d4udx4 = (upp - 4*up + 6*u - 4*um + umm)/dx4
-
-                #sgs = 2*cs*cs*dx2*(d2udx2)*(dudx**2)/(np.absolute(dudx))
-                #sgs = 2*cs*cs*dx2*(d4udx4*np.absolute(dudx) + d4udx4*dudx*d2udx2/(np.absolute(dudx)))
-                sgs = 2*cs*cs*dx2*np.absolute(dudx)*d4udx4
-                les.step(sgs)
+                les.step(cs)
 
             les.compute_Ek()
 
@@ -105,7 +94,6 @@ def fKS( s , N, gridSize, dt, nu, episodeLength, ic, spectralReward, noise, seed
             uTruthToCoarse = les.mapGroundTruth()
             uDiffMse = ((uTruthToCoarse[les.ioutnum-nIntermediate:les.ioutnum,:] - les.uu[les.ioutnum-nIntermediate:les.ioutnum,:])**2).mean()
             reward = -rewardFactor*uDiffMse
-
 
         cumreward += reward
 
