@@ -21,7 +21,7 @@ class Burger:
     # u_t + u*u_x = nu*u_xx0
     # with periodic BCs on x \in [0, L]: u(0,t) = u(L,t).
 
-    def __init__(self, L=2.*np.pi, N=512, dt=0.001, nu=0.0, dforce=True, nsteps=None, tend=5., u0=None, v0=None, case=None, forcing=False, ssm=False, dsm=False, noise=0., seed=42, nunoise=False):
+    def __init__(self, L=2.*np.pi, N=512, dt=0.001, nu=0.0, dforce=True, nsteps=None, tend=5., u0=None, v0=None, case=None, forcing=False, ssm=False, dsm=False, noise=0., seed=42, version=0, nunoise=False):
         
         # Randomness
         np.random.seed(None)
@@ -59,6 +59,7 @@ class Burger:
         self.M = 0
         self.basis = None
         self.actions = None
+        self.version = version
 
         # Static Smagorinsky Constant
         self.cs = 0.1
@@ -435,7 +436,7 @@ class Burger:
                     self.v += correction
                 
         except FloatingPointError:
-            print("[Burger] Floating point exception occured", flush=True)
+            print("[Burger] Floating point exception occured in simulate", flush=True)
             # something exploded
             # cut time series to last saved solution and return
             self.nout = self.ioutnum
@@ -529,16 +530,37 @@ class Burger:
      
     def getState(self, nAgents = None):
         # Convert from spectral to physical space
-        #self.iou2real()
+        self.fou2real()
+        try:
+            # Extract state
+            u = self.uu[self.ioutnum,:]
+            umt = self.uu[self.ioutnum-1,:] if self.ioutnum > 0 else self.uu[self.ioutnum, :]
 
-        # Extract state
-        u = self.uu[self.ioutnum,:]
-             
-        up = np.roll(u,1)
-        um = np.roll(u,-1)
-        d2udx2 = (up - 2.*u + um)/self.dx**2
-        
-        state = d2udx2
+            dudt = (u - umt)/self.dt
+                 
+            up = np.roll(u,1)
+            um = np.roll(u,-1)
+            d2udx2 = (up - 2.*u + um)/self.dx**2
+         
+            if self.version == 0:
+                state = d2udx2
+            elif self.version == 1:
+                state = np.concatenate((dudt,d2udx2))
+            else:
+                print("[Burger] Version not recognized", flush=True)
+                sys.exit()
+
+
+        except FloatingPointError:
+
+            print("[Burger] Floating point exception occured in getState", flush=True)
+            if self.version == 0:
+                return np.inf*np.ones(self.N)
+            elif self.version == 1:
+                return np.inf*np.ones(2*self.N)
+            else:
+                print("[Burger] Version not recognized", flush=True)
+                sys.exit()
        
         return state
 

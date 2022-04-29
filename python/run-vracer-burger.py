@@ -22,6 +22,7 @@ parser.add_argument('--tend', help='Simulation length', required=False, type=int
 parser.add_argument('--nt', help='Number of testing runs', required=False, type=int, default=1)
 parser.add_argument('--tf', help='Testing frequenct in episodes', required=False, type=int, default=100)
 parser.add_argument('--run', help='Run tag', required=False, type=int, default=0)
+parser.add_argument('--version', help='Version tag', required=False, type=int, default=0)
 parser.add_argument('--test', action='store_true', help='Run tag', required=False)
 
 args = parser.parse_args()
@@ -67,6 +68,7 @@ e["Problem"]["Environment Function"] = lambda s : be.environment(
         noise = args.noise, 
         seed = args.seed, 
         nunoise = args.nunoise,
+        version = args.version,
         dns_default = dns_default )
 e["Problem"]["Testing Frequency"] = args.tf
 e["Problem"]["Policy Testing Episodes"] = args.nt
@@ -83,7 +85,14 @@ e["Solver"]["Mini Batch"]["Size"] = 256
 
 ### Defining Variables
 
-nState  = args.N
+if args.verson == 0:
+    nState  = args.N
+elif args.version == 1:
+    nState  = 2*args.N
+else:
+    print("[run-vracer-burger] version not recognized")
+    sys.exit()
+
 # States (flow at sensor locations)
 for i in range(nState):
 	e["Variables"][i]["Name"] = "Field Information " + str(i)
@@ -137,6 +146,7 @@ e["Console Output"]["Verbosity"] = "Detailed"
 e["File Output"]["Enabled"] = True
 e["File Output"]["Frequency"] = 10
 e["File Output"]["Path"] = resultFolder
+e["File Output"]["Use Multiple Files"] = False
 
 if args.test:
     fileName = 'test_burger_{}_{}'.format(args.ic, args.run)

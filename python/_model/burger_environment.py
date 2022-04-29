@@ -76,7 +76,7 @@ def environment( s , N, gridSize, numActions, dt, nu, episodeLength, ic, spectra
             sgs.compute_Ek()
             sgs.fou2real()
         except Exception as e:
-            print("[burger_environment] Exception occured:")
+            print("[burger_environment] Exception occured during stepping:")
             print(str(e))
             error = 1
             break
@@ -174,7 +174,7 @@ def environment( s , N, gridSize, numActions, dt, nu, episodeLength, ic, spectra
                 base.compute_Ek()
                 base.fou2real()
             except Exception as e:
-                print("[burger_environment] Exception occured:")
+                print("[burger_environment] Exception occured during stepping:")
                 print(str(e))
                 error = 1
                 break
