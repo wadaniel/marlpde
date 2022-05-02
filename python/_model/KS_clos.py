@@ -236,6 +236,25 @@ class KS_clos:
         t = np.arange(0, self.uu.shape[0])*self.dt
         return self.f_truth(self.x,t)
 
+    def etdrk(self, Fforcing, u, v):
+
+        # Computation is based on v = fft(u), so linear term is diagonal.
+        # The time-discretization is done via ETDRK4
+        # (exponential time differencing - 4th order Runge Kutta)
+
+        v_ = v
+        Nv = self.g*fft(u**2)
+        a = self.E2*v_ + self.Q*Nv;
+        Na = self.g*fft(np.real(ifft(a))**2)
+        b = self.E2*v_ + self.Q*Na;
+        Nb = self.g*fft(np.real(ifft(b))**2)
+        c = self.E2*a + self.Q*(2.*Nb - Nv);
+        Nc = self.g*fft(np.real(ifft(c))**2)
+
+        v = self.E*v_ + (Nv + Fforcing)*self.f1 + 2.*(Na + Nb + 2*Fforcing)*self.f2 + (Nc + Fforcing)*self.f3
+        u = np.real(ifft(v))
+
+        return (u, v)
 
     def step( self, C=None ):
 
@@ -247,7 +266,7 @@ class KS_clos:
         dx3 = dx2*dx
         dx4 = dx3*dx
 
-        u = self.uu[self.ioutnum-1,:]
+        u = self.uu[self.ioutnum,:]
         um = np.roll(u, 1)
         umm = np.roll(u, 2)
         up = np.roll(u, -1)
@@ -270,10 +289,10 @@ class KS_clos:
 
         if self.dsm == True:
 
-
             u_ = np.convolve(u, self.Gker)
             u2_ = np.convolve(u*u, self.Gker)
             L_ = u2_ - u_
+
 
             dudx_ = np.convolve(dudx, self.Gker)
             d3udx3_ = np.convolve(d3udx3, self.Gker)
@@ -282,10 +301,10 @@ class KS_clos:
             M = dx*dx*np.convolve(np.absolute(dudx)*dudx, self.Gker) - dx_*dx_*dudx_abs*dudx_
             #M = dx*dx*np.convolve(np.absolute(dudx)*d3udx3, self.Gker) - dx_*dx_*dudx_abs*d3udx3_
 
-            C = np.mean(L_*M)/(2*np.mean(M*M)+eps)
+            C = np.mean(L_*M)/(2*np.mean(M*M))
             print(C)
-            #sgs = 2*C*C*dx2*(d2udx2)*(dudx**2)/(np.absolute(dudx)+eps)
-            sgs = 2*C*C*dx2*(d4udx4*np.absolute(dudx) + d4udx4*dudx*d2udx2/(np.absolute(dudx)+eps))
+            sgs = 2*C*C*dx2*(d2udx2)*(dudx**2)/(np.absolute(dudx))
+            #sgs = 2*C*C*dx2*(d4udx4*np.absolute(dudx) + d4udx4*dudx*d2udx2/(np.absolute(dudx)+eps))
             Fforcing += fft( sgs )
 
             self.sgsHistory[self.ioutnum,:] = sgs
@@ -294,23 +313,17 @@ class KS_clos:
         # The time-discretization is done via ETDRK4
         # (exponential time differencing - 4th order Runge Kutta)
         #
-        v = self.v;
-        Nv = self.g*fft(u**2)
-        a = self.E2*v + self.Q*Nv;
-        Na = self.g*fft(np.real(ifft(a))**2)
-        b = self.E2*v + self.Q*Na;
-        Nb = self.g*fft(np.real(ifft(b))**2)
-        c = self.E2*a + self.Q*(2.*Nb - Nv);
-        Nc = self.g*fft(np.real(ifft(c))**2)
-
-
-        self.v = self.E*v + (Nv + Fforcing)*self.f1 + 2.*(Na + Nb + 2*Fforcing)*self.f2 + (Nc + Fforcing)*self.f3
+        u, v = self.etdrk(Fforcing, self.u, self.v)
 
         self.stepnum += 1
         self.t       += self.dt
 
+        self.u = u
+        self.v = v
+
         self.ioutnum += 1
-        self.vv[self.ioutnum,:] = self.v
+        self.uu[self.ioutnum,:] = u
+        self.vv[self.ioutnum,:] = v
         self.tt[self.ioutnum]   = self.t
 
     def simulate(self, nsteps=None, restart=False, correction=[], C=None):

@@ -22,7 +22,7 @@ class KS:
     # with periodic BCs on x \in [0, 2*pi*L]: u(x+2*pi*L,t) = u(x,t).
     #
     # The nature of the solution depends on the system size L and on the initial
-    # condition u(x,0). 
+    # condition u(x,0).
     #
     # see P Cvitanović, RL Davidchack, and E Siminos, SIAM Journal on Applied Dynamical Systems 2010
     #
@@ -31,23 +31,23 @@ class KS:
     # see AK Kassam and LN Trefethen, SISC 2005
 
     def __init__(self, L=2.*np.pi, N=512, dt=0.001, nu=1.0, dforce=True, nsteps=None, tend=5., u0=None, v0=None, case=None, noise=0., seed=42):
-        
+
         # Initialize
         np.random.seed(None)
         self.noise = noise
         self.seed = seed
-        
-        self.L  = float(L); 
-        self.dt = float(dt); 
+
+        self.L  = float(L);
+        self.dt = float(dt);
         self.tend = float(tend)
-        
+
         if (nsteps is None):
             nsteps = int(tend/dt)
         else:
             nsteps = int(nsteps)
             # override tend
             tend = dt*nsteps
-        
+
         # save to self
         self.N      = N
         self.dx     = L/N
@@ -57,14 +57,14 @@ class KS:
         self.nsteps = nsteps
         self.nout   = nsteps
         self.sigma  = L/(2*N)
-  
+
         # Basis
         self.M = 0
         self.basis = None
         self.actions = None
 
         self.dforce = dforce
-       
+
         # time when field space transformed
         self.uut = -1
         # field in real space
@@ -76,7 +76,7 @@ class KS:
 
         # initialize simulation arrays
         self.__setup_timeseries()
- 
+
         # set initial condition
         if (case is not None):
             self.IC(case=case)
@@ -89,24 +89,24 @@ class KS:
         else:
             print("[KS] IC ambigous")
             sys.exit()
- 
+
         # precompute Fourier-related quantities
         self.__setup_fourier()
-        
+
         # precompute ETDRK4 scalar quantities:
         self.__setup_etdrk4()
 
     def __setup_timeseries(self, nout=None):
         if (nout != None):
             self.nout = int(nout)
-        
+
         # nout+1 because we store the IC as well
         self.uu = np.zeros([self.nout+1, self.N], dtype=np.complex64)
         self.vv = np.zeros([self.nout+1, self.N], dtype=np.complex64)
         self.tt = np.zeros(self.nout+1)
         self.sgsHistory = np.zeros([self.nout+1, self.N])
         self.actionHistory = np.zeros([self.nout+1, self.N])
-        
+
         self.tt[0]   = 0.
 
     def __setup_fourier(self, coeffs=None):
@@ -116,7 +116,7 @@ class KS:
             # normal-form equation
             self.l = self.k**2 - self.k**4 #(KS)
         else:
-            # altered-coefficients 
+            # altered-coefficients
             self.l = -      coeffs[0]*np.ones(self.k.shape) \
                      -      coeffs[1]*1j*self.k             \
                      + (1 + coeffs[2])  *self.k**2          \
@@ -135,7 +135,7 @@ class KS:
         self.f2 = self.dt*np.real( np.mean( ( 2. +    self.LR              + np.exp(self.LR)*(-2. +    self.LR             ) )/(self.LR**3) , 1) )
         self.f3 = self.dt*np.real( np.mean( (-4. - 3.*self.LR - self.LR**2 + np.exp(self.LR)*( 4. -    self.LR             ) )/(self.LR**3) , 1) )
         self.g  = -0.5j*self.k
- 
+
     def setup_basis(self, M, kind = 'uniform'):
         self.M = M
         if M > 1:
@@ -160,20 +160,20 @@ class KS:
                 sys.exit()
         else:
             self.basis = np.ones((self.M, self.N))
-        
+
         np.testing.assert_allclose(np.sum(self.basis, axis=0), 1)
 
     def IC(self, u0=None, v0=None, case='noise', seed=42):
-        
+
         # Set initial condition
         if (v0 is None):
             if (u0 is None):
-                    
+
                     # Gaussian noise (according to https://arxiv.org/pdf/1906.07672.pdf)
                     if case == 'noise':
                         #print("[KS] Noisy IC")
                         u0 = np.random.normal(0., 1e-3, self.N)
-                    
+
                     else:
                         print("[KS] Error: IC case unknown")
                         return -1
@@ -203,7 +203,7 @@ class KS:
                 v0 = np.array(v0)
                 # and transform to physical space
                 u0 = np.real(ifft(v0))
-        
+
         # and save to self
         self.u0  = u0
         self.u   = u0
@@ -212,65 +212,73 @@ class KS:
         self.t   = 0.
         self.stepnum = 0
         self.ioutnum = 0 # [0] is the initial condition
-                
+
         # store the IC in [0]
         self.uu[0,:] = u0
         self.vv[0,:] = v0
         self.tt[0]   = 0.
- 
+
     def setGroundTruth(self, t, x, uu):
         self.uu_truth = uu
         self.f_truth = interpolate.interp2d(x, t, self.uu_truth, kind='cubic')
- 
+
     def mapGroundTruth(self):
         t = np.arange(0, self.uu.shape[0])*self.dt
         return self.f_truth(self.x,t)
 
+    def etdrk(self, Fforcing, u, v):
+
+        # Computation is based on v = fft(u), so linear term is diagonal.
+        # The time-discretization is done via ETDRK4
+        # (exponential time differencing - 4th order Runge Kutta)
+
+        v_ = v
+        Nv = self.g*fft(u**2)
+        a = self.E2*v_ + self.Q*Nv;
+        Na = self.g*fft(np.real(ifft(a))**2)
+        b = self.E2*v_ + self.Q*Na;
+        Nb = self.g*fft(np.real(ifft(b))**2)
+        c = self.E2*a + self.Q*(2.*Nb - Nv);
+        Nc = self.g*fft(np.real(ifft(c))**2)
+
+        v = self.E*v_ + (Nv + Fforcing)*self.f1 + 2.*(Na + Nb + 2*Fforcing)*self.f2 + (Nc + Fforcing)*self.f3
+        u = np.real(ifft(v))
+
+        return (u, v)
 
     def step( self, actions=None ):
- 
+
         Fforcing = np.zeros(self.N)
+
         if (actions is not None):
             assert self.basis is not None, print("[KS] Basis not set up (is None).")
             assert len(actions) == self.M, print("[KS] Wrong number of actions (provided {}/ expected {})".format(len(actions), self.M))
 
             forcing = np.matmul(actions, self.basis)
             self.actionHistory[self.ioutnum,:] = forcing
-            
+
             if self.dforce == False:
                 u = self.uu[self.ioutnum,:]
                 up = np.roll(u,1)
                 um = np.roll(u,-1)
                 d2udx2 = (up - 2.*u + um)/self.dx**2
                 forcing *= d2udx2
-                
+
             self.sgsHistory[self.ioutnum,:] = forcing
-            
+
             Fforcing = fft( forcing )
 
-        # Computation is based on v = fft(u), so linear term is diagonal.
-        # The time-discretization is done via ETDRK4
-        # (exponential time differencing - 4th order Runge Kutta)
-        #
-        v = self.v;                           
-        Nv = self.g*fft(np.real(ifft(v))**2)
-        a = self.E2*v + self.Q*Nv;            
-        Na = self.g*fft(np.real(ifft(a))**2)
-        b = self.E2*v + self.Q*Na;            
-        Nb = self.g*fft(np.real(ifft(b))**2)
-        c = self.E2*a + self.Q*(2.*Nb - Nv);  
-        Nc = self.g*fft(np.real(ifft(c))**2)
-        
-        if (actions is not None):
-            self.v = self.E*v + (Nv + Fforcing)*self.f1 + 2.*(Na + Nb + 2*Fforcing)*self.f2 + (Nc + Fforcing)*self.f3
-        else:
-            self.v = self.E*v + Nv*self.f1 + 2.*(Na + Nb)*self.f2 + Nc*self.f3
+        u, v = self.etdrk(Fforcing, self.u, self.v)
 
         self.stepnum += 1
         self.t       += self.dt
- 
+
+        self.u = u
+        self.v = v
+
         self.ioutnum += 1
-        self.vv[self.ioutnum,:] = self.v
+        self.uu[self.ioutnum,:] = u
+        self.vv[self.ioutnum,:] = v
         self.tt[self.ioutnum]   = self.t
 
     def simulate(self, nsteps=None, restart=False, correction=[]):
@@ -281,7 +289,7 @@ class KS:
         else:
             nsteps = int(nsteps)
             self.nsteps = nsteps
-        
+
         if restart:
             # update nout in case nsteps or iout were changed
             nout      = nsteps
@@ -293,7 +301,7 @@ class KS:
             self.__setup_timeseries(nout=self.nout)
             self.vv[0,:] = self.v0
             self.uu[0,:] = self.v0
-        
+
         # advance in time for nsteps steps
         try:
             if (correction==[]):
@@ -303,7 +311,7 @@ class KS:
                 for n in range(1,self.nsteps+1):
                     self.step()
                     self.v += correction
-                
+
         except FloatingPointError:
             print("[KS] Floating point exception occured", flush=True)
             # something exploded
@@ -325,16 +333,16 @@ class KS:
         #
         # Kinetic energy as a function of wavenumber and time
         self.__compute_Ek_kt()
-        
+
         # Time-averaged energy spectrum as a function of wavenumber
         self.Ek_k = np.sum(self.Ek_kt, 0)/(self.ioutnum+1) # not self.nout because we might not be at the end; ioutnum+1 because the IC is in [0]
-        
+
         # Total kinetic energy as a function of time
         self.Ek_t = np.sum(self.Ek_kt, 1)
-		
+
         # Time-cumulative average as a function of wavenumber and time
         self.Ek_ktt = np.cumsum(self.Ek_kt, 0)[:self.ioutnum+1,:] / np.arange(1,self.ioutnum+2)[:,None] # not self.nout because we might not be at the end; ioutnum+1 because the IC is in [0] +1 more because we divide starting from 1, not zero
-		
+
         # Time-cumulative average as a function of time
         self.Ek_tt = np.cumsum(self.Ek_t, 0)[:self.ioutnum+1] / np.arange(1,self.ioutnum+2) # not self.nout because we might not be at the end; ioutnum+1 because the IC is in [0] +1 more because we divide starting from 1, not zero
 
@@ -360,26 +368,26 @@ class KS:
     def getReward(self):
         # Convert from spectral to physical space
         self.fou2real()
-        
+
         u = self.uu[self.ioutnum,:]
         t = [self.t]
         uMap = self.f_truth(self.x, t)
         return -np.abs(u-uMap)
- 
+
     def getState(self):
         # Convert from spectral to physical space
         self.fou2real()
 
         # Extract state
         u = self.uu[self.ioutnum,:]
-             
+
         up = np.roll(u,-1)
         um = np.roll(u,+1)
         dudx = (up - um)/(2.*self.dx)
         d2udx2 = (up - 2.*u + um)/self.dx**2
-        
+
         state = np.concatenate((dudx, d2udx2))
-       
+
         return state
 
     def compute_Sgs(self, nURG):

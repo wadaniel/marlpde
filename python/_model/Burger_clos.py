@@ -61,7 +61,6 @@ class Burger_clos:
         self.actions = None
 
         # Static Smagorinsky Constant
-        self.cs = 0.1
         self.ssm = ssm
         self.dsm = dsm
 
@@ -279,13 +278,12 @@ class Burger_clos:
         print("[Burger] TODO.. exit")
         sys.exit()
 
-    def step( self, actions=None ):
+    def step( self, actions=None, cs=None ):
 
         Fforcing = np.zeros(self.N, dtype=np.complex64)
 
         dx = self.dx
         dx2 = dx*dx
-        cs = self.cs
 
         idx = self.ioutnum
         u = self.uu[self.ioutnum,:]
@@ -299,6 +297,7 @@ class Burger_clos:
         if self.ssm == True:
 
             sgs = 2*cs*cs*dx2*(d2udx2)*(dudx**2)/(np.absolute(dudx)+eps)
+            print(cs)
             Fforcing += fft( sgs )
 
         if self.dsm == True:
@@ -374,7 +373,7 @@ class Burger_clos:
         self.vv[self.ioutnum,:] = self.v
         self.tt[self.ioutnum]   = self.t
 
-    def simulate(self, nsteps=None, restart=False, correction=[]):
+    def simulate(self, nsteps=None, restart=False, correction=[], cs=None):
         #
         # If not provided explicitly, get internal values
         if (nsteps is None):
@@ -394,10 +393,10 @@ class Burger_clos:
         try:
             if (correction==[]):
                 for n in range(1,self.nsteps+1):
-                    self.step()
+                    self.step(cs=cs)
             else:
                 for n in range(1,self.nsteps+1):
-                    self.step()
+                    self.step(cs=cs)
                     self.v += correction
 
         except FloatingPointError:

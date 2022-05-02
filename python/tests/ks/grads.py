@@ -76,6 +76,8 @@ while step < episodeLength and error == 0:
         error = 1
         break
     #print(sgs.u)
-    print("grads")
-    print(sgs.gradient)
+    #print("field")
+    #print(sgs.u)
+    #print("grads")
+    #print(sgs.gradient)
     step += 1

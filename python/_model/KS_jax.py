@@ -365,6 +365,7 @@ class KS_jax:
         for _ in range(nIntermed):
 
             u, v = self.etdrk( Fforcing, self.u, self.v)
+            print(u)
 
             self.stepnum += 1
             self.t       += self.dt
