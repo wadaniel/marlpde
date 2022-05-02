@@ -242,6 +242,7 @@ class KS_clos:
         Fforcing = np.zeros(self.N, dtype=np.complex64)
 
         dx = self.dx
+        dx_ = 2*dx
         dx2 = dx*dx
         dx3 = dx2*dx
         dx4 = dx3*dx
@@ -257,6 +258,8 @@ class KS_clos:
         d3udx3 = (upp - 2*up + 2*um - umm)/(2*dx3)
         d4udx4 = (upp - 4*up + 6*u - 4*um + umm)/dx4
 
+        eps = np.finfo(float).eps
+
         if self.ssm == True:
 
             #sgs = 2*C*C*dx2*(d2udx2)*(dudx**2)/(np.absolute(dudx)+eps)
@@ -267,22 +270,25 @@ class KS_clos:
 
         if self.dsm == True:
 
+
             u_ = np.convolve(u, self.Gker)
             u2_ = np.convolve(u*u, self.Gker)
             L_ = u2_ - u_
 
             dudx_ = np.convolve(dudx, self.Gker)
+            d3udx3_ = np.convolve(d3udx3, self.Gker)
             dudx_abs = np.absolute(dudx_)
-            M = dx*dx*np.convolve(np.absolute(dudx)*dudx, self.Gker) - self.dx_*self.dx_*dudx_abs*dudx_
+            d3udx3_abs = np.absolute(d3udx3_)
+            M = dx*dx*np.convolve(np.absolute(dudx)*dudx, self.Gker) - dx_*dx_*dudx_abs*dudx_
+            #M = dx*dx*np.convolve(np.absolute(dudx)*d3udx3, self.Gker) - dx_*dx_*dudx_abs*d3udx3_
 
-            C = np.mean(L_*M)/(2*np.mean(M*M))
-
-            sgs = 2*C*C*dx2*(d2udx2)*(dudx**2)/(np.absolute(dudx)+eps)
+            C = np.mean(L_*M)/(2*np.mean(M*M)+eps)
+            print(C)
+            #sgs = 2*C*C*dx2*(d2udx2)*(dudx**2)/(np.absolute(dudx)+eps)
+            sgs = 2*C*C*dx2*(d4udx4*np.absolute(dudx) + d4udx4*dudx*d2udx2/(np.absolute(dudx)+eps))
             Fforcing += fft( sgs )
 
-            self.sgsHistory[self.ioutnum,:] = forcing
-
-            Fforcing = fft( forcing )
+            self.sgsHistory[self.ioutnum,:] = sgs
 
         # Computation is based on v = fft(u), so linear term is diagonal.
         # The time-discretization is done via ETDRK4
@@ -307,7 +313,7 @@ class KS_clos:
         self.vv[self.ioutnum,:] = self.v
         self.tt[self.ioutnum]   = self.t
 
-    def simulate(self, nsteps=None, restart=False, correction=[]):
+    def simulate(self, nsteps=None, restart=False, correction=[], C=None):
         #
         # If not provided explicitly, get internal values
         if (nsteps is None):
@@ -332,10 +338,10 @@ class KS_clos:
         try:
             if (correction==[]):
                 for n in range(1,self.nsteps+1):
-                    self.step()
+                    self.step(C=C)
             else:
                 for n in range(1,self.nsteps+1):
-                    self.step()
+                    self.step(C)
                     self.v += correction
 
         except FloatingPointError:
