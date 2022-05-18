@@ -24,11 +24,10 @@ import numpy as np
 from scipy import interpolate
 from scipy.fft import fftfreq
 
-from KS import *
-from KS_clos import *
+from Kuramoto import *
 #------------------------------------------------------------------------------
 ## set parameters and initialize simulation
-L    = 22
+L    = 2*pi
 nu   = 1.0
 dt   = 0.25
 tTransient = 50
@@ -40,7 +39,7 @@ seed = 42
 C = 0.1
 
 
-dns = KS(L=L, N=N, dt=dt, nu=nu, tend=tTransient, seed=seed)
+dns = Kuramoto(L=L, N=N, dt=dt, nu=nu, tend=tTransient, seed=seed)
 
 print("Simulate DNS")
 
