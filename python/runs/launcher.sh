@@ -1,7 +1,7 @@
 #!/bin/bash
 
-IC='turbulence'
-run=103
+IC='forced'
+run=203
 NEX=1000000
 N=32
 NA=32

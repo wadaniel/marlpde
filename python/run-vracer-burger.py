@@ -44,7 +44,7 @@ e = korali.Experiment()
 
 ### Defining results folder and loading previous results, if any
 
-resultFolder = '_result_{}_{}/'.format(args.ic, args.run)
+resultFolder = '_result_{}_{}_{}/'.format(args.ic, args.dt, args.run)
 
 found = e.loadState(resultFolder + '/latest')
 if found == True:
@@ -85,7 +85,7 @@ e["Solver"]["Mini Batch"]["Size"] = 256
 
 ### Defining Variables
 
-if args.verson == 0:
+if args.version == 0:
     nState  = args.N
 elif args.version == 1:
     nState  = 2*args.N

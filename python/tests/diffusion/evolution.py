@@ -6,7 +6,7 @@ initial condition is set to be approx k^-5/3.
 """
 
 # Discretization grid
-N = 1024
+N = 256
 
 import matplotlib
 matplotlib.use('Agg')
@@ -22,18 +22,15 @@ from Diffusion import *
 #------------------------------------------------------------------------------
 ## set parameters and initialize simulation
 L    = 2*np.pi
-dt   = 0.0005
-tEnd = 10
-nu   = 0.01
-dns = Diffusion(L=L, N=N, dt=dt, nu=nu, tend=tEnd)
-dns.IC(case='box')
+dt   = 2*0.001
+tEnd = 5
+nu   = 0.1
+dns = Diffusion(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case='box')
 
 #------------------------------------------------------------------------------
 print("Simulate..")
 ## simulate
 dns.simulate()
-# convert to physical space
-dns.fou2real()
 
 #------------------------------------------------------------------------------
 ## plot
@@ -45,7 +42,6 @@ cs0 = axs.contourf(dns.tt, dns.x, dns.uu.T, 50, cmap=plt.get_cmap("seismic"))
 
 plt.colorbar(cs0, ax=axs)
 
-# for c in cs.collections: c.set_rasterized(True)
 fig.savefig('evolution.png')
 plt.close()
 

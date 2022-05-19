@@ -4,6 +4,11 @@ from plotting import *
 # dns defaults
 L    = 2*np.pi
 tEnd = 5
+
+# reward defaults
+rewardFactor = 1.
+
+# basis defaults
 basis = 'hat'
 
 
@@ -15,13 +20,13 @@ def setup_dns_default(N, dt, nu , ic, forcing, seed):
     dns.compute_Ek()
     return dns
 
-def environment( s , N, gridSize, numActions, dt, nu, episodeLength, ic, spectralReward, forcing, dforce, noise, seed, nunoise=False, dns_default = None):
+def environment( s , N, gridSize, numActions, dt, nu, episodeLength, ic, spectralReward, forcing, dforce, noise, seed, nunoise=False, version=0, dns_default = None):
  
     testing = True if s["Custom Settings"]["Mode"] == "Testing" else False
     noise = 0. if testing else noise
     
     if noise > 0. or nunoise:
-        dns = Burger(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case=ic, forcing=forcing, noise=noise, seed=seed, nunoise=nunoise)
+        dns = Burger(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case=ic, forcing=forcing, noise=noise, seed=seed, version=version, nunoise=nunoise)
         dns.simulate()
         dns.fou2real()
         dns.compute_Ek()

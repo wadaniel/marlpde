@@ -215,10 +215,20 @@ class Burger:
                         assert( criterion < 0.8 )
                         assert( criterion > 0.6 )
 
-
                     elif case == 'zero':
                         u0 = np.zeros(self.N)
-             
+                    
+                    elif case == 'forced':
+                        u0 = np.zeros(self.N)
+            
+                        #A = 1
+                        A = 1./self.N
+                        for k in range(1,self.N):
+                            r1 = np.random.normal(loc=0., scale=1.)
+                            r2 = np.random.normal(loc=0., scale=1.)
+                            #A = A**(-5/3) if k <= 5 else A*k**(-5/3) 
+                            u0 += r1*A*np.sin(2.*np.pi*(k*self.x/self.L+r2))
+ 
                     else:
                         print("[Burger] Error: IC case unknown")
                         sys.exit()
@@ -360,8 +370,9 @@ class Burger:
             
             A = 1.
             for k in range(1,32):
-                r = self.randfac1[k, self.ioutnum]
-                forcing += r*A*np.sin(2.*np.pi*(k*self.x/self.L+self.randfac2[k, self.ioutnum]))
+                r1 = self.randfac1[k, self.ioutnum]
+                r2 = self.randfac2[k, self.ioutnum]
+                forcing += r1*A*np.sin(2.*np.pi*(k*self.x/self.L+r2))
             
             Fforcing += fft( forcing )
             
@@ -423,7 +434,7 @@ class Burger:
             # reset simulation arrays with possibly updated size
             self.__setup_timeseries(nout=self.nout)
             self.vv[0,:] = self.v0
-            self.uu[0,:] = self.v0
+            self.uu[0,:] = self.u0
  
         # advance in time for nsteps steps
         try:

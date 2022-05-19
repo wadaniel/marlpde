@@ -186,7 +186,7 @@ def makePlot(dns, base, sgs, fileName, spectralReward=True):
     smax = max(dnsSgs.max(), sgs.sgsHistory.max())
     smin = min(dnsSgs.min(), sgs.sgsHistory.min())
     slevels = np.linspace(smin, smax, 50)
-    svals = np.linspace(smin,smax,200)
+    svals = np.linspace(smin,smax,500)
    
     fig3, axs3 = plt.subplots(2, 2, sharex='col', sharey='col', subplot_kw=dict(box_aspect=1), figsize=(10,10))
     
@@ -213,7 +213,8 @@ def makePlot(dns, base, sgs, fileName, spectralReward=True):
     #axs3[idx,3].contourf(base.x, base.tt, dns.sgsHistoryAlt2, slevels)
     
     dnsDensity = gaussian_kde(dnsSgs.flatten())
-    axs3[idx,1].plot(svals, dnsDensity(svals), color=colors[idx])
+    dnsDensityVals = dnsDensity(svals)
+    axs3[idx,1].plot(svals, dnsDensityVals, color=colors[idx])
     axs3[idx,1].set_yscale('log')
  
     #idx += 1
@@ -225,8 +226,26 @@ def makePlot(dns, base, sgs, fileName, spectralReward=True):
     idx += 1
     axs3[idx,0].contourf(sgs.x, sgs.tt, sgs.sgsHistory) #, slevels)
   
-    density = gaussian_kde(sgs.sgsHistory.flatten())
-    axs3[idx,1].plot(svals, dnsDensity(svals), color=colors[0], linestyle='--')
-    axs3[idx,1].plot(svals, density(svals), color=colors[2])
+    sgsDensity = gaussian_kde(sgs.sgsHistory.flatten())
+    sgsDensityVals = sgsDensity(svals)
+    axs3[idx,1].plot(svals, dnsDensityVals, color=colors[0], linestyle='--')
+    axs3[idx,1].plot(svals, sgsDensityVals, color=colors[2])
     
     fig3.savefig(figName3)
+
+#------------------------------------------------------------------------------
+
+    figName4 = fileName + "_action_closeup.png"
+    print("Plotting {} ...".format(figName4))
+ 
+    sfac = 3
+    sgsMean = np.mean(sgs.sgsHistory)
+    sgsSdev = np.std(sgs.sgsHistory)
+    svals2  = np.linspace(sgsMean-sfac*sgsSdev,sgsMean+sfac*sgsSdev,500)
+    fig4, axs4 = plt.subplots(1, 1, subplot_kw=dict(box_aspect=1), figsize=(10,10))
+    axs4.plot(svals2, dnsDensity(svals2), color=colors[0], linestyle='--')
+    axs4.plot(svals2, sgsDensity(svals2), color=colors[2])
+    axs4.set_yscale('log')
+    fig4.savefig(figName4)
+ 
+
