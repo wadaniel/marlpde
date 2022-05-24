@@ -41,7 +41,7 @@ def environment( s , N, gridSize, numActions, dt, nu, episodeLength, ic, spectra
     f_restart = interpolate.interp1d(dns.x, dns.u0, kind='cubic')
 
     # Initialize LES
-    sgs = Burger(L=L, N=gridSize, dt=dt, nu=nu, tend=tEnd, forcing=forcing, dforce=dforce, noise=0.)
+    sgs = Burger(L=L, N=gridSize, dt=dt, nu=nu, tend=tEnd, forcing=forcing, dforce=dforce, noise=0., version=version)
     if spectralReward:
         v0 = np.concatenate((dns.v0[:((gridSize+1)//2)], dns.v0[-(gridSize-1)//2:])) * gridSize / dns.N
         sgs.IC( v0 = v0 )

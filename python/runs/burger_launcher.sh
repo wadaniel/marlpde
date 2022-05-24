@@ -14,6 +14,7 @@ seed=42
 tf=50
 nt=20
 esteps=500
+version=1
 
 launchname="${0##*/}"
 cp $launchname "./burger_launcher${run}.sh"
@@ -27,14 +28,14 @@ python run-vracer-burger.py --ic $IC --run $run --NE $NEX \
     --N $N --NA $NA --dt $dt --nu $nu \
     --iex $iex --noise $noise --seed $seed \
     --episodelength $esteps --NDNS $NDNS \
-    --tf $tf --nt $nt \
+    --tf $tf --nt $nt --version $version \
     --forcing --nunoise
 
 python run-vracer-burger.py --ic $IC --run $run --NE $NEX \
     --N $N --NA $NA --dt $dt --nu $nu \
     --iex $iex --noise $noise --seed $seed \
     --episodelength $esteps --NDNS $NDNS \
-    --tf $tf --nt $nt \
+    --tf $tf --nt $nt --version $version \
     --forcing --nunoise \
     --test
 
