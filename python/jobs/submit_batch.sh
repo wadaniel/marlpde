@@ -12,7 +12,7 @@ s=1
 
 for env in burger
 do 
-    for run in {21..25} 
+    for run in {20..20} 
     #for run in {11..15} #0.01
     #for run in {16..20} #0.001
     do

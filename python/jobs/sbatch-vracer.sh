@@ -12,21 +12,22 @@ echo "NOISE:"               $NOISE
 echo "SEED:"                $SEED
 echo "RUN:"					$RUN
 
-RUNPATH=${SCRATCH}/marlpde/$ENV/$RUN/$IC
+RUNPATH=${SCRATCH}/marlpde/$ENV/$RUN/
 mkdir -p $RUNPATH
 
 cd ..
 
 cp run-vracer-${ENV}.py $RUNPATH
 cp -r _model/ $RUNPATH
+cp -r runs/ $RUNPATH
 
 cd $RUNPATH
 
 cat > run.sbatch <<EOF
 #!/bin/bash -l
 #SBATCH --job-name=pde_${ENV}
-#SBATCH --output=pde_${ENV}_${NUMACT}_${SEED}_${RUN}_%j.out
-#SBATCH --error=pde_${ENV}_${NUMACT}_${SEED}_${RUN}_err_%j.out
+#SBATCH --output=pde_${ENV}_${RUN}_%j.out
+#SBATCH --error=pde_${ENV}_${RUN}_err_%j.out
 #SBATCH --time=24:00:00
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
@@ -36,13 +37,8 @@ cat > run.sbatch <<EOF
 #SBATCH --constraint=gpu
 #SBATCH --account=s929
 
-export OMP_NUM_THREADS=\$SLURM_CPUS_PER_TASK
-python3 run-vracer-${ENV}.py --N $N --numactions $NUMACT --numexp $NUMEXP --width $NN --ic $IC --iex $IEX --noise $NOISE --seed $SEED --run $RUN
-
-resdir=\$(ls -d _result*)
-python3 -m korali.rlview --dir \$resdir --out vracer.png
-
-python3 run-vracer-${ENV}.py --N $N --numactions $NUMACT --numexp $NUMEXP --width $NN --ic $IC --iex $IEX --noise $NOISE --seed $SEED --run $RUN --test
+cd runs/
+bash burger_launcher.sh
 
 EOF
 
