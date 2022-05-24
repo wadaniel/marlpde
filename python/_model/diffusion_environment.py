@@ -16,17 +16,9 @@ def environment( s , N, tEnd, dt_sgs, numActions, nu, episodeLength, ic, dforce,
     testing = True if s["Custom Settings"]["Mode"] == "Testing" else False
     noise = 0.0 if testing else 0.1
 
-    dns = Diffusion(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case=ic, noise=noise, seed=seed, version=version, nunoise=nunoise)
-    dns.simulate()
-
-    ## create interpolated IC
-    f_restart = interpolate.interp1d(dns.x, dns.u0, kind='cubic')
-
     # Initialize LES
     les = Diffusion(L=L, N=N, dt=dt_sgs, nu=nu, tend=tEnd, case=ic, version=version, noise=0. )
-    les.IC( u0 = f_restart(dns.x) )
     les.setup_basis(numActions, basis)
-    les.setGroundTruth(dns.tt, dns.x, dns.uu)
 
     ## get initial state
     state = les.getState().flatten().tolist()
@@ -75,7 +67,9 @@ def environment( s , N, tEnd, dt_sgs, numActions, nu, episodeLength, ic, dforce,
         s["State"] = state
     
         # calculate reward
-        reward = rewardFactor*les.getMseReward()
+        sol = les.getAnalyticalSolution(les.t)
+        uDiffMse = ((sol - les.uu[les.ioutnum,:])**2).mean()
+        reward = -rewardFactor*uDiffMse
  
         cumreward += reward
         s["Reward"] = reward

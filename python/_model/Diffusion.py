@@ -3,6 +3,7 @@ import time
 from numpy import pi
 from scipy import interpolate
 from scipy.fftpack import rfft, irfft, rfftfreq
+from scipy import special
 import numpy as np
 
 np.seterr(over='raise', invalid='raise')
@@ -41,10 +42,10 @@ class Diffusion:
             tend = dt*nsteps
         
         # save to self
-        self.N      = N
-        self.dx     = L/N
-        self.x      = np.linspace(0, self.L, N, endpoint=False)
-        self.nu     = nu
+        self.N  = N
+        self.dx = L/N
+        self.x  = np.linspace(0, self.L, N, endpoint=False)
+        self.nu = nu
         if nunoise:
             self.nu = 0.01+0.02*np.random.uniform()
         self.nsteps = nsteps
@@ -76,6 +77,9 @@ class Diffusion:
         self.__setup_timeseries()
  
         # set initial condition
+        self.offset = 0.
+        self.case = case
+
         if (case is not None):
             self.IC(case=case)
         elif (u0 is not None):
@@ -128,74 +132,27 @@ class Diffusion:
         
         # Set initial condition
         if (u0 is None):
-            offset = np.random.normal(loc=0., scale=self.noise) if self.noise > 0 else 0.
+            if self.noise > 0.:
+                self.offset = np.random.normal(loc=0., scale=self.noise) 
             
             # Gaussian initialization
             if case == 'gaussian':
                 # Gaussian noise (according to https://arxiv.org/pdf/1906.07672.pdf)
                 #u0 = np.random.normal(0., 1, self.N)
                 sigma = self.L/8
-                u0 = gaussian(self.x, mean=0.5*self.L+offset, sigma=sigma)
+                u0 = gaussian(self.x, mean=0.5*self.L+self.offset, sigma=sigma)
                 
             # Box initialization
             elif case == 'box':
-                u0 = np.abs(self.x-self.L/2-offset)<self.L/8
+                u0 = np.abs(self.x-self.L/2-self.offset)<self.L/8
             
             # Sinus
             elif case == 'sinus':
-                u0 = np.sin(self.x+offset)
-
-            # Turbulence
-            elif case == 'turbulence':
-                # Taken from: 
-                # A priori and a posteriori evaluations 
-                # of sub-grid scale models for the Burgers' eq. (Li, Wang, 2016)
-                
-                rng = 123456789 + self.seed
-                a = 1103515245
-                c = 12345
-                m = 2**13
-            
-                A = 1
-                u0 = np.ones(self.N)
-                for k in range(1, self.N):
-                    offset = np.random.normal(loc=0., scale=self.noise) if self.noise > 0 else 0.
-                    rng = (a * rng + c) % m
-                    phase = rng/m*2.*np.pi
-
-                    Ek = A*5**(-5/3) if k <= 5 else A*k**(-5/3) 
-                    u0 += np.sqrt(2*Ek)*np.sin(k*2*np.pi*self.x/self.L + phase + offset)
-                    
-                # rescale IC
-                idx = 0
-                criterion = np.sqrt(np.sum((u0-1.)**2)/self.N)
-                while (criterion < 0.65 or criterion > 0.75):
-                    scale = 0.7/criterion
-                    u0 *= scale
-                    criterion = np.sqrt(np.sum((u0-1.)**2)/self.N)
-                    
-                    # exit
-                    idx += 1
-                    if idx > 100:
-                        break
-                
-                assert( criterion < 0.8 )
-                assert( criterion > 0.6 )
+                u0 = np.sin(self.x+self.offset)
 
             elif case == 'zero':
                 u0 = np.zeros(self.N)
             
-            elif case == 'forced':
-                u0 = np.zeros(self.N)
-    
-                #A = 1
-                A = 1./self.N
-                for k in range(1,self.N):
-                    r1 = np.random.normal(loc=0., scale=1.)
-                    r2 = np.random.normal(loc=0., scale=1.)
-                    #A = A**(-5/3) if k <= 5 else A*k**(-5/3) 
-                    u0 += r1*A*np.sin(2.*np.pi*(k*self.x/self.L+r2))
-
             else:
                 print("[Diffusion] Error: IC case unknown")
                 sys.exit()
@@ -231,9 +188,14 @@ class Diffusion:
         return self.f_truth(self.x,t)
 
     def getAnalyticalSolution(self, t):
-        if t > 0.:
+        
+        if self.case != 'box':
             print("[Diffusion] TODO: Analytical solution")
             sys.exit()
+
+        if t > 0.:
+            C = 2.*np.sqrt(self.nu*t)
+            sol = 0.5*(special.erf((self.x-0.375*self.L)/C)+special.erf((0.625*self.L-self.x)/C))
 
         else:
             sol = self.u0
@@ -245,10 +207,10 @@ class Diffusion:
         forcing = np.zeros(self.N)
  
         up = np.roll(self.u, -1)
-        up[-1] = 0.
         um = np.roll(self.u, +1)
-        um[0] = 0.
         d2udx2 = (up - 2.*self.u + um)/self.dx**2
+        d2udx2[0] = d2udx2[1]
+        d2udx2[-1] = d2udx2[-2]
 
         if (actions is not None):
             assert self.basis is not None, print("[Diffusion] Basis not set up (is None).")

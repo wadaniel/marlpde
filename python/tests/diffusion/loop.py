@@ -23,7 +23,7 @@ tEnd = args.tend
 nu   = 0.1
 ic   = args.ic
 seed = args.seed
-noise = 0.1
+noise = 0.0
 
 # reward defaults
 rewardFactor = 1e6
@@ -38,17 +38,17 @@ episodeLength = args.episodelength
 # DNS baseline
 print("Setting up DNS..")
 dns = Diffusion(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case=ic, noise=noise, seed=seed)
-dns.simulate()
+#dns.simulate()
 
 ## create interpolated IC
-f_restart = interpolate.interp1d(dns.x, dns.u0, kind='cubic')
+#f_restart = interpolate.interp1d(dns.x, dns.u0, kind='cubic')
 
 # Initialize LES
 dt_sgs = args.dt
 les = Diffusion(L=L, N=N, dt=dt_sgs, nu=nu, tend=tEnd, case=ic, noise=0., seed=seed)
-les.IC(u0 = f_restart(les.x))
+#les.IC(u0 = f_restart(les.x))
 les.setup_basis(numActions, basis)
-les.setGroundTruth(dns.tt, dns.x, dns.uu)
+#les.setGroundTruth(dns.tt, dns.x, dns.uu)
 
 ## run controlled simulation
 error = 0
@@ -70,12 +70,18 @@ while step < episodeLength and error == 0:
         break
     
     idx = les.ioutnum
-    uTruthToCoarse = les.mapGroundTruth()
-    uDiffMse = ((uTruthToCoarse[idx,:] - les.uu[idx,:])**2).mean()
+    #uTruthToCoarse = les.mapGroundTruth()
+    #uDiffMse = ((uTruthToCoarse[idx,:] - les.uu[idx,:])**2).mean()
+  
+    sol = les.getAnalyticalSolution(les.t)
+    uDiffMse = ((sol - les.uu[les.ioutnum,:])**2).mean()
+    reward = -rewardFactor*uDiffMse
+    print(step)
+    print(reward)
     
     # calculate reward from energy
     # reward = -rewardFactor*(np.abs(les.Ek_tt[step*nIntermediate]-dns.Ek_tt[step*nIntermediate]))
-    reward = -rewardFactor*uDiffMse
+    #reward = -rewardFactor*uDiffMse
     cumreward += reward
 
     if (np.isnan(reward)):

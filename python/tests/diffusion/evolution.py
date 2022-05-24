@@ -6,7 +6,7 @@ initial condition is set to be approx k^-5/3.
 """
 
 # Discretization grid
-N = 256
+N = 32
 
 import matplotlib
 matplotlib.use('Agg')
@@ -22,7 +22,7 @@ from Diffusion import *
 #------------------------------------------------------------------------------
 ## set parameters and initialize simulation
 L    = 2*np.pi
-dt   = 2*0.001
+dt   = 0.001
 tEnd = 5
 nu   = 0.1
 dns = Diffusion(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case='box')
@@ -48,10 +48,17 @@ plt.close()
 print("Plotting diffusion_evolution.png ...")
 fig, axs = plt.subplots(4,4, sharex=True, sharey=True, figsize=(15,15))
 for i in range(16):
-    t = int(i * tEnd / dt / 16)
-    k = int(i / 4)
+    t = i * tEnd / 16
+    tidx = int(t / dt)
+
     l = i % 4
-    axs[k,l].plot(dns.x, dns.uu[t,:])
+    k = int(i / 4)
+    sol = dns.getAnalyticalSolution(t)
+
+    err = ((dns.uu[tidx,:] - sol)**2).mean()
+    print(1e6*err)
+    axs[k,l].plot(dns.x, dns.uu[tidx,:])
+    axs[k,l].plot(dns.x, sol, 'k--')
 
 fig.savefig('diffusion_evolution.png'.format())
 plt.close()
