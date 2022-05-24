@@ -2,17 +2,17 @@
 
 version=1
 IC='box'
-run=9
+run=11
 NEX=2000000
-N=32
-NA=32
+N=144
+NA=64
 dt=0.01
 tend=5.0
-noise=0.0
+noise=0.1
 nu=0.1
 iex=0.1
 seed=42
-esteps=500
+esteps=200
 
 launchname="${0##*/}"
 cp $launchname "./diffusion_launcher${run}.sh"

@@ -11,7 +11,6 @@ rewardFactor = 1.
 # basis defaults
 basis = 'hat'
 
-
 def setup_dns_default(N, dt, nu , ic, forcing, seed):
     print("Setting up default dns with args ({}, {}, {}, {}, {}, {})".format(N, dt, nu, ic, forcing, seed))
     dns = Burger(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case=ic, forcing=forcing, noise=0., seed=seed)
@@ -134,6 +133,8 @@ def environment( s , N, gridSize, numActions, dt, nu, episodeLength, ic, spectra
     if testing:
 
         fileName = s["Custom Settings"]["Filename"]
+        nu = s["Custom Settings"]["Viscosity"]
+
         print("[burger_env] Storing sgs to file {}".format(fileName))
         np.savez(fileName, x = sgs.x, t = sgs.tt, uu = sgs.uu, vv = sgs.vv, L=L, N=gridSize, dt=dt, nu=nu, tEnd=tEnd, actions=sgs.actionHistory)
          

@@ -7,7 +7,7 @@ from Diffusion import *
  
 parser = argparse.ArgumentParser()
 parser.add_argument('--N', help='Gridpoints', required=False, type=int, default=32)
-parser.add_argument('--dt', help='Timediscretization of URG', required=False, type=float, default=0.001)
+parser.add_argument('--dt', help='Timediscretization of URG', required=False, type=float, default=0.01)
 parser.add_argument('--tend', help='Length of simulation', required=False, type=float, default=5)
 parser.add_argument('--ic', help='Initial condition', required=False, type=str, default='box')
 parser.add_argument('--seed', help='Random seed', required=False, type=int, default=42)
@@ -18,7 +18,7 @@ args = parser.parse_args()
 # dns defaults
 N    = args.N
 L    = 2*np.pi
-dt   = 0.001
+dt   = 0.01
 tEnd = args.tend
 nu   = 0.1
 ic   = args.ic

@@ -247,5 +247,7 @@ def makePlot(dns, base, sgs, fileName, spectralReward=True):
     axs4.plot(svals2, sgsDensity(svals2), color=colors[2])
     axs4.set_yscale('log')
     fig4.savefig(figName4)
+
+    plt.close('all')
  
 

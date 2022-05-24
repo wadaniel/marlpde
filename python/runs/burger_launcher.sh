@@ -1,7 +1,7 @@
 #!/bin/bash
 
-IC='forced'
-run=203
+IC='sinus'
+run=20
 NEX=1000000
 N=32
 NA=32
@@ -16,7 +16,7 @@ nt=20
 esteps=500
 
 launchname="${0##*/}"
-cp $launchname "./launcher${run}.sh"
+cp $launchname "./burger_launcher${run}.sh"
 
 git diff > "./gitdiff${run}.txt"
 
@@ -28,14 +28,14 @@ python run-vracer-burger.py --ic $IC --run $run --NE $NEX \
     --iex $iex --noise $noise --seed $seed \
     --episodelength $esteps --NDNS $NDNS \
     --tf $tf --nt $nt \
-    --forcing --nunoise --specreward
+    --forcing --nunoise
 
 python run-vracer-burger.py --ic $IC --run $run --NE $NEX \
     --N $N --NA $NA --dt $dt --nu $nu \
     --iex $iex --noise $noise --seed $seed \
     --episodelength $esteps --NDNS $NDNS \
     --tf $tf --nt $nt \
-    --forcing --nunoise --specreward \
+    --forcing --nunoise \
     --test
 
 python -m korali.rlview --dir "_result_${IC}_${run}" --out "vracer${run}.png"

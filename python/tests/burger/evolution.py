@@ -26,11 +26,11 @@ from Burger import *
 L       = 2*np.pi
 dt      = 0.001
 tEnd    = 5
-nu      = 0.03
+nu      = 0.02
 #ic      = 'zero'
 #ic      = 'turbulence'
-#ic      = 'sinus'
-ic      = 'forced'
+ic      = 'sinus'
+#ic      = 'forced'
 noise   = 0.0
 seed    = 42
 forcing = True

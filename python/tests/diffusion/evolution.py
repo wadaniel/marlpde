@@ -6,7 +6,7 @@ initial condition is set to be approx k^-5/3.
 """
 
 # Discretization grid
-N = 32
+N = 150
 
 import matplotlib
 matplotlib.use('Agg')
@@ -22,10 +22,10 @@ from Diffusion import *
 #------------------------------------------------------------------------------
 ## set parameters and initialize simulation
 L    = 2*np.pi
-dt   = 0.001
+dt   = 0.01
 tEnd = 5
 nu   = 0.1
-dns = Diffusion(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case='box')
+dns  = Diffusion(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case='box')
 
 #------------------------------------------------------------------------------
 print("Simulate..")

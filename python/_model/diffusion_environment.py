@@ -1,9 +1,8 @@
 from Diffusion import *
 import matplotlib.pyplot as plt 
 
-# dns defaults
-L    = 2*np.pi
-dt   = 0.001
+# defaults
+L = 2*np.pi
 
 # reward defaults
 rewardFactor = 1e6
@@ -30,6 +29,7 @@ def environment( s , N, tEnd, dt_sgs, numActions, nu, episodeLength, ic, dforce,
     nIntermediate = int(tEnd / dt_sgs / episodeLength)
     assert nIntermediate > 0
     cumreward = 0.
+    cumMseDiff = 0.
 
     timestamps = []
     actionHistory = []
@@ -52,15 +52,12 @@ def environment( s , N, tEnd, dt_sgs, numActions, nu, episodeLength, ic, dforce,
             print("Exception occured:")
             print(str(e))
             error = 1
-            break
-        
 
         # get new state
         newstate = les.getState().flatten().tolist()
         if(np.isfinite(newstate).all() == False):
             print("Nan state detected")
             error = 1
-            break
         else:
             state = newstate
 
@@ -69,6 +66,7 @@ def environment( s , N, tEnd, dt_sgs, numActions, nu, episodeLength, ic, dforce,
         # calculate reward
         sol = les.getAnalyticalSolution(les.t)
         uDiffMse = ((sol - les.uu[les.ioutnum,:])**2).mean()
+        cumMseDiff += uDiffMse
         reward = -rewardFactor*uDiffMse
  
         cumreward += reward
@@ -77,11 +75,13 @@ def environment( s , N, tEnd, dt_sgs, numActions, nu, episodeLength, ic, dforce,
         if (np.isfinite(reward) == False):
             print("Nan reward detected")
             error = 1
-            break
         
+        #if uDiffMse > 1.:
+        #    error = 1
+
         step += 1
 
-
+    print(step)
     print(cumreward)
     if error == 1:
         s["State"] = state
@@ -92,5 +92,4 @@ def environment( s , N, tEnd, dt_sgs, numActions, nu, episodeLength, ic, dforce,
         s["Termination"] = "Terminal"
     
     if testing:
-
         print("[diffusion_environment] TODO testing")

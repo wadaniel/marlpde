@@ -149,10 +149,17 @@ e["File Output"]["Path"] = resultFolder
 e["File Output"]["Use Multiple Files"] = False
 
 if args.test:
-    fileName = 'test_burger_{}_{}'.format(args.ic, args.run)
-    e["Solver"]["Testing"]["Sample Ids"] = [0]
-    e["Problem"]["Custom Settings"]["Filename"] = fileName
+
+    nus = [0.001, 0.005, 0.01, 0.015, 0.02, 0.025, 0.03, 0.035, 0.04]
+    #nus = [0.01, 0.015, 0.02, 0.025, 0.03, 0.035]
+
+    for nu in nus:
+        fileName = 'test_burger_{}_{}_{}'.format(args.ic, nu, args.run)
+        e["Solver"]["Testing"]["Sample Ids"] = [0]
+        e["Problem"]["Custom Settings"]["Filename"] = fileName
+        e["Problem"]["Custom Settings"]["Viscosity"] = nu
+        k.run(e)
 
 ### Running Experiment
-
-k.run(e)
+else:
+    k.run(e)
