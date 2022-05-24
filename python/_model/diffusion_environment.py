@@ -4,7 +4,6 @@ import matplotlib.pyplot as plt
 # dns defaults
 L    = 2*np.pi
 dt   = 0.001
-tEnd = 5
 
 # reward defaults
 rewardFactor = 1e6
@@ -12,10 +11,10 @@ rewardFactor = 1e6
 # basis defaults
 basis = 'hat'
 
-def environment( s , N, dt_sgs, numActions, nu, episodeLength, ic, dforce, noise, seed, nunoise=False, version=0):
+def environment( s , N, tEnd, dt_sgs, numActions, nu, episodeLength, ic, dforce, noise, seed, nunoise=False, tnoise=False, version=0):
     
     testing = True if s["Custom Settings"]["Mode"] == "Testing" else False
-    noise = 0.0 #if testing else 0.1
+    noise = 0.0 if testing else 0.1
 
     dns = Diffusion(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case=ic, noise=noise, seed=seed, version=version, nunoise=nunoise)
     dns.simulate()
@@ -24,7 +23,8 @@ def environment( s , N, dt_sgs, numActions, nu, episodeLength, ic, dforce, noise
     f_restart = interpolate.interp1d(dns.x, dns.u0, kind='cubic')
 
     # Initialize LES
-    les = Diffusion(L=L, N=N, dt=dt_sgs, nu=nu, tend=tEnd, u0 = f_restart(dns.x), noise=0. )
+    les = Diffusion(L=L, N=N, dt=dt_sgs, nu=nu, tend=tEnd, case=ic, version=version, noise=0. )
+    les.IC( u0 = f_restart(dns.x) )
     les.setup_basis(numActions, basis)
     les.setGroundTruth(dns.tt, dns.x, dns.uu)
 
@@ -36,6 +36,7 @@ def environment( s , N, dt_sgs, numActions, nu, episodeLength, ic, dforce, noise
     error = 0
     step = 0
     nIntermediate = int(tEnd / dt_sgs / episodeLength)
+    assert nIntermediate > 0
     cumreward = 0.
 
     timestamps = []
@@ -77,13 +78,12 @@ def environment( s , N, dt_sgs, numActions, nu, episodeLength, ic, dforce, noise
         reward = rewardFactor*les.getMseReward()
  
         cumreward += reward
+        s["Reward"] = reward
 
         if (np.isfinite(reward) == False):
             print("Nan reward detected")
             error = 1
             break
-        else:
-            s["Reward"] = reward
         
         step += 1
 
@@ -92,7 +92,7 @@ def environment( s , N, dt_sgs, numActions, nu, episodeLength, ic, dforce, noise
     if error == 1:
         s["State"] = state
         s["Termination"] = "Truncated"
-        s["Reward"] = -np.inf
+        s["Reward"] = reward
     
     else:
         s["Termination"] = "Terminal"

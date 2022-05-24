@@ -243,6 +243,12 @@ class Diffusion:
     def step( self, actions=None ):
         
         forcing = np.zeros(self.N)
+ 
+        up = np.roll(self.u, -1)
+        up[-1] = 0.
+        um = np.roll(self.u, +1)
+        um[0] = 0.
+        d2udx2 = (up - 2.*self.u + um)/self.dx**2
 
         if (actions is not None):
             assert self.basis is not None, print("[Diffusion] Basis not set up (is None).")
@@ -253,11 +259,6 @@ class Diffusion:
             
             if self.dforce == False:
                 u = self.uu[self.ioutnum,:]
-                up = np.roll(u,1)
-                up[-1] = 0.
-                um = np.roll(u,-1)
-                um[0] = 0.
-                d2udx2 = (up - 2.*u + um)/self.dx**2
                 forcing *= d2udx2
             
             self.sgsHistory[self.ioutnum,:] = forcing
@@ -265,13 +266,7 @@ class Diffusion:
         """
         Expl. Euler Central Differences
         """
-        up = np.roll(self.u, -1)
-        up[-1] = 0.
-        um = np.roll(self.u, +1)
-        um[0] = 0.
-        d2udx2 = (up - 2.*self.u + um)/self.dx**2
-
-        self.u = self.u + self.dt * (self.nu * d2udx2 + forcing)
+        self.u = self.u + self.dt * self.nu * (d2udx2 + forcing)
      
         self.stepnum += 1
         self.t       += self.dt
@@ -280,7 +275,7 @@ class Diffusion:
         self.uu[self.ioutnum,:] = self.u
         self.tt[self.ioutnum]   = self.t
 
-    def simulate(self, nsteps=None, restart=False, correction=[]):
+    def simulate(self, nsteps=None, restart=False):
         #
         # If not provided explicitly, get internal values
         if (nsteps is None):
@@ -302,20 +297,16 @@ class Diffusion:
  
         # advance in time for nsteps steps
         try:
-            if (correction==[]):
-                for n in range(1,self.nsteps+1):
-                    self.step()
-            else:
-                for n in range(1,self.nsteps+1):
-                    self.step()
-                    self.v += correction
+            for n in range(1,self.nsteps+1):
+                self.step()
                 
         except FloatingPointError:
             print("[Burger] Floating point exception occured in simulate", flush=True)
             # something exploded
             # cut time series to last saved solution and return
             self.nout = self.ioutnum
-            self.tt.resize(self.nout+1)          # nout+1 because the IC is in [0]
+            self.tt.resize(self.nout+1)           # nout+1 because the IC is in [0]
+            self.uu.resize((self.N, self.nout+1)) # nout+1 because the IC is in [0]
             return -1
 
     def getMseReward(self):
@@ -337,7 +328,9 @@ class Diffusion:
             dudt = (u - umt)/self.dt
                  
             up = np.roll(u,1)
+            up[-1] = 0.
             um = np.roll(u,-1)
+            um[0] = 0.
             d2udx2 = (up - 2.*u + um)/self.dx**2
          
             if self.version == 0:
