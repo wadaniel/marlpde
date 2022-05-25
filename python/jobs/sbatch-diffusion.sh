@@ -3,7 +3,7 @@
 version=1
 width=256
 IC='box'
-RUN=1
+RUN=2
 NEX=500000
 N=32
 NA=32

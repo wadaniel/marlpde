@@ -49,9 +49,16 @@ def environment( s , N, tEnd, dt_sgs, numActions, nu, episodeLength, ic, dforce,
         actionHistory.append(actions)
         timestamps.append(les.t)
 
+        reward = 0.
+
         try:
             for _ in range(nIntermediate):
                 les.step(actions)
+         
+                # calculate reward
+                sol = les.getAnalyticalSolution(les.t)
+                uDiffMse = ((sol - les.uu[les.ioutnum,:])**2).mean()
+                reward += -rewardFactor*uDiffMse/episodeLength
         
         except Exception as e:
             print("Exception occured:")
@@ -68,12 +75,7 @@ def environment( s , N, tEnd, dt_sgs, numActions, nu, episodeLength, ic, dforce,
 
         s["State"] = state
     
-        # calculate reward
-        sol = les.getAnalyticalSolution(les.t)
-        uDiffMse = ((sol - les.uu[les.ioutnum,:])**2).mean()
-        cumMseDiff += uDiffMse
-        reward = -rewardFactor*uDiffMse
- 
+
         cumreward += reward
         s["Reward"] = reward
 
@@ -86,7 +88,6 @@ def environment( s , N, tEnd, dt_sgs, numActions, nu, episodeLength, ic, dforce,
 
         step += 1
 
-    cumreward /= episodeLength
     print(step)
     print(dt_sgs)
     print(cumreward)
