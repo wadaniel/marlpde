@@ -20,8 +20,7 @@ do
         export RUN=$run
         export SEED=$s
 
-        ./sbatch-vracer.sh
-        #./sbatch-coupled-vracer.sh
+        ./sbatch-burger.sh
 
         s=$(( $s + 1 ))
     done

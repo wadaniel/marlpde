@@ -135,7 +135,7 @@ class Burger:
             if kind == 'uniform':
                 self.basis = np.zeros((self.M, self.N))
                 for i in range(self.M):
-                    assert self.N % self.M == 0, print("[Burger] Something went wrong in basis setup")
+                    assert self.N % self.M == 0, "[Burger] Something went wrong in basis setup"
                     idx1 = i * self.N//self.M
                     idx2 = (i+1) * self.N//self.M
                     self.basis[i,idx1:idx2] = 1.
@@ -377,8 +377,8 @@ class Burger:
             Fforcing += fft( forcing )
             
         if (actions is not None):
-            assert self.basis is not None, print("[Burger] Basis not set up (is None).")
-            assert len(actions) == self.M, print("[Burger] Wrong number of actions (provided {}/{}".format(len(actions), self.M))
+            assert self.basis is not None, "[Burger] Basis not set up (is None)."
+            assert len(actions) == self.M, "[Burger] Wrong number of actions (provided {}/{}".format(len(actions), self.M)
 
             forcing = np.matmul(actions, self.basis)
             self.actionHistory[self.ioutnum,:] = forcing

@@ -108,7 +108,7 @@ class Diffusion:
             if kind == 'uniform':
                 self.basis = np.zeros((self.M, self.N))
                 for i in range(self.M):
-                    assert self.N % self.M == 0, print("[Diffusion] Something went wrong in basis setup")
+                    assert self.N % self.M == 0, "[Diffusion] Something went wrong in basis setup"
                     idx1 = i * self.N//self.M
                     idx2 = (i+1) * self.N//self.M
                     self.basis[i,idx1:idx2] = 1.
@@ -213,8 +213,8 @@ class Diffusion:
         d2udx2[-1] = d2udx2[-2]
 
         if (actions is not None):
-            assert self.basis is not None, print("[Diffusion] Basis not set up (is None).")
-            assert len(actions) == self.M, print("[Diffusion] Wrong number of actions (provided {}/{}".format(len(actions), self.M))
+            assert self.basis is not None, "[Diffusion] Basis not set up (is None)."
+            assert len(actions) == self.M, "[Diffusion] Wrong number of actions (provided {}/{}".format(len(actions), self.M)
 
             forcing = np.matmul(actions, self.basis)
             self.actionHistory[self.ioutnum,:] = forcing
