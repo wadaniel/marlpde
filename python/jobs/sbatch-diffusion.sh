@@ -16,11 +16,7 @@ seed=42
 esteps=500
 ENV="diffusion"
 
-launchname="${0##*/}"
-cp $launchname "./diffusion_launcher${RUN}.sh"
-
 git diff > "./gitdiff${RUN}.txt"
-
 
 RUNPATH=${SCRATCH}/marlpde/$ENV/$RUN/
 mkdir -p $RUNPATH

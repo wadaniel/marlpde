@@ -18,6 +18,8 @@ esteps=500
 version=0
 width=512
 
+git diff > "./gitdiff${RUN}.txt"
+
 RUNPATH=${SCRATCH}/marlpde/$ENV/$RUN/
 mkdir -p $RUNPATH
 
