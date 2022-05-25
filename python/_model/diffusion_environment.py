@@ -15,8 +15,8 @@ def environment( s , N, tEnd, dt_sgs, numActions, nu, episodeLength, ic, dforce,
     testing = True if s["Custom Settings"]["Mode"] == "Testing" else False
     noise = 0.0 if testing else 0.1
         
-    if tnoise and testing:
-        dt_sgs = 0.01+0.02*np.random.uniform()
+    if tnoise and testing == False:
+        dt_sgs = 0.01+0.04*np.random.uniform()
 
     # Initialize LES
     les = Diffusion(L=L, N=N, dt=dt_sgs, nu=nu, tend=tEnd, case=ic, version=version, noise=0. )
@@ -29,8 +29,10 @@ def environment( s , N, tEnd, dt_sgs, numActions, nu, episodeLength, ic, dforce,
     ## run controlled simulation
     error = 0
     step = 0
+    episodeLength = min( int(tEnd/dt_sgs), episodeLength)
     nIntermediate = int(tEnd / dt_sgs / episodeLength)
-    assert nIntermediate > 0
+    
+    assert nIntermediate > 0, "Too large timestep"
     cumreward = 0.
     cumMseDiff = 0.
 
@@ -84,8 +86,11 @@ def environment( s , N, tEnd, dt_sgs, numActions, nu, episodeLength, ic, dforce,
 
         step += 1
 
+    cumreward /= episodeLength
     print(step)
+    print(dt_sgs)
     print(cumreward)
+
     if error == 1:
         s["State"] = state
         s["Termination"] = "Truncated"
