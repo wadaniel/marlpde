@@ -1,10 +1,10 @@
 #!/bin/bash -l
 
 version=1
-width=256
+width=512
 IC='box'
-RUN=2
-NEX=500000
+RUN=3
+NEX=10000000
 N=32
 NA=32
 dt=0.01
