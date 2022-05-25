@@ -24,14 +24,14 @@ git diff > "./gitdiff${run}.txt"
 pushd .
 cd ..
 
-python run-vracer-burger.py --ic $IC --run $run --NE $NEX \
+python3 run-vracer-burger.py --ic $IC --run $run --NE $NEX \
     --N $N --NA $NA --dt $dt --nu $nu \
     --iex $iex --noise $noise --seed $seed \
     --episodelength $esteps --NDNS $NDNS \
     --tf $tf --nt $nt --version $version \
     --forcing --nunoise
 
-python run-vracer-burger.py --ic $IC --run $run --NE $NEX \
+python3 run-vracer-burger.py --ic $IC --run $run --NE $NEX \
     --N $N --NA $NA --dt $dt --nu $nu \
     --iex $iex --noise $noise --seed $seed \
     --episodelength $esteps --NDNS $NDNS \
@@ -39,7 +39,7 @@ python run-vracer-burger.py --ic $IC --run $run --NE $NEX \
     --forcing --nunoise \
     --test
 
-python -m korali.rlview --dir "_result_${IC}_${run}" --out "vracer${run}.png"
+python3 -m korali.rlview --dir "_result_${IC}_${run}" --out "vracer${run}.png"
 
 
 popd
