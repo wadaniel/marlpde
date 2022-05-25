@@ -42,14 +42,14 @@ cat > run.sbatch <<EOF
 #SBATCH --constraint=gpu
 #SBATCH --account=s929
 
-python run-vracer-burger.py --ic $IC --run $run --NE $NEX \
+python run-vracer-burger.py --ic $IC --run $RUN --NE $NEX \
     --N $N --NA $NA --dt $dt --nu $nu \
     --iex $iex --noise $noise --seed $seed \
     --episodelength $esteps --NDNS $NDNS \
     --tf $tf --nt $nt --version $version --width $width \
     --forcing --nunoise
 
-python run-vracer-burger.py --ic $IC --run $run --NE $NEX \
+python run-vracer-burger.py --ic $IC --run $RUN --NE $NEX \
     --N $N --NA $NA --dt $dt --nu $nu \
     --iex $iex --noise $noise --seed $seed \
     --episodelength $esteps --NDNS $NDNS \

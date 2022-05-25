@@ -14,6 +14,9 @@ def environment( s , N, tEnd, dt_sgs, numActions, nu, episodeLength, ic, dforce,
     
     testing = True if s["Custom Settings"]["Mode"] == "Testing" else False
     noise = 0.0 if testing else 0.1
+        
+    if tnoise and testing:
+        dt_sgs = 0.01+0.02*np.random.uniform()
 
     # Initialize LES
     les = Diffusion(L=L, N=N, dt=dt_sgs, nu=nu, tend=tEnd, case=ic, version=version, noise=0. )

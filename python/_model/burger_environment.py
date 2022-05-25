@@ -23,7 +23,10 @@ def environment( s , N, gridSize, numActions, dt, nu, episodeLength, ic, spectra
  
     testing = True if s["Custom Settings"]["Mode"] == "Testing" else False
     noise = 0. if testing else noise
-    
+ 
+    if testing == True:
+        nu = s["Custom Settings"]["Viscosity"]
+
     if noise > 0. or nunoise:
         dns = Burger(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case=ic, forcing=forcing, noise=noise, seed=seed, version=version, nunoise=nunoise)
         dns.simulate()
@@ -131,9 +134,8 @@ def environment( s , N, gridSize, numActions, dt, nu, episodeLength, ic, spectra
         s["Termination"] = "Terminal"
 
     if testing:
-
+        
         fileName = s["Custom Settings"]["Filename"]
-        nu = s["Custom Settings"]["Viscosity"]
 
         print("[burger_env] Storing sgs to file {}".format(fileName))
         np.savez(fileName, x = sgs.x, t = sgs.tt, uu = sgs.uu, vv = sgs.vv, L=L, N=gridSize, dt=dt, nu=nu, tEnd=tEnd, actions=sgs.actionHistory)
