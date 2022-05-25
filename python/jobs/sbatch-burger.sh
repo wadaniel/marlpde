@@ -1,6 +1,6 @@
 #!/bin/bash -l
 
-RUN=0
+RUN=2
 ENV="burger"
 IC="sinus"
 NEX=1000000
@@ -15,8 +15,8 @@ seed=42
 tf=50
 nt=20
 esteps=500
-version=1
-width=256
+version=0
+width=512
 
 RUNPATH=${SCRATCH}/marlpde/$ENV/$RUN/
 mkdir -p $RUNPATH
@@ -62,6 +62,9 @@ python -m korali.rlview --dir "_result_${IC}_${RUN}" --out "vracer${RUN}.png"
 
 popd
 EOF
+
+module purge
+module load daint-gpu gcc GSL/2.7-CrayGNU-21.09 cray-hdf5-parallel cray-python cdt-cuda craype-accel-nvidia60
 
 chmod 755 run.sbatch
 sbatch run.sbatch
