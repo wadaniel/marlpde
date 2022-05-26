@@ -337,6 +337,7 @@ class Kuramoto_RL:
             forcing = np.matmul(actions, self.basis)
 
             if self.dforce == False:
+                u = self.u
                 up = np.roll(u,1)
                 um = np.roll(u,-1)
                 d2udx2 = (up - 2.*u + um)/self.dx**2
