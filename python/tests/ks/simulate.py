@@ -21,43 +21,45 @@ from Kuramoto import *
 
 #------------------------------------------------------------------------------
 # DNS defaults
-N    = 124
-L    = 32*np.pi
-nu   = 1
-# dt   = 3*1e-6
-dt   = 0.25
-# tTransient = 2*1e-2
-# tEnd = 6*1e-3
-# tSim = tEnd
-tSim = 150
+N    = 32
+L    = 2*np.pi
+nu   = 100
+dt   = 3*1e-6
+tTransient = 6*1e-3
+tEnd = 6*1e-3 + tTransient
+tSim = tEnd - tTransient
+# dt   = 0.01
+# tSim = 100
 nSimSteps = int(tSim/dt)
+Cs = 0.001
 
 #------------------------------------------------------------------------------
 ## transient
-dns = Kuramoto(L=L, N=N, dt=dt, nu=nu, tend=tSim, case='ETDRK4')
+print("simulate transient")
+
+dns = Kuramoto(L=L, N=N, dt=dt, nu=nu, tend=tTransient, case='ETDRK4')
 dns.simulate()
 dns.fou2real()
 dns.compute_Ek()
 
 #------------------------------------------------------------------------------
-# ## restart
+## restart
 # v_restart = dns.vv[-1,:].copy()
 # u_restart = dns.uu[-1,:].copy()
 #
+# print("simulate DNS")
 # # set IC
 # dns.IC( v0 = v_restart )
-#
 # # continue simulation
-# dns.simulate( nsteps=int(tSim/dt), restart = True )
-#
+# dns.simulate( nsteps=int(tSim/dt), restart = True)
 # # convert to physical space
 # dns.fou2real()
-#
 # # compute energies
 # dns.compute_Ek()
 
 #------------------------------------------------------------------------------
-## plot result
+
+# plot result
 u = dns.uu
 e_t = dns.Ek_t
 e_tt = dns.Ek_tt

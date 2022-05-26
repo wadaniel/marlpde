@@ -139,11 +139,12 @@ class Kuramoto_RL:
         self.tt[0]   = 0.
 
     def __setup_fourier(self, coeffs=None):
-        self.k   = fftfreq(self.N, self.L / (2*np.pi*self.N))
-        ###### for rk3 #####
-        # self.k1  = 1j * self.k
-        # self.k2  = self.k**2
-        # self.k4  = self.k**4
+        #self.k   = fftfreq(self.N, self.L / (2*np.pi*self.N))
+        ###########
+        k1 = np.arange(0, self.N/2 - 0.5, 1)
+        k2 = np.arange(-self.N/2+1, -0.5, 1)
+        k3 = np.zeros(1)
+        self.k = np.concatenate([k1, k3, k2])*(2*np.pi/self.L)
         ####################
         # Fourier multipliers for the linear term Lu
         if (coeffs is None):

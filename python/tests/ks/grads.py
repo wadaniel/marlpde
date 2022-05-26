@@ -5,7 +5,7 @@
 import sys
 sys.path.append('./../../_model/')
 
-from KS_jax import *
+from Kuramoto_RL import *
 import jax.numpy as jnp
 from jax import grad, jit, vmap, jacfwd, jacrev, random
 from numpy.linalg import norm
@@ -31,7 +31,7 @@ M = 16
 
 # Initialize LES
 # simulate transient period
-dns = KS_jax(L=L, N=N, dt=dt, nu=nu, tend=tTransient)
+dns = Kuramoto_RL(L=L, N=N, dt=dt, nu=nu, tend=tTransient)
 dns.simulate()
 dns.fou2real()
 u_restart = dns.uu[-1,:].copy()
@@ -53,7 +53,7 @@ rewardFactor = 1.
 f_restart = interpolate.interp1d(dns.x, dns.u0, kind='cubic')
 
 # Initialize LES
-sgs = KS_jax(L=L, N = N_sgs, dt=dt, nu=nu, tend=tSim)
+sgs = Kuramoto_RL(L=L, N = N_sgs, dt=dt, nu=nu, tend=tSim)
 v0 = np.concatenate((v_restart[:((N_sgs+1)//2)], v_restart[-(N_sgs-1)//2:])) * N_sgs / dns.N
 
 sgs.IC( v0 = v0 )
@@ -75,9 +75,8 @@ while step < episodeLength and error == 0:
         print(str(e))
         error = 1
         break
-    #print(sgs.u)
-    #print("field")
-    #print(sgs.u)
-    #print("grads")
-    #print(sgs.gradient)
+    print("field")
+    print(sgs.u)
+    print("grads")
+    print(sgs.gradient)
     step += 1

@@ -120,8 +120,8 @@ class Kuramoto:
         k2 = np.arange(-self.N/2+1, -0.5, 1)
         k3 = np.zeros(1)
         self.k = np.concatenate([k1, k3, k2])*(2*np.pi/self.L)
-        #print(self.k)
-        #print(self.k.shape)
+        print(self.k)
+        print(self.k.shape)
         print(np.amax(self.k))
         # Fourier multipliers for the linear term Lu
         if (coeffs is None):
@@ -179,7 +179,7 @@ class Kuramoto:
                         #print("[KS] Noisy IC")
                         u0 = np.random.normal(0., 1e-3, self.N)
                     elif case == 'ETDRK4':
-                        u0 = np.cos(self.x / 16)*(1+np.sin(self.x / 16))
+                        u0 = np.cos(2*self.x / self.N)*(1+np.sin(2*self.x / N))
                     else:
                         print("[KS] Error: IC case unknown")
                         return -1
@@ -259,8 +259,9 @@ class Kuramoto:
         if self.ssm == True:
 
             #sgs = 2*Cs*Cs*dx2*(d2udx2)*(dudx**2)/(np.absolute(dudx)+eps)
-            #sgs = 2*Cs*Cs*dx2*(d4udx4*np.absolute(dudx) + d4udx4*dudx*d2udx2/(np.absolute(dudx)+eps))
-            sgs = 2*Cs*Cs*dx2*np.absolute(dudx)*d2udx2
+            sgs = 2*Cs*Cs*dx2*(d4udx4*np.absolute(dudx) + d4udx4*dudx*d2udx2/(np.absolute(dudx)+eps))
+            #sgs = 2*Cs*Cs*dx2*np.absolute(dudx)*d2udx2
+            #print(sgs)
             #sgs = 2*Cs*Cs*dx2*np.absolute(dudx)*d4udx4
             Fforcing += fft( sgs )
 
