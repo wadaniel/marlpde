@@ -1,9 +1,9 @@
 #!/bin/bash -l
 
-version=1
-width=512
+version=0
+width=256
 IC='box'
-RUN=3
+RUN=5
 NEX=10000000
 N=32
 NA=32
@@ -16,7 +16,7 @@ seed=42
 esteps=500
 ENV="diffusion"
 
-git diff > "./gitdiff${RUN}.txt"
+git diff > "./gitdiff_diffusion_${RUN}.txt"
 
 RUNPATH=${SCRATCH}/marlpde/$ENV/$RUN/
 mkdir -p $RUNPATH
