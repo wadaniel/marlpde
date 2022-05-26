@@ -48,7 +48,7 @@ def environment( s , N, gridSize, numActions, dt, nu, episodeLength, dforce, see
     f_restart = interpolate.interp1d(dns.x, dns.u0, kind='cubic')
 
     # Initialize LES
-    sgs = Kuramoto_RL(L=L, N = gridSize, dt=dt, nu=nu, tend=tSim, dforce=dforce, noise=0.)
+    sgs = Kuramoto_RL(L=L, N = gridSize, dt=dt, nu=nu, tend=tSim, dforce=dforce)
     v0 = np.concatenate((v_restart[:((gridSize+1)//2)], v_restart[-(gridSize-1)//2:])) * gridSize / dns.N
 
     sgs.IC( v0 = v0 )
