@@ -34,13 +34,13 @@ def setup_dns_default(N, dt, nu , seed):
     return dns
 
 def environment( s , N, gridSize, numActions, dt, nu, episodeLength, dforce, seed, dns_default):
-    
+
     testing = True if s["Custom Settings"]["Mode"] == "Testing" else False
     dns = dns_default
 
     u_restart = dns.uu[0,:].copy()
     v_restart = dns.vv[0,:].copy()
- 
+
     # reward defaults
     rewardFactor = 1.
 
@@ -50,7 +50,7 @@ def environment( s , N, gridSize, numActions, dt, nu, episodeLength, dforce, see
     # Initialize LES
     sgs = KS(L=L, N = gridSize, dt=dt, nu=nu, tend=tSim, dforce=dforce, noise=0.)
     v0 = np.concatenate((v_restart[:((gridSize+1)//2)], v_restart[-(gridSize-1)//2:])) * gridSize / dns.N
-    
+
     sgs.IC( v0 = v0 )
     sgs.setup_basis(numActions, basis)
 
@@ -68,7 +68,7 @@ def environment( s , N, gridSize, numActions, dt, nu, episodeLength, dforce, see
     cumreward = 0.
 
     while step < episodeLength and error == 0:
-        
+
         # Getting new action
         s.update()
 
@@ -86,7 +86,7 @@ def environment( s , N, gridSize, numActions, dt, nu, episodeLength, dforce, see
             print(str(e))
             error = 1
             break
-        
+
         # get new state
         state = sgs.getState().flatten().tolist()
         if(np.isnan(state).any() == True):
@@ -94,13 +94,14 @@ def environment( s , N, gridSize, numActions, dt, nu, episodeLength, dforce, see
             error = 1
             break
         s["State"] = state
- 
+
+        #print(dns.Ek_ktt)
         kMseLogErr = np.mean((np.abs(dns.Ek_ktt[sgs.ioutnum,1:gridSize//2] - sgs.Ek_ktt[sgs.ioutnum,1:gridSize//2])/dns.Ek_ktt[sgs.ioutnum,1:gridSize//2])**2)
         reward = rewardFactor*(prevkMseLogErr-kMseLogErr)
         prevkMseLogErr = kMseLogErr
 
         cumreward += reward
-        
+
         if (np.isnan(reward)):
             print("[ks_environment] Nan reward detected")
             error = 1
@@ -115,20 +116,20 @@ def environment( s , N, gridSize, numActions, dt, nu, episodeLength, dforce, see
         s["Termination"] = "Truncated"
         s["Termination"] = "Truncated"
         s["Reward"] = -1000 if testing else -np.inf
-    
+
     else:
         s["Termination"] = "Terminal"
-    
+
     if testing:
 
         # store controlled LES
         fileName = s["Custom Settings"]["Filename"]
         print("[ks_environment] Storing sgs to file {}".format(fileName))
         np.savez(fileName, x = sgs.x, t = sgs.tt, uu = sgs.uu, vv = sgs.vv, L=L, N=gridSize, dt=dt, nu=nu, tEnd=tSim)
-         
+
         print("[ks_environmnet] Calculating SGS terms from DNS..")
         dns.compute_Sgs(gridSize)
-  
+
         print("[ks_environment] Running UGS..")
         base = KS(L=L, N = gridSize, dt=dt, nu=nu, tend=tSim, dforce=dforce, noise=0.)
         v0 = np.concatenate((dns.v0[:((gridSize+1)//2)], dns.v0[-(gridSize-1)//2:]))
@@ -147,7 +148,7 @@ def environment( s , N, gridSize, numActions, dt, nu, episodeLength, dforce, see
         actions = np.zeros(numActions)
 
         while step < episodeLength and error == 0:
-        
+
             # apply action and advance environment
             try:
                 for _ in range(nIntermediate):
@@ -160,7 +161,7 @@ def environment( s , N, gridSize, numActions, dt, nu, episodeLength, dforce, see
                 print(str(e))
                 error = 1
                 break
-            
+
 
             # calculate reward
             kMseLogErr = np.mean((np.abs(dns.Ek_ktt[base.ioutnum,:gridSize//2] - base.Ek_ktt[base.ioutnum,:gridSize//2])/dns.Ek_ktt[base.ioutnum,:gridSize//2])**2)
@@ -174,10 +175,10 @@ def environment( s , N, gridSize, numActions, dt, nu, episodeLength, dforce, see
                 print("[ks_environment] Nan reward detected")
                 error = 1
                 break
-     
+
             step += 1
 
         print("[ks_environment] uncontrolled cumreward")
         print(cumreward)
-        
+
         makePlot(dns, base, sgs, fileName, True)

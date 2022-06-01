@@ -110,11 +110,15 @@ class KS:
         self.tt[0]   = 0.
 
     def __setup_fourier(self, coeffs=None):
-        self.k   = fftfreq(self.N, self.L / (2*np.pi*self.N))
+        # self.k   = fftfreq(self.N, self.L / (2*np.pi*self.N))
+        k1 = np.arange(0, self.N/2 - 0.5, 1)
+        k2 = np.arange(-self.N/2+1, -0.5, 1)
+        k3 = np.zeros(1)
+        self.k = np.concatenate([k1, k3, k2])*(2*np.pi/self.L)
         # Fourier multipliers for the linear term Lu
         if (coeffs is None):
             # normal-form equation
-            self.l = self.k**2 - self.k**4 #(KS)
+            self.l = self.nu*self.k**2 - self.k**4 #(KS)
         else:
             # altered-coefficients
             self.l = -      coeffs[0]*np.ones(self.k.shape) \
@@ -134,7 +138,7 @@ class KS:
         self.f1 = self.dt*np.real( np.mean( (-4. -    self.LR              + np.exp(self.LR)*( 4. - 3.*self.LR + self.LR**2) )/(self.LR**3) , 1) )
         self.f2 = self.dt*np.real( np.mean( ( 2. +    self.LR              + np.exp(self.LR)*(-2. +    self.LR             ) )/(self.LR**3) , 1) )
         self.f3 = self.dt*np.real( np.mean( (-4. - 3.*self.LR - self.LR**2 + np.exp(self.LR)*( 4. -    self.LR             ) )/(self.LR**3) , 1) )
-        self.g  = -0.5j*self.k
+        self.g  = -0.5j*self.nu*self.k
 
     def setup_basis(self, M, kind = 'uniform'):
         self.M = M
@@ -218,6 +222,7 @@ class KS:
         self.vv[0,:] = v0
         self.tt[0]   = 0.
 
+
     def setGroundTruth(self, t, x, uu):
         self.uu_truth = uu
         self.f_truth = interpolate.interp2d(x, t, self.uu_truth, kind='cubic')
@@ -300,7 +305,7 @@ class KS:
             # reset simulation arrays with possibly updated size
             self.__setup_timeseries(nout=self.nout)
             self.vv[0,:] = self.v0
-            self.uu[0,:] = self.v0
+            self.uu[0,:] = self.u0
 
         # advance in time for nsteps steps
         try:
