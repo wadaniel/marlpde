@@ -7,8 +7,9 @@ import math
 ### Parsing arguments
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--NDNS', help='Discretization / number of grid points of DNS', required=False, type=int, default=2048)
+parser.add_argument('--NDNS', help='Discretization / number of grid points of DNS', required=False, type=int, default=1024)
 parser.add_argument('--N', help='Discretization / number of grid points of UGS', required=False, type=int, default=32)
+parser.add_argument('--L', help='Domain size', required=False, type=float, default=2*np.pi)
 parser.add_argument('--NA', help='Number of actions', required=False, type=int, default=32)
 parser.add_argument('--NE', help='Number of experiences', required=False, type=int, default=5e5)
 parser.add_argument('--width', help='Size of hidden layer', required=False, type=int, default=256)
@@ -18,7 +19,7 @@ parser.add_argument('--noise', help='Standard deviation of IC', required=False, 
 parser.add_argument('--dforce', help='Do direct forcing', action='store_true', required=False)
 parser.add_argument('--seed', help='Random seed', required=False, type=int, default=42)
 parser.add_argument('--dt', help='Simulator time step', required=False, type=float, default=0.1)
-parser.add_argument('--nu', help='Viscosity', required=False, type=float, default=1,)
+parser.add_argument('--nu', help='Viscosity', required=False, type=float, default=1)
 parser.add_argument('--tend', help='Simulation length', required=False, type=int, default=550)
 parser.add_argument('--nt', help='Number of testing runs', required=False, type=int, default=1)
 parser.add_argument('--tf', help='Testing frequency in episodes', required=False, type=int, default=100)

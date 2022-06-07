@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 
 N    = 1024
 L    = 22
-nu   = 1.0
+nu   = 100
 dt   = 0.25
 tTransient = 50
 tEnd = 550
@@ -76,8 +76,7 @@ def environment( s , N, gridSize, numActions, dt, nu, episodeLength, dforce, see
         actions = s["Action"]
 
         try:
-            for _ in range(nIntermediate):
-                sgs.step(actions)
+            sgs.step(actions=actions, nIntermed=nIntermediate)
             sgs.compute_Ek()
             sgs.fou2real()
 
@@ -95,6 +94,7 @@ def environment( s , N, gridSize, numActions, dt, nu, episodeLength, dforce, see
             break
         s["State"] = state
 
+        #print(dns.Ek_ktt)
         kMseLogErr = np.mean((np.abs(dns.Ek_ktt[sgs.ioutnum,1:gridSize//2] - sgs.Ek_ktt[sgs.ioutnum,1:gridSize//2])/dns.Ek_ktt[sgs.ioutnum,1:gridSize//2])**2)
         reward = rewardFactor*(prevkMseLogErr-kMseLogErr)
         prevkMseLogErr = kMseLogErr
@@ -130,7 +130,7 @@ def environment( s , N, gridSize, numActions, dt, nu, episodeLength, dforce, see
         dns.compute_Sgs(gridSize)
 
         print("[ks_environment] Running UGS..")
-        base = Kuramoto_RL(L=L, N = gridSize, dt=dt, nu=nu, tend=tSim, dforce=dforce, noise=0.)
+        base = Kuramoto_RL(L=L, N = gridSize, dt=dt, nu=nu, tend=tSim, dforce=dforce)
         v0 = np.concatenate((dns.v0[:((gridSize+1)//2)], dns.v0[-(gridSize-1)//2:]))
         base.IC( v0 = v0 * gridSize / dns.N )
         base.setup_basis(numActions, basis)

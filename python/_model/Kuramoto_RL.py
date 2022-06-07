@@ -46,7 +46,7 @@ class Kuramoto_RL:
     #
     # Solution of the  KS equation
     #
-    # u_t + u_xx + u_xxxx + 0.5(u*u)_x = 0 (KS)
+    # u_t + nu*u_xx + u_xxxx + nu*0.5(u*u)_x = 0 (KS)
     # u_t + u_xx + 0.5(u*u)_x = 0 (VB)
     # with periodic BCs on x \in [0, 2*pi*L]: u(x+2*pi*L,t) = u(x,t).
     #
@@ -59,12 +59,16 @@ class Kuramoto_RL:
     # Temporal discretization: exponential time differencing fourth-order Runge-Kutta
     # see AK Kassam and LN Trefethen, SISC 2005
 
-    def __init__(self, L=16, N=128, dt=0.25, nu=1.0, dforce=True, nsteps=None, tend=150, u0=None, v0=None, case=None, coeffs=None, noisy = False, seed=42, grad=None):
+    def __init__(self, L=2.*np.pi, N=512, dt=0.001, nu=1.0, nsteps=None, tend=5., u0=None, v0=None, case=None, noise=0., seed=42, dforce=True, grad=None):
 
         # Initialize
-        L  = float(L);
-        dt = float(dt);
-        tend = float(tend)
+        np.random.seed(None)
+        self.noise = noise
+        self.seed = seed
+
+        self.L  = float(L);
+        self.dt = float(dt);
+        self.tend = float(tend)
 
         if (nsteps is None):
             nsteps = int(tend/dt)
@@ -73,10 +77,7 @@ class Kuramoto_RL:
             # override tend
             tend = dt*nsteps
 
-        self.noisy = noisy
-
         # save to self
-        self.L      = L
         self.N      = N
         self.dx     = L/N
         self.x      = np.linspace(0, self.L, N, endpoint=False)
@@ -85,7 +86,6 @@ class Kuramoto_RL:
         self.nsteps = nsteps
         self.nout   = nsteps
         self.sigma  = L/(2*N)
-        self.coeffs = coeffs
 
         # Basis
         self.M = 0
@@ -127,6 +127,7 @@ class Kuramoto_RL:
         # precompute ETDRK4 scalar quantities:
         self.__setup_etdrk4()
 
+
     def __setup_timeseries(self, nout=None):
         if (nout != None):
             self.nout = int(nout)
@@ -135,21 +136,20 @@ class Kuramoto_RL:
         self.uu = np.zeros([self.nout+1, self.N], dtype=np.complex64)
         self.vv = np.zeros([self.nout+1, self.N], dtype=np.complex64)
         self.tt = np.zeros(self.nout+1)
-
         self.tt[0]   = 0.
 
     def __setup_fourier(self, coeffs=None):
-        #self.k   = fftfreq(self.N, self.L / (2*np.pi*self.N))
-        ###########
+        # self.k = fftfreq(self.N, self.L / (2*np.pi*self.N))
         k1 = np.arange(0, self.N/2 - 0.5, 1)
         k2 = np.arange(-self.N/2+1, -0.5, 1)
         k3 = np.zeros(1)
         self.k = np.concatenate([k1, k3, k2])*(2*np.pi/self.L)
-        ####################
+        # print(self.k)
+        # print(self.k.shape)
+        # print(np.amax(self.k))
         # Fourier multipliers for the linear term Lu
         if (coeffs is None):
             # normal-form equation
-            #self.l = self.k**2 - self.k**4 #(KS)
             self.l = self.nu*self.k**2 - self.k**4 #(KS)
             #self.l = self.k**2 #(VB)
         else:
@@ -171,7 +171,6 @@ class Kuramoto_RL:
         self.f1 = self.dt*np.real( np.mean( (-4. -    self.LR              + np.exp(self.LR)*( 4. - 3.*self.LR + self.LR**2) )/(self.LR**3) , 1) )
         self.f2 = self.dt*np.real( np.mean( ( 2. +    self.LR              + np.exp(self.LR)*(-2. +    self.LR             ) )/(self.LR**3) , 1) )
         self.f3 = self.dt*np.real( np.mean( (-4. - 3.*self.LR - self.LR**2 + np.exp(self.LR)*( 4. -    self.LR             ) )/(self.LR**3) , 1) )
-        #self.g  = -0.5j*self.k
         self.g  = -0.5j*self.nu*self.k
 
     def etdrk(self, Fforcing, u, v):
@@ -224,50 +223,12 @@ class Kuramoto_RL:
         if (v0 is None):
             if (u0 is None):
 
-                    # uniform noise
-                    np.random.seed( seed )
-                    offset = np.random.normal(loc=0., scale=self.dx) if self.noisy else 0.
-
                     # Gaussian noise (according to https://arxiv.org/pdf/1906.07672.pdf)
                     if case == 'noise':
-                        u0 = np.random.normal(0., 1e-4, self.N)
-
-                    # Gaussian initialization
-                    elif case == 'gaussian':
-                        sigma = self.L/8
-                        u0 = gaussian(self.x, mean=0.5*self.L+offset, sigma=sigma)
-
-                    # Box initialization
-                    elif case == 'box':
-                        u0 = np.abs(self.x-self.L/2-offset)<self.L/8
-
-                    # Sinus
-                    elif case == 'sinus':
-                        u0 = np.sin(self.x+offset)
-
-                    # Turbulence
-                    elif case == 'turbulence':
-                        # Taken from:
-                        # A priori and a posteriori evaluations
-                        # of sub-grid scale models for the Burgers' eq. (Li, Wang, 2016)
-
-                        #np.random.seed(11337)
-                        np.random.seed(1337)
-
-                        A = 1
-                        u0 = np.ones(self.N)
-                        for k in range(1, self.N):
-                            phase = np.random.uniform(low=-np.pi, high=np.pi)
-                            Ek = A*5**(-5/3) if k <= 5 else A*k**(-5/3)
-                            u0 += np.sqrt(2*Ek)*np.sin(k*2*np.pi*self.x/self.L+phase)
-
-                        # rescale
-                        scale = 0.7 / np.sqrt(np.sum((u0-1.)**2)/self.N)
-                        u0 *= scale
-
-                        #assert( np.sqrt(np.sum((u0-1.)**2)/self.N) < 1.5 )
-                        assert( np.sqrt(np.sum((u0-1.)**2)/self.N) > 0.5 )
-
+                        #print("[KS] Noisy IC")
+                        u0 = np.random.normal(0., 1e-3, self.N)
+                    elif case == 'ETDRK4':
+                        u0 = np.cos(2*self.x / self.N)*(1+np.sin(2*self.x / N))
                     else:
                         print("[KS] Error: IC case unknown")
                         return -1
@@ -275,27 +236,25 @@ class Kuramoto_RL:
             else:
                 # check the input size
                 if (np.size(u0,0) != self.N):
-                    if self.noisy:
-                        print("[KS] Error: wrong IC array size")
-                    return -1
+                    print("[KS] Error: wrong IC array size")
+                    sys.exit()
+
                 else:
-                    if self.noisy:
-                        print("[KS] Using given (real) flow field...")
                     # if ok cast to np.array
                     u0 = np.array(u0)
 
             # in any case, set v0:
             v0 = fft(u0)
+
         else:
+            print("[KS] v0 was given")
             # the initial condition is provided in v0
             # check the input size
             if (np.size(v0,0) != self.N):
-                if self.noisy:
-                    print("[KS] Error: wrong IC array size")
-                    return -1
+                print("[KS] Error: wrong IC array size")
+                sys.exit()
+
             else:
-                if self.noisy:
-                    print("[KS] Using given (Fourier) flow field...")
                 # if ok cast to np.array
                 v0 = np.array(v0)
                 # and transform to physical space
@@ -380,8 +339,13 @@ class Kuramoto_RL:
             # update nout in case nsteps or iout were changed
             nout      = nsteps
             self.nout = nout
+            self.uut  = -1
+            self.stepnum = 0
+            self.ioutnum = 0
             # reset simulation arrays with possibly updated size
             self.__setup_timeseries(nout=self.nout)
+            self.vv[0,:] = self.v0
+            self.uu[0,:] = self.u0
 
         # advance in time for nsteps steps
         try:
@@ -404,8 +368,9 @@ class Kuramoto_RL:
 
     def fou2real(self):
         # Convert from spectral to physical space
-        #self.uut = self.stepnum
-        self.uu = np.real(ifft(self.vv))
+        if self.uut < self.stepnum:
+            self.uut = self.stepnum
+            self.uu = np.real(ifft(self.vv))
 
     def compute_Ek(self):
         #
