@@ -20,7 +20,9 @@ def setup_dns_default(N, dt, nu , seed):
 
     # simulate transient period
     dns = Kuramoto_RL(L=L, N=N, dt=dt, nu=nu, tend=tTransient, seed=seed)
+    print("hi")
     dns.simulate()
+    print("hi")
     dns.fou2real()
     u_restart = dns.uu[-1,:].copy()
     v_restart = dns.vv[-1,:].copy()

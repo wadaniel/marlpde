@@ -18,16 +18,15 @@ parser.add_argument('--episodelength', help='Actual length of episode / number o
 parser.add_argument('--noise', help='Standard deviation of IC', required=False, type=float, default=0.)
 parser.add_argument('--dforce', help='Do direct forcing', action='store_true', required=False)
 parser.add_argument('--seed', help='Random seed', required=False, type=int, default=42)
-parser.add_argument('--dt', help='Simulator time step', required=False, type=float, default=0.1)
-parser.add_argument('--nu', help='Viscosity', required=False, type=float, default=1)
-parser.add_argument('--tend', help='Simulation length', required=False, type=int, default=550)
+parser.add_argument('--dt', help='Simulator time step', required=False, type=float, default=3*1e-6)
+parser.add_argument('--nu', help='Viscosity', required=False, type=float, default=100)
+parser.add_argument('--tend', help='Simulation length', required=False, type=int, default=6*1e-3)
 parser.add_argument('--nt', help='Number of testing runs', required=False, type=int, default=1)
 parser.add_argument('--tf', help='Testing frequency in episodes', required=False, type=int, default=100)
 parser.add_argument('--run', help='Run tag', required=False, type=int, default=0)
 parser.add_argument('--test', action='store_true', help='Run tag', required=False)
 
 args = parser.parse_args()
-
 
 ### Import modules
 
