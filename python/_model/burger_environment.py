@@ -1,5 +1,5 @@
 from Burger import *
-from plotting import *
+from plotting import makePlot
 
 # dns defaults
 L    = 2*np.pi
@@ -19,7 +19,9 @@ def setup_dns_default(N, dt, nu , ic, forcing, seed):
     dns.compute_Ek()
     return dns
 
-def environment( s , N, gridSize, numActions, dt, nu, episodeLength, ic, spectralReward, forcing, dforce, noise, seed, nunoise=False, version=0, dns_default = None):
+def environment( s , N, gridSize, numActions, dt, nu, episodeLength, ic, spectralReward, forcing, dforce, noise, seed, nunoise=False, version=0, ssm=False, dsm=False, dns_default = None):
+
+    assert( (ssm and dsm) == False )
  
     testing = True if s["Custom Settings"]["Mode"] == "Testing" else False
     noise = 0. if testing else noise
@@ -138,7 +140,7 @@ def environment( s , N, gridSize, numActions, dt, nu, episodeLength, ic, spectra
         fileName = s["Custom Settings"]["Filename"]
 
         print("[burger_env] Storing sgs to file {}".format(fileName))
-        np.savez(fileName, x = sgs.x, t = sgs.tt, uu = sgs.uu, vv = sgs.vv, L=L, N=gridSize, dt=dt, nu=nu, tEnd=tEnd, actions=sgs.actionHistory)
+        np.savez(fileName, x = sgs.x, t = sgs.tt, uu = sgs.uu, vv = sgs.vv, L=L, N=gridSize, dt=dt, nu=nu, tEnd=tEnd, ssm = ssm, dsm = dsm, actions=sgs.actionHistory)
          
 #------------------------------------------------------------------------------
         

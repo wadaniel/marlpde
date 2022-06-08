@@ -21,6 +21,8 @@ parser.add_argument('--nu', help='Viscosity', required=False, type=float, defaul
 parser.add_argument('--tend', help='Simulation length', required=False, type=int, default=10)
 parser.add_argument('--nt', help='Number of testing runs', required=False, type=int, default=1)
 parser.add_argument('--tf', help='Testing frequenct in episodes', required=False, type=int, default=100)
+parser.add_argument('--ssm', help='Static Smagorinksy Model', action='store_true', required=False)
+parser.add_argument('--dsm', help='Dynamic Smagorinksy Model', action='store_true', required=False)
 parser.add_argument('--run', help='Run tag', required=False, type=int, default=0)
 parser.add_argument('--version', help='Version tag', required=False, type=int, default=0)
 parser.add_argument('--test', action='store_true', help='Run tag', required=False)
@@ -69,6 +71,8 @@ e["Problem"]["Environment Function"] = lambda s : be.environment(
         seed = args.seed, 
         nunoise = args.nunoise,
         version = args.version,
+        ssm = args.ssm,
+        dsm = args.dsm,
         dns_default = dns_default )
 e["Problem"]["Testing Frequency"] = args.tf
 e["Problem"]["Policy Testing Episodes"] = args.nt

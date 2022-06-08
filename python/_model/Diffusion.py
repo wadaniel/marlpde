@@ -2,6 +2,7 @@ import sys
 import time
 from numpy import pi
 from scipy import interpolate
+from scipy.sparse import diags
 from scipy.fftpack import rfft, irfft, rfftfreq
 from scipy import special
 import numpy as np
@@ -22,12 +23,15 @@ class Diffusion:
     # u_t = nu*u_xx
     # with periodic BCs on x \in [0, L]: u(0,t) = u(L,t).
 
-    def __init__(self, L=2.*np.pi, N=512, dt=0.001, nu=0.0, dforce=True, nsteps=None, tend=5., u0=None, v0=None, case=None, ssm=False, dsm=False, noise=0., seed=42, version=0, nunoise=False):
+    def __init__(self, L=2.*np.pi, N=512, dt=0.001, nu=0.0, dforce=True, nsteps=None, tend=5., u0=None, v0=None, case=None, ssm=False, dsm=False, noise=0., seed=42, version=0, nunoise=False, implicit=False):
         
         # Randomness
         np.random.seed(None)
         self.noise = noise*L
         self.seed = seed
+
+        # EXplicit or Implicit euler schme
+        self.implicit = implicit
 
         # Initialize
         self.L  = float(L); 
@@ -68,6 +72,8 @@ class Diffusion:
         self.uut = -1
         # field in real space
         self.uu = None
+        # placeholder for analytical solution
+        self.analytical = None
         # ground truth in real space
         self.uu_truth = None
         # interpolation of truth
@@ -94,6 +100,7 @@ class Diffusion:
         
         # nout+1 because we store the IC as well
         self.uu = np.zeros([self.nout+1, self.N])
+        self.analytical = np.zeros([self.nout+1, self.N])
         self.tt = np.zeros(self.nout+1)
         self.sgsHistory = np.zeros([self.nout+1, self.N])
         self.actionHistory = np.zeros([self.nout+1, self.N])
@@ -178,6 +185,7 @@ class Diffusion:
         # store the IC in [0]
         self.uu[0,:] = u0
         self.tt[0]   = 0.
+        self.analytical[0,:] = u0
        
     def setGroundTruth(self, t, x, uu):
         self.uu_truth = uu
@@ -205,8 +213,10 @@ class Diffusion:
     def step( self, actions=None ):
         
         forcing = np.zeros(self.N)
+        sol = self.getAnalyticalSolution(self.t)
  
         up = np.roll(self.u, -1)
+        up[-1] = 0
         um = np.roll(self.u, +1)
         d2udx2 = (up - 2.*self.u + um)/self.dx**2
         d2udx2[0] = d2udx2[1]
@@ -225,17 +235,30 @@ class Diffusion:
             
             self.sgsHistory[self.ioutnum,:] = forcing
 
-        """
-        Expl. Euler Central Differences
-        """
-        self.u = self.u + self.dt * self.nu * (d2udx2 + forcing)
-     
+        if self.implicit == True:
+            """
+            Impl. Euler Central Differences
+            """
+            c = self.dt*self.nu/(self.dx**2)
+            M = diags([-c, 1+2*c, -c], [-1, 0, 1], shape=(self.N, self.N)).toarray()
+            self.u = np.linalg.solve(M, self.u)
+ 
+
+        else:
+            """
+            Expl. Euler Central Differences
+            """
+            self.u = self.u + self.dt * self.nu * (d2udx2 + forcing)
+         
         self.stepnum += 1
         self.t       += self.dt
  
         self.ioutnum += 1
         self.uu[self.ioutnum,:] = self.u
         self.tt[self.ioutnum]   = self.t
+
+        # Store analytical solution
+        self.analytical[self.ioutnum, :] = sol
 
     def simulate(self, nsteps=None, restart=False):
         #

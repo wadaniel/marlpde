@@ -3,6 +3,7 @@ import argparse
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--N', help='Discretization / number of grid points', required=False, type=int, default=32)
+#parser.add_argument('--NDNS', help='Discretization / number of grid points', required=False, type=int, default=512)
 parser.add_argument('--dt', help='Time discretization', required=False, type=float, default=0.001)
 parser.add_argument('--tend', help='Length of simulation', required=False, type=float, default=5)
 parser.add_argument('--NA', help='Number of actions', required=False, type=int, default=32)
@@ -39,6 +40,9 @@ import korali
 k = korali.Engine()
 e = korali.Experiment()
 
+#dns_default = de.setup_dns_default(args.NDNS, args.dt, args.nu, args.tend, args.seed)
+dns_default = None
+
 ### Defining results folder and loading previous results, if any
 
 resultFolder = '_result_diffusion_{}/'.format(args.run)
@@ -63,7 +67,8 @@ e["Problem"]["Environment Function"] = lambda s : de.environment(
         seed = args.seed, 
         nunoise = args.nunoise,
         tnoise = args.tnoise,
-        version = args.version
+        version = args.version,
+        dns_default = dns_default
         )
 
 e["Problem"]["Testing Frequency"] = 100

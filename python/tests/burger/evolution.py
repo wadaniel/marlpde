@@ -6,8 +6,8 @@ initial condition is set to be approx k^-5/3.
 """
 
 # Discretization grid
-N = 512
-N2 = 32
+N = 1024
+N2 = 1024
 
 import matplotlib
 matplotlib.use('Agg')
@@ -24,9 +24,9 @@ from Burger import *
 #------------------------------------------------------------------------------
 ## set parameters and initialize simulation
 L       = 2*np.pi
-dt      = 0.001
-tEnd    = 5
-nu      = 0.02
+dt      = 0.0005
+tEnd    = 4
+nu      = 0.001
 #ic      = 'zero'
 #ic      = 'turbulence'
 ic      = 'sinus'
@@ -36,8 +36,8 @@ seed    = 42
 forcing = True
 
 dns = Burger(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case=ic, noise=noise, seed=seed, forcing=forcing)
-sgs0 = Burger(L=L, N=N2, dt=dt, nu=nu, tend=tEnd, case=ic, noise=noise, seed=seed, forcing=forcing)
-sgs = Burger(L=L, N=N2, dt=dt, nu=nu, tend=tEnd, case=ic, noise=noise, seed=seed, forcing=forcing)
+sgs0 = dns #Burger(L=L, N=N2, dt=dt, nu=nu, tend=tEnd, case=ic, noise=noise, seed=seed, forcing=forcing)
+sgs = dns #Burger(L=L, N=N2, dt=dt, nu=nu, tend=tEnd, case=ic, noise=noise, seed=seed, forcing=forcing)
 
 v0 = np.concatenate((dns.v0[:((N2+1)//2)], dns.v0[-(N2-1)//2:]))
 sgs0.IC( v0 = v0 * N2 / N )
@@ -48,7 +48,6 @@ sgs.IC( v0 = v0 * N2 / N )
 sgs.randfac1 = dns.randfac1
 sgs.randfac2 = dns.randfac2
 
-
 #------------------------------------------------------------------------------
 print("Simulate DNS ..")
 ## simulate
@@ -58,6 +57,7 @@ dns.compute_Ek()
 print("Compute SGS ..")
 dns.compute_Sgs(N2)
 
+"""
 print("Simulate SGS..")
 ## simulate
 sgs0.simulate()
@@ -72,5 +72,5 @@ sgs.fou2real()
 sgs.compute_Ek()
 #------------------------------------------------------------------------------
 ## plot
-
+"""
 makePlot(dns, sgs0, sgs, "evolution", False)

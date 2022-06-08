@@ -18,11 +18,14 @@ class Burger:
     #
     # Solution of the Burgers equation
     #
-    # u_t + u*u_x = nu*u_xx0
+    # u_t + u*u_x = nu*u_xx0 + Forcing
     # with periodic BCs on x \in [0, L]: u(0,t) = u(L,t).
 
     def __init__(self, L=2.*np.pi, N=512, dt=0.001, nu=0.0, dforce=True, nsteps=None, tend=5., u0=None, v0=None, case=None, forcing=False, ssm=False, dsm=False, noise=0., seed=42, version=0, nunoise=False):
         
+        # SGS models
+        assert( (ssm and dsm) == False )
+
         # Randomness
         np.random.seed(None)
         self.noise = noise*L
@@ -367,14 +370,25 @@ class Burger:
         if self.forcing:
         
             forcing = np.zeros(self.N)
-            
+         
             A = 1.
             for k in range(1,32):
                 r1 = self.randfac1[k, self.ioutnum]
                 r2 = self.randfac2[k, self.ioutnum]
                 forcing += r1*A*np.sin(2.*np.pi*(k*self.x/self.L+r2))
             
-            Fforcing += fft( forcing )
+            Fforcing = fft( forcing )
+
+            """
+            hidx = (np.abs(self.k)>70) 
+            z = self.v.copy()
+            z[hidx] = 0
+            energy = sum(z**2)
+            eta = 1/2048
+            eps = self.nu**3/eta**4
+            gamma = eps / energy
+            Fforcing = -gamma * z
+            """
             
         if (actions is not None):
             assert self.basis is not None, "[Burger] Basis not set up (is None)."

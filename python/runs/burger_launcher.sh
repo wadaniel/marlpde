@@ -30,14 +30,14 @@ python3 run-vracer-burger.py --ic $IC --run $run --NE $NEX \
     --iex $iex --noise $noise --seed $seed \
     --episodelength $esteps --NDNS $NDNS \
     --tf $tf --nt $nt --version $version --width $width \
-    --forcing --nunoise
+    --nunoise
 
 python3 run-vracer-burger.py --ic $IC --run $run --NE $NEX \
     --N $N --NA $NA --dt $dt --nu $nu \
     --iex $iex --noise $noise --seed $seed \
     --episodelength $esteps --NDNS $NDNS \
     --tf $tf --nt $nt --version $version --width $width \
-    --forcing --nunoise \
+    --nunoise \
     --test
 
 python3 -m korali.rlview --dir "_result_${IC}_${run}" --out "vracer${run}.png"
