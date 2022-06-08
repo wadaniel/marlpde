@@ -105,7 +105,7 @@ e["Solver"]["Experience Replay"]["Off Policy"]["Annealing Rate"] = 5.0e-8
 e["Solver"]["Experience Replay"]["Off Policy"]["Cutoff Scale"] = 4.0
 e["Solver"]["Experience Replay"]["Off Policy"]["REFER Beta"] = 0.3
 e["Solver"]["Experience Replay"]["Off Policy"]["Target"] = 0.1
-e["Solver"]["Experience Replay"]["Start Size"] = 32768
+e["Solver"]["Experience Replay"]["Start Size"] = 16384
 e["Solver"]["Experience Replay"]["Maximum Size"] = 524288
 
 e["Solver"]["Policy"]["Distribution"] = "Clipped Normal"
@@ -145,6 +145,18 @@ if args.test:
     fileName = 'test_diffusion_{}_{}_{}_{}_{}'.format(args.ic, args.N, args.NA, args.seed, args.run)
     e["Solver"]["Testing"]["Sample Ids"] = [0]
     e["Problem"]["Custom Settings"]["Filename"] = fileName
+
+if args.test:
+
+    dts = [0.005, 0.01, 0.02, 0.04, 0.1, 0.2]
+
+    for dt in dts:
+        fileName = 'test_diffusion_{}_{}_{}'.format(args.ic, dt, args.run)
+        e["Solver"]["Testing"]["Sample Ids"] = [0]
+        e["Problem"]["Custom Settings"]["Filename"] = fileName
+        e["Problem"]["Custom Settings"]["Timestep"] = nu
+        k.run(e)
+
 
 ### Running Experiment
 

@@ -26,7 +26,11 @@ def environment( s , N, tEnd, dt_sgs, numActions, nu, episodeLength, ic, dforce,
         
     if tnoise and testing == False:
         dt_sgs = 0.01+0.04*np.random.uniform()
-    
+     
+    if testing == True:
+        dt_sgs = s["Custom Settings"]["Timestep"]
+
+
     #if noise > 0.:
         #dns = Diffusion(L=L, N=NDNS, dt=dt_sgs, nu=nu, tend=tEnd, case=ic, version=version, noise=0., implicit = True)
         #dns.simulate()

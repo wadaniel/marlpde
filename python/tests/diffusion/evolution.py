@@ -24,7 +24,7 @@ from diffusion_environment import setup_dns_default
 #------------------------------------------------------------------------------
 ## set parameters and initialize simulation
 L    = 2*np.pi
-dt   = 0.01
+dt   = 0.2
 tEnd = 10.
 nu   = 0.1
 implicit = False
