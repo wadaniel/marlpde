@@ -50,7 +50,7 @@ python3 run-vracer-diffusion.py --ic $IC --run $RUN --NE $NEX \
 python3 run-vracer-diffusion.py --ic $IC --run $RUN --NE $NEX \
     --N $N --NA $NA --dt $dt --tend $tend --nu $nu \
     --iex $iex --noise $noise --seed $seed \
-    --episodelength $esteps --width $width --version $version --tnoise --testing
+    --episodelength $esteps --width $width --version $version --tnoise --test
 
 python3 -m korali.rlview --dir "_result_diffusion_${RUN}" --out "vracer_diffusion_${RUN}.png"
 
