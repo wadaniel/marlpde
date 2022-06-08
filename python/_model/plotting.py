@@ -357,83 +357,31 @@ def makeDiffusionPlot(base, sgs, fileName):
     fig2.savefig(figName2)
 
 #------------------------------------------------------------------------------
-    """
+    
     figName3 = fileName + "_action.png"
     print("Plotting {} ...".format(figName3))
   
-    dnsSgs = dns.sgsHistory
-    
-    print(np.mean(dnsSgs.flatten()))
-    print(np.std(dnsSgs.flatten()))
-    
     print(np.mean(sgs.sgsHistory.flatten()))
     print(np.std(sgs.sgsHistory.flatten()))
  
-    smax = max(dnsSgs.max(), sgs.sgsHistory.max())
-    smin = min(dnsSgs.min(), sgs.sgsHistory.min())
+    smax = sgs.sgsHistory.max()
+    smin = sgs.sgsHistory.min()
     slevels = np.linspace(smin, smax, 50)
-    svals = np.linspace(smin,smax,500)
+    svals = np.linspace(smin, smax, 500)
    
-    fig3, axs3 = plt.subplots(2, 2, sharex='col', sharey='col', subplot_kw=dict(box_aspect=1), figsize=(10,10))
+    fig3, axs3 = plt.subplots(1, 3, sharex='col', sharey='col', subplot_kw=dict(box_aspect=1), figsize=(10,10))
     
-
-    up = np.roll(dns.uu,-1,axis=1)
-    um = np.roll(dns.uu,1,axis=1)
-    ldns = dns.nu*(up - 2*dns.uu + um)/dns.dx**2
- 
-    up = np.roll(base.uu,-1,axis=1)
-    um = np.roll(base.uu,1,axis=1)
-    lbase = base.nu*(up - 2*base.uu + um)/base.dx**2
-    
-    up = np.roll(sgs.uu,-1,axis=1)
-    um = np.roll(sgs.uu,1,axis=1)
-    lsgs = sgs.nu*(up - 2*sgs.uu + um)/sgs.dx**2
-
-    lmax = max(ldns.max(), lbase.max(), lsgs.max())
-    lmin = min(ldns.min(), lbase.min(), lsgs.min())
-    llevels = np.linspace(lmin, lmax, 50)
-
-    idx = 0
-    axs3[idx,0].contourf(dns.x, dns.tt, dnsSgs) #, slevels)
-    #axs3[idx,2].contourf(dns.x, dns.tt, dns.sgsHistoryAlt, slevels)
-    #axs3[idx,3].contourf(base.x, base.tt, dns.sgsHistoryAlt2, slevels)
-    
-    dnsDensity = gaussian_kde(dnsSgs.flatten())
-    dnsDensityVals = dnsDensity(svals)
-    axs3[idx,1].plot(svals, dnsDensityVals, color=colors[idx])
-    axs3[idx,1].set_yscale('log')
- 
-    #idx += 1
-    #axs3[idx,0].contourf(base.x, base.tt, base.sgsHistory) #, llevels)
-
-    #density = gaussian_kde(base.sgsHistory.flatten())
-    #axs3[idx,1].plot(svals, density(svals))
- 
-    idx += 1
-    axs3[idx,0].contourf(sgs.x, sgs.tt, sgs.sgsHistory) #, slevels)
+    axs3[0].contourf(sgs.x, sgs.tt, sgs.sgsHistory) 
   
     sgsDensity = gaussian_kde(sgs.sgsHistory.flatten())
     sgsDensityVals = sgsDensity(svals)
-    axs3[idx,1].plot(svals, dnsDensityVals, color=colors[0], linestyle='--')
-    axs3[idx,1].plot(svals, sgsDensityVals, color=colors[2])
-    
-    fig3.savefig(figName3)
+    axs3[1].plot(svals, sgsDensityVals, color=colors[2])
 
-#------------------------------------------------------------------------------
-
-    figName4 = fileName + "_action_closeup.png"
-    print("Plotting {} ...".format(figName4))
- 
     sfac = 3
     sgsMean = np.mean(sgs.sgsHistory)
     sgsSdev = np.std(sgs.sgsHistory)
     svals2  = np.linspace(sgsMean-sfac*sgsSdev,sgsMean+sfac*sgsSdev,500)
-    fig4, axs4 = plt.subplots(1, 1, subplot_kw=dict(box_aspect=1), figsize=(10,10))
-    axs4.plot(svals2, dnsDensity(svals2), color=colors[0], linestyle='--')
-    axs4.plot(svals2, sgsDensity(svals2), color=colors[2])
-    axs4.set_yscale('log')
-    fig4.savefig(figName4)
+    axs3[2].plot(svals2, sgsDensity(svals2), color=colors[2])
 
+    fig3.savefig(figName3)
     plt.close('all')
- 
-    """
