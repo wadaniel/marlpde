@@ -18,9 +18,9 @@ version=1
 width=512
 
 launchname="${0##*/}"
-cp $launchname "./burger_launcher${run}.sh"
+cp $launchname "./burger_launcher_${run}.sh"
 
-git diff > "./gitdiff${run}.txt"
+git diff > "./gitdiff_${run}.txt"
 
 pushd .
 cd ..
