@@ -15,7 +15,7 @@ basis = 'hat'
 
 def setup_dns_default(NDNS, dt, nu, tend, seed):
     print("Setting up default dns with args ({}, {}, {}, {} )".format(NDNS, dt, nu, seed))
-    dns = Diffusion(L=L, N=NDNS, dt=dt, nu=nu, tend=tend, case='box', noise=0., implicit = True)
+    dns = Diffusion(L=L, N=NDNS, dt=dt, nu=nu, tend=tend, case='sinus', noise=0., implicit = True)
     dns.simulate()
     return dns
 
@@ -25,19 +25,11 @@ def environment( s , N, tEnd, dt_sgs, numActions, nu, episodeLength, ic, dforce,
     noise = 0.0 if testing else 0.1
         
     if tnoise and testing == False:
-        dt_sgs = 0.01+0.04*np.random.uniform()
+        dt_sgs = 0.01+0.03*np.random.uniform()
      
     if testing == True:
         dt_sgs = s["Custom Settings"]["Timestep"]
 
-
-    #if noise > 0.:
-        #dns = Diffusion(L=L, N=NDNS, dt=dt_sgs, nu=nu, tend=tEnd, case=ic, version=version, noise=0., implicit = True)
-        #dns.simulate()
-    
-    #else:
-    #    dns = dns_default
- 
     # Initialize LES
     les = Diffusion(L=L, N=N, dt=dt_sgs, nu=nu, tend=tEnd, case=ic, version=version, noise=0. )
     les.setup_basis(numActions, basis)

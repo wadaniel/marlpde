@@ -12,7 +12,7 @@ parser.add_argument('--width', help='Size of hidden layer', required=False, type
 parser.add_argument('--iex', help='Initial exploration', required=False, type=float, default=0.0001)
 parser.add_argument('--episodelength', help='Actual length of episode / number of actions', required=False, type=int, default=500)
 parser.add_argument('--noise', help='Standard deviation of IC', required=False, type=float, default=0.)
-parser.add_argument('--ic', help='Initial condition', required=False, type=str, default='box')
+parser.add_argument('--ic', help='Initial condition', required=False, type=str, default='sinus')
 parser.add_argument('--dforce', help='Do direct forcing', action='store_true', required=False)
 parser.add_argument('--nunoise', help='Enable noisy nu', action='store_true', required=False)
 parser.add_argument('--tnoise', help='Enable noisy timestep', action='store_true', required=False)
@@ -148,7 +148,7 @@ if args.test:
 
 if args.test:
 
-    dts = [0.005, 0.01, 0.02, 0.04, 0.1, 0.2]
+    dts = [0.005, 0.01, 0.02, 0.03, 0.04]
 
     for dt in dts:
         fileName = 'test_diffusion_{}_{}_{}'.format(args.ic, dt, args.run)

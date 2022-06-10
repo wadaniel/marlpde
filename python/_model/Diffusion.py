@@ -155,7 +155,7 @@ class Diffusion:
             
             # Sinus
             elif case == 'sinus':
-                u0 = np.sin(self.x+self.offset)
+                u0 = np.sin(np.pi/self.L*self.x+self.offset)
 
             elif case == 'zero':
                 u0 = np.zeros(self.N)
@@ -197,13 +197,19 @@ class Diffusion:
 
     def getAnalyticalSolution(self, t):
         
-        if self.case != 'box':
-            print("[Diffusion] TODO: Analytical solution")
-            sys.exit()
-
         if t > 0.:
-            C = 2.*np.sqrt(self.nu*t)
-            sol = 0.5*(special.erf((self.x-0.375*self.L)/C)+special.erf((0.625*self.L-self.x)/C))
+        
+            if self.case == 'box':
+                C = 2.*np.sqrt(self.nu*t)
+                sol = 0.5*(special.erf((self.x-0.375*self.L)/C)+special.erf((0.625*self.L-self.x)/C))
+
+            elif self.case == 'sinus':
+                C = -self.nu * (np.pi / self.L)**2
+                sol = np.sin(np.pi/self.L*self.x) * np.exp(C*t)
+
+            else:
+                print("[Diffusion] TODO: Analytical solution")
+                sys.exit()
 
         else:
             sol = self.u0
@@ -218,9 +224,8 @@ class Diffusion:
         up = np.roll(self.u, -1)
         up[-1] = 0
         um = np.roll(self.u, +1)
+        um[0] = 0
         d2udx2 = (up - 2.*self.u + um)/self.dx**2
-        d2udx2[0] = d2udx2[1]
-        d2udx2[-1] = d2udx2[-2]
 
         if (actions is not None):
             assert self.basis is not None, "[Diffusion] Basis not set up (is None)."
@@ -250,6 +255,7 @@ class Diffusion:
             """
             self.u = self.u + self.dt * self.nu * (d2udx2 + forcing)
          
+        self.u[0] = 0
         self.stepnum += 1
         self.t       += self.dt
  

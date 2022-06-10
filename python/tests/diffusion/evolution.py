@@ -6,7 +6,7 @@ initial condition is set to be approx k^-5/3.
 """
 
 # Discretization grid
-N1 = 512
+N1 = 32
 N2 = 32
 
 import matplotlib
@@ -24,15 +24,15 @@ from diffusion_environment import setup_dns_default
 #------------------------------------------------------------------------------
 ## set parameters and initialize simulation
 L    = 2*np.pi
-dt   = 0.2
+dt   = 0.03
 tEnd = 10.
-nu   = 0.1
+nu   = 0.5
 implicit = False
 seed = 1234
 
 dns  = setup_dns_default(N1, dt, nu, tEnd, seed=seed)
 #sgs  = setup_dns_default(N2, dt, nu, tEnd, seed=seed)
-sgs  = Diffusion(L=L, N=N2, dt=dt, nu=nu, tend=tEnd, case='box', implicit=implicit)
+sgs  = Diffusion(L=L, N=N2, dt=dt, nu=nu, tend=tEnd, case='sinus', implicit=implicit)
 
 #------------------------------------------------------------------------------
 print("Simulate..")
@@ -62,7 +62,12 @@ for i in range(16):
     k = int(i / 4)
     sol = dns.getAnalyticalSolution(t)
 
+    print("dns err")
     err = ((dns.uu[tidx,:] - sol)**2).mean()
+    print(1e6*err)
+    
+    print("sgs err")
+    err = ((sgs.uu[tidx,:] - sgs.getAnalyticalSolution(t))**2).mean()
     print(1e6*err)
     axs[k,l].plot(sgs.x, sgs.uu[tidx,:])
     axs[k,l].plot(dns.x, dns.uu[tidx,:])
