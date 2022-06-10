@@ -1,15 +1,15 @@
 #!/bin/bash -l
 
-version=0
-width=256
+version=1
+RUN=3
+width=512
 IC='box'
-RUN=5
-NEX=10000000
+NEX=5000000
 N=32
 NA=32
 dt=0.01
 tend=10.0
-noise=0.1
+noise=0.0
 nu=0.1
 iex=0.1
 seed=42
@@ -18,7 +18,7 @@ ENV="diffusion"
 
 git diff > "./gitdiff_diffusion_${RUN}.txt"
 
-RUNPATH=${SCRATCH}/marlpde/$ENV/$RUN/
+RUNPATH=${SCRATCH}/gmmarlpde/$ENV/$RUN/
 mkdir -p $RUNPATH
 
 cd ..
@@ -46,6 +46,11 @@ python3 run-vracer-diffusion.py --ic $IC --run $RUN --NE $NEX \
     --N $N --NA $NA --dt $dt --tend $tend --nu $nu \
     --iex $iex --noise $noise --seed $seed \
     --episodelength $esteps --width $width --version $version --tnoise
+
+python3 run-vracer-diffusion.py --ic $IC --run $RUN --NE $NEX \
+    --N $N --NA $NA --dt $dt --tend $tend --nu $nu \
+    --iex $iex --noise $noise --seed $seed \
+    --episodelength $esteps --width $width --version $version --tnoise --test
 
 python3 -m korali.rlview --dir "_result_diffusion_${RUN}" --out "vracer_diffusion_${RUN}.png"
 
