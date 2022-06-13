@@ -591,9 +591,9 @@ class Burger:
 
             print("[Burger] Floating point exception occured in getState", flush=True)
             if self.version == 0:
-                state = np.inf*np.ones(self.N)
+                state = np.inf*np.ones((1,self.N))
             elif self.version == 1:
-                state = np.inf*np.ones(2*self.N)
+                state = np.inf*np.ones((2,self.N))
             else:
                 print("[Burger] Version not recognized", flush=True)
                 sys.exit()

@@ -49,9 +49,9 @@ cd $RUNPATH
 
 cat > run.sbatch <<EOF
 #!/bin/bash -l
-#SBATCH --job-name=pde_${ENV}
-#SBATCH --output=pde_${ENV}_${RUN}_%j.out
-#SBATCH --error=pde_${ENV}_${RUN}_err_%j.out
+#SBATCH --job-name=RL_${ENV}
+#SBATCH --output=RL_${ENV}_${RUN}_%j.out
+#SBATCH --error=RL_${ENV}_${RUN}_err_%j.out
 #SBATCH --time=24:00:00
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1

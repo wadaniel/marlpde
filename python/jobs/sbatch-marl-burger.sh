@@ -1,6 +1,6 @@
 #!/bin/bash -l
 
-RUN=4
+RUN=2
 ENV="burger"
 IC="sinus"
 NEX=5000000
@@ -17,7 +17,7 @@ nt=20
 esteps=500
 version=1
 width=256
-nagents=16
+nagents=4
 
 pushd .
 
@@ -49,7 +49,7 @@ cd $RUNPATH
 
 cat > run.sbatch <<EOF
 #!/bin/bash -l
-#SBATCH --job-name=pde_${ENV}
+#SBATCH --job-name=MARL_${ENV}
 #SBATCH --output=pde_${ENV}_${RUN}_%j.out
 #SBATCH --error=pde_${ENV}_${RUN}_err_%j.out
 #SBATCH --time=24:00:00
