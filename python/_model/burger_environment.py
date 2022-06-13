@@ -154,7 +154,6 @@ def environment( s ,
             kMseLogErr = np.mean((np.abs(dns.Ek_ktt[sgs.ioutnum,1:gridSize//2] - sgs.Ek_ktt[sgs.ioutnum,1:gridSize//2])/dns.Ek_ktt[sgs.ioutnum,1:gridSize//2])**2)
             reward = rewardFactor*(prevkMseLogErr-kMseLogErr)
             prevkMseLogErr = kMseLogErr
-
         
         # accumulat reward
         cumreward += reward
@@ -176,7 +175,7 @@ def environment( s ,
     if error == 1:
         s["State"] = state
         s["Termination"] = "Truncated"
-        s["Reward"] = -1000 if testing else -np.inf
+        s["Reward"] = -np.inf if numAgents == 1 else [-np.inf]*numAgents
     
     else:
         s["Termination"] = "Terminal"
@@ -228,7 +227,6 @@ def environment( s ,
 
         while step < episodeLength and error == 0:
         
-
             # apply action and advance environment
             try:
                 for _ in range(nIntermediate):
