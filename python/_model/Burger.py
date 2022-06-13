@@ -21,7 +21,10 @@ class Burger:
     # u_t + u*u_x = nu*u_xx0 + Forcing
     # with periodic BCs on x \in [0, L]: u(0,t) = u(L,t).
 
-    def __init__(self, L=2.*np.pi, N=512, dt=0.001, nu=0.0, dforce=True, nsteps=None, tend=5., u0=None, v0=None, case=None, forcing=False, ssm=False, dsm=False, noise=0., seed=42, version=0, nunoise=False):
+    def __init__(self, L=2.*np.pi, N=512, dt=0.001, nu=0.0, dforce=True, nsteps=None, tend=5., u0=None, v0=None, case=None, forcing=False, ssm=False, dsm=False, noise=0., seed=42, version=0, nunoise=False, numAgents=1):
+        
+        # Number of agents (>1 for MARL)
+        self.numAgents = numAgents
         
         # SGS models
         assert( (ssm and dsm) == False )
@@ -290,6 +293,7 @@ class Burger:
  
     def step( self, actions=None ):
 
+        actions = actions if self.numAgents == 1 else [a for acs in s["Action"] for a in acs]
         Fforcing = np.zeros(self.N, dtype=np.complex64)
 
         if self.ssm == True:
@@ -546,12 +550,23 @@ class Burger:
 
         try:
             uTruthToCoarse = self.mapGroundTruth()
-            uDiffMse = ((uTruthToCoarse[self.ioutnum,:] - self.uu[self.ioutnum,:])**2).mean()
+            uDiffMse = ((uTruthToCoarse[self.ioutnum,:] - self.uu[self.ioutnum,:])**2)
+
         except FloatingPointError:
             print("[Burger] Floating point exception occured in mse", flush=True)
             return -np.inf
 
-        return -uDiffMse
+        if self.numAgents > 1:
+            rewards = np.zeros(self.numAgents)
+            for agentId in range(self.numAgents):
+                a = agentId*self.N/numAgents
+                b = (agentId+1)*self.N/numAgents
+                rewards[agentId] = uDiffMse[a:b].mean()
+            
+            return -rewards
+ 
+        else:
+            return -uDiffMse.mean()
      
     def getState(self, nAgents = None):
         # Convert from spectral to physical space
@@ -570,7 +585,7 @@ class Burger:
             if self.version == 0:
                 state = d2udx2
             elif self.version == 1:
-                state = np.concatenate((dudt,d2udx2))
+                state = np.vstack((dudt,d2udx2))
             else:
                 print("[Burger] Version not recognized", flush=True)
                 sys.exit()
@@ -580,14 +595,24 @@ class Burger:
 
             print("[Burger] Floating point exception occured in getState", flush=True)
             if self.version == 0:
-                return np.inf*np.ones(self.N)
+                state = np.inf*np.ones(self.N)
             elif self.version == 1:
-                return np.inf*np.ones(2*self.N)
+                state = np.inf*np.ones(2*self.N)
             else:
                 print("[Burger] Version not recognized", flush=True)
                 sys.exit()
        
-        return state
+        if self.numAgents > 1:
+            states = []
+            for agentId in range(self.numAgents):
+                a = agentId*self.N/numAgents
+                b = (agentId+1)*self.N/numAgents
+                states.append(state[:,a:b].flatten().tolist())
+            
+            return states
+        
+        else:
+            return state.flatten().tolist()
 
     def compute_Sgs(self, nURG):
         hidx = np.abs(self.k)>nURG//2

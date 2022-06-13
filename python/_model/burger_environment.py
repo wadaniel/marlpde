@@ -19,7 +19,25 @@ def setup_dns_default(N, dt, nu , ic, forcing, seed):
     dns.compute_Ek()
     return dns
 
-def environment( s , N, gridSize, numActions, dt, nu, episodeLength, ic, spectralReward, forcing, dforce, noise, seed, nunoise=False, version=0, ssm=False, dsm=False, dns_default = None):
+def environment( s , 
+        N, 
+        gridSize, 
+        numActions, 
+        dt, 
+        nu, 
+        episodeLength, 
+        ic, 
+        spectralReward, 
+        forcing, 
+        dforce, 
+        noise, 
+        seed, 
+        nunoise=False, 
+        version=0,
+        ssm=False, 
+        dsm=False, 
+        dns_default = None,
+        numAgents = 1):
 
     assert( (ssm and dsm) == False )
  
@@ -30,7 +48,19 @@ def environment( s , N, gridSize, numActions, dt, nu, episodeLength, ic, spectra
         nu = s["Custom Settings"]["Viscosity"]
 
     if noise > 0. or nunoise:
-        dns = Burger(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case=ic, forcing=forcing, noise=noise, seed=seed, version=version, nunoise=nunoise)
+        dns = Burger(L=L, 
+                N=N, 
+                dt=dt, 
+                nu=nu, 
+                tend=tEnd, 
+                case=ic, 
+                forcing=forcing, 
+                noise=noise, 
+                seed=seed, 
+                version=version, 
+                nunoise=nunoise, 
+                numAgents = numAgents)
+
         dns.simulate()
         dns.fou2real()
         dns.compute_Ek()
@@ -46,7 +76,16 @@ def environment( s , N, gridSize, numActions, dt, nu, episodeLength, ic, spectra
     f_restart = interpolate.interp1d(dns.x, dns.u0, kind='cubic')
 
     # Initialize LES
-    sgs = Burger(L=L, N=gridSize, dt=dt, nu=nu, tend=tEnd, forcing=forcing, dforce=dforce, noise=0., version=version)
+    sgs = Burger(L=L, 
+            N=gridSize, 
+            dt=dt, 
+            nu=nu, 
+            tend=tEnd, 
+            forcing=forcing, 
+            dforce=dforce, 
+            noise=0., 
+            version=version)
+
     if spectralReward:
         v0 = np.concatenate((dns.v0[:((gridSize+1)//2)], dns.v0[-(gridSize-1)//2:])) * gridSize / dns.N
         sgs.IC( v0 = v0 )
@@ -59,7 +98,7 @@ def environment( s , N, gridSize, numActions, dt, nu, episodeLength, ic, spectra
     sgs.setGroundTruth(dns.tt, dns.x, dns.uu)
 
     ## get initial state
-    state = sgs.getState().flatten().tolist()
+    state = sgs.getState()
     s["State"] = state
 
     ## run controlled simulation
@@ -77,10 +116,17 @@ def environment( s , N, gridSize, numActions, dt, nu, episodeLength, ic, spectra
         s.update()
 
         # apply action and advance environment
-        actions = s["Action"]
+        actions = s["Action"] 
+
+        reward = np.zeros(numAgents)
+
         try:
             for _ in range(nIntermediate):
                 sgs.step(actions)
+            
+                # calculate MSE reward
+                if spectralReward == False:
+                    reward += rewardFactor*sgs.getMseReward()/nIntermediate
 
             sgs.compute_Ek()
             sgs.fou2real()
@@ -92,7 +138,7 @@ def environment( s , N, gridSize, numActions, dt, nu, episodeLength, ic, spectra
         
 
         # get new state
-        newstate = sgs.getState().flatten().tolist()
+        newstate = sgs.getState()
         if(np.isfinite(newstate).all() == False):
             print("[burger_environment] Nan state detected")
             error = 1
@@ -102,17 +148,13 @@ def environment( s , N, gridSize, numActions, dt, nu, episodeLength, ic, spectra
 
         s["State"] = state
     
-        # calculate reward
+        # calculate spectral reward
         if spectralReward:
             kMseLogErr = np.mean((np.abs(dns.Ek_ktt[sgs.ioutnum,1:gridSize//2] - sgs.Ek_ktt[sgs.ioutnum,1:gridSize//2])/dns.Ek_ktt[sgs.ioutnum,1:gridSize//2])**2)
             reward = rewardFactor*(prevkMseLogErr-kMseLogErr)
             prevkMseLogErr = kMseLogErr
 
-        else:
-            uTruthToCoarse = sgs.mapGroundTruth()
-            uDiffMse = ((uTruthToCoarse[sgs.ioutnum-nIntermediate:sgs.ioutnum,:] - sgs.uu[sgs.ioutnum-nIntermediate:sgs.ioutnum,:])**2).mean()
-            reward = -rewardFactor*uDiffMse
-
+        
         # accumulat reward
         cumreward += reward
 
@@ -122,7 +164,10 @@ def environment( s , N, gridSize, numActions, dt, nu, episodeLength, ic, spectra
             break
     
         else:
-            s["Reward"] = reward
+            if numAgents > 1:
+                s["Reward"] = reward.tolist()
+            else:
+                s["Reward"] = reward[0]
  
         step += 1
 
@@ -148,7 +193,14 @@ def environment( s , N, gridSize, numActions, dt, nu, episodeLength, ic, spectra
         dns.compute_Sgs(gridSize)
 
         print("[burger_env] Running UGS..")
-        base = Burger(L=L, N=gridSize, dt=dt, nu=nu, tend=tEnd, forcing=forcing, noise=0.)
+        base = Burger(L=L, 
+                N=gridSize, 
+                dt=dt, 
+                nu=nu, 
+                tend=tEnd, 
+                forcing=forcing, 
+                noise=0.)
+
         if spectralReward:
             print("[burger_env] Init spectrum.")
             v0 = np.concatenate((dns.v0[:((gridSize+1)//2)], dns.v0[-(gridSize-1)//2:]))
