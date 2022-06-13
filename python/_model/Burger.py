@@ -293,7 +293,6 @@ class Burger:
  
     def step( self, actions=None ):
 
-        actions = actions if self.numAgents == 1 else [a for acs in s["Action"] for a in acs]
         Fforcing = np.zeros(self.N, dtype=np.complex64)
 
         if self.ssm == True:
@@ -309,7 +308,6 @@ class Burger:
 
             nuSSM = (self.cs*delta)**2*np.abs(dudx)
             sgs = nuSSM*d2udx2 
-            print(sgs)
             
             Fforcing += fft( sgs )
 
@@ -334,8 +332,6 @@ class Burger:
             uh = np.real(ifft(vh))
             L2 = 0.5*uh**2
             L = L1-L2
-            #print("L")
-            #print(L)
 
             um = np.roll(self.u, 1)
             up = np.roll(self.u, -1)
@@ -353,8 +349,6 @@ class Burger:
             M2 = deltah**2*np.abs(duhdx)*duhdx
 
             M = M1 - M2
-            #print("M")
-            #print(M)
             csd = L/M
 
             H = -L
@@ -366,7 +360,6 @@ class Burger:
             
             nuDSM = (csd*delta)**2*np.abs(dudx)
             sgs = nuDSM*d2udx2
-            print(sgs)
             
             #Fforcing += fft( sgs )
             Fforcing += fft( sgsalt )
@@ -395,9 +388,12 @@ class Burger:
             """
             
         if (actions is not None):
+ 
+            actions = actions if self.numAgents == 1 else [a for acs in actions for a in acs]
+            
             assert self.basis is not None, "[Burger] Basis not set up (is None)."
             assert len(actions) == self.M, "[Burger] Wrong number of actions (provided {}/{}".format(len(actions), self.M)
-
+            
             forcing = np.matmul(actions, self.basis)
             self.actionHistory[self.ioutnum,:] = forcing
             
@@ -559,8 +555,8 @@ class Burger:
         if self.numAgents > 1:
             rewards = np.zeros(self.numAgents)
             for agentId in range(self.numAgents):
-                a = agentId*self.N/numAgents
-                b = (agentId+1)*self.N/numAgents
+                a = agentId*self.N//self.numAgents
+                b = (agentId+1)*self.N//self.numAgents
                 rewards[agentId] = uDiffMse[a:b].mean()
             
             return -rewards
@@ -605,8 +601,8 @@ class Burger:
         if self.numAgents > 1:
             states = []
             for agentId in range(self.numAgents):
-                a = agentId*self.N/numAgents
-                b = (agentId+1)*self.N/numAgents
+                a = agentId*self.N//self.numAgents
+                b = (agentId+1)*self.N//self.numAgents
                 states.append(state[:,a:b].flatten().tolist())
             
             return states

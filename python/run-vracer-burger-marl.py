@@ -29,7 +29,7 @@ parser.add_argument('--version', help='Version tag', required=False, type=int, d
 parser.add_argument('--test', action='store_true', help='Run tag', required=False)
 
 # MARL configs
-parser.add_argument('--nagents', help='Number of agents', required=False, type=int, default=1)
+parser.add_argument('--nagents', help='Number of agents', required=False, type=int, default=2)
 parser.add_argument('--mar', help='Multi Agent Relationship', required=False, type=str, default="Individual")
 parser.add_argument('--mac', help='Multi Agent Correlation', required=False, type=bool, default=False)
 
@@ -54,7 +54,7 @@ e = korali.Experiment()
 
 ### Defining results folder and loading previous results, if any
 
-resultFolder = '_result_vracer_marl_{}_{}_{}/'.format(args.mar, args.mac, args.run)
+resultFolder = '_result_vracer_marl_{}/'.format(args.run)
 
 found = e.loadState(resultFolder + '/latest')
 if found == True:
@@ -88,7 +88,7 @@ e["Problem"]["Environment Function"] = lambda s : be.environment(
         ssm = args.ssm,
         dsm = args.dsm,
         dns_default = dns_default,
-        nagents = args.nagents )
+        numAgents = args.nagents )
 
 e["Problem"]["Testing Frequency"] = args.tf
 e["Problem"]["Policy Testing Episodes"] = args.nt
@@ -99,7 +99,7 @@ e["Problem"]["Policies Per Environment"] = 1
  
 e["Solver"]["Multi Agent Relationship"] = "Individual"
 e["Solver"]["Multi Agent Correlation"] = args.mac
-e["Solver"]["Strong Truncation Variant"] = False
+#e["Solver"]["Strong Truncation Variant"] = False
 
 ### Defining Agent Configuration 
 
@@ -131,7 +131,7 @@ for i in range(numEffectiveStates):
 # Actions 
 assert args.NA/args.nagents % 1 == 0., "Number of agents must be a divisor of num actions"
 numEffectiveActions = args.NA // args.nagents
-for i in range(args.NA):
+for i in range(numEffectiveActions):
     e["Variables"][numEffectiveStates+i]["Name"] = "Forcing " + str(i)
     e["Variables"][numEffectiveStates+i]["Type"] = "Action"
     e["Variables"][numEffectiveStates+i]["Lower Bound"] = -5.

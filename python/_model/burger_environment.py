@@ -59,7 +59,7 @@ def environment( s ,
                 seed=seed, 
                 version=version, 
                 nunoise=nunoise, 
-                numAgents = numAgents)
+                numAgents = 1)
 
         dns.simulate()
         dns.fou2real()
@@ -84,7 +84,8 @@ def environment( s ,
             forcing=forcing, 
             dforce=dforce, 
             noise=0., 
-            version=version)
+            version=version,
+            numAgents = numAgents)
 
     if spectralReward:
         v0 = np.concatenate((dns.v0[:((gridSize+1)//2)], dns.v0[-(gridSize-1)//2:])) * gridSize / dns.N
@@ -158,7 +159,7 @@ def environment( s ,
         # accumulat reward
         cumreward += reward
 
-        if (np.isfinite(reward) == False):
+        if (np.isfinite(reward) == False).any():
             print("[burger_environment] Nan reward detected")
             error = 1
             break
