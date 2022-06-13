@@ -18,9 +18,26 @@ esteps=500
 version=0
 width=256
 
+pushd .
+
+cd ~/projects/korali
+bname=`git branch --show-current`
+echo $bname
+if [ $bname != "safe-rl" ]; then
+    echo "Installing safe-rl branch"
+    git checkout MARL-new-safe-rl
+    pip3 uninstall korali -y; 
+    rm -rf ~/projects/korali/build; 
+    mkdir -p ~/projects/korali/build; 
+    meson .. -Dmpi=true -Donednn=true -Dtest=false -Dbuildtype=release --prefix=~/.local; 
+    ninja install;
+fi
+
+popd
+
 git diff > "./gitdiff_burger_${RUN}.txt"
 
-RUNPATH=${SCRATCH}/marlpde/$ENV/$RUN/
+RUNPATH=${SCRATCH}/rlpde/$ENV/$RUN/
 mkdir -p $RUNPATH
 
 cd ..

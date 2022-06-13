@@ -1,6 +1,6 @@
 #!/bin/bash -l
 
-RUN=1
+RUN=4
 ENV="burger"
 IC="sinus"
 NEX=5000000
@@ -17,9 +17,10 @@ nt=20
 esteps=500
 version=1
 width=256
-nagents=2
+nagents=16
 
 pushd .
+
 cd ~/projects/korali
 bname=`git branch --show-current`
 echo $bname
@@ -60,19 +61,19 @@ cat > run.sbatch <<EOF
 #SBATCH --constraint=gpu
 #SBATCH --account=s929
 
-python run-vracer-burger.py --ic $IC --run $RUN --NE $NEX \
+python run-vracer-burger-marl.py --ic $IC --run $RUN --NE $NEX \
     --N $N --NA $NA --dt $dt --nu $nu \
     --iex $iex --noise $noise --seed $seed \
     --episodelength $esteps --NDNS $NDNS \
     --tf $tf --nt $nt --version $version --width $width \
-    --nagents $nagents --nunoise 
+    --nagents $nagents --nunoise --dforce
 
-python run-vracer-burger.py --ic $IC --run $RUN --NE $NEX \
+python run-vracer-burger-marl.py --ic $IC --run $RUN --NE $NEX \
     --N $N --NA $NA --dt $dt --nu $nu \
     --iex $iex --noise $noise --seed $seed \
     --episodelength $esteps --NDNS $NDNS \
     --tf $tf --nt $nt --version $version --width $width \
-    --nagents $nagents --nunoise \
+    --nagents $nagents --nunoise --dforce \
     --test
 
 python -m korali.rlview --dir "_result_${IC}_${RUN}" --out "vracer${RUN}.png"
