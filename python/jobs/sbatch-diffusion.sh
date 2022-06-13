@@ -1,8 +1,8 @@
 #!/bin/bash -l
 
 version=1
-RUN=3
-width=512
+RUN=4
+width=256
 IC='box'
 NEX=5000000
 N=32
@@ -45,7 +45,7 @@ cat > run.sbatch <<EOF
 python3 run-vracer-diffusion.py --ic $IC --run $RUN --NE $NEX \
     --N $N --NA $NA --dt $dt --tend $tend --nu $nu \
     --iex $iex --noise $noise --seed $seed \
-    --episodelength $esteps --width $width --version $version --tnoise
+    --episodelength $esteps --width $width --version $version --tnoise --nunoise
 
 python3 run-vracer-diffusion.py --ic $IC --run $RUN --NE $NEX \
     --N $N --NA $NA --dt $dt --tend $tend --nu $nu \
