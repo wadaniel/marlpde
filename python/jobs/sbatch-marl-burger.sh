@@ -1,9 +1,9 @@
 #!/bin/bash -l
 
-RUN=2
+RUN=10
 ENV="burger"
 IC="sinus"
-NEX=5000000
+NEX=1000000
 N=32
 NA=32
 NDNS=512
@@ -17,7 +17,13 @@ nt=20
 esteps=500
 version=1
 width=256
-nagents=4
+nagents=2
+mar="Cooperative"
+
+
+###############################################################################
+# Comment: testing with cooperative mar
+##############################################################################
 
 pushd .
 
@@ -66,14 +72,16 @@ python run-vracer-burger-marl.py --ic $IC --run $RUN --NE $NEX \
     --iex $iex --noise $noise --seed $seed \
     --episodelength $esteps --NDNS $NDNS \
     --tf $tf --nt $nt --version $version --width $width \
-    --nagents $nagents --nunoise --dforce
+    --nagents $nagents --mar $mar \ 
+    --nunoise --dforce
 
 python run-vracer-burger-marl.py --ic $IC --run $RUN --NE $NEX \
     --N $N --NA $NA --dt $dt --nu $nu \
     --iex $iex --noise $noise --seed $seed \
     --episodelength $esteps --NDNS $NDNS \
     --tf $tf --nt $nt --version $version --width $width \
-    --nagents $nagents --nunoise --dforce \
+    --nagents $nagents --mar $mar \
+    --nunoise --dforce \
     --test
 
 python -m korali.rlview --dir "_result_${IC}_${RUN}" --out "vracer${RUN}.png"
