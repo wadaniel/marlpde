@@ -1,5 +1,7 @@
 import numpy as np
 from scipy.fftpack import fft, ifft, fftfreq
+import pickle
+
 
 L=100.0     # domainsize
 nu=0.02     # viscosity 
@@ -70,7 +72,7 @@ for m in range(1,M):
         z=z+1
         U_DNS[:,z] = u
 
-f_store = f_store[:,0:s:end] # weird but ok
+f_store = f_store[:,0:s:-1] # weird but ok
 
-np.save('DNS_Burgers_s_20.npy', U_DNS)
-np.save('DNS_Force_LES_s_20.npy', f_store)
+pickle.dump(U_DNS, open('/scratch/wadaniel/DNS_Burgers_s_20.pickle', 'wb'))
+pickle.dump(f_store, open('/scratch/wadaniel/DNS_Force_LES_s_20.pickle', 'wb'))
