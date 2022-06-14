@@ -35,6 +35,7 @@ parser.add_argument('--mac', help='Multi Agent Correlation', required=False, typ
 
 args = parser.parse_args()
 
+assert args.nagents > 1, "Script must be run with 2 agents or more."
 
 
 ### Import modules
