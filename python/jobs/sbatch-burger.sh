@@ -1,9 +1,9 @@
 #!/bin/bash -l
 
-RUN=7
+RUN=1
 ENV="burger"
-IC="turbulence"
-NEX=5000000
+IC="sinus"
+NEX=1000000
 N=32
 NA=32
 NDNS=512
@@ -25,7 +25,7 @@ bname=`git branch --show-current`
 echo $bname
 if [ $bname != "safe-rl" ]; then
     echo "Installing safe-rl branch"
-    git checkout MARL-new-safe-rl
+    git checkout safe-rl
     pip3 uninstall korali -y; 
     rm -rf ~/projects/korali/build; 
     mkdir -p ~/projects/korali/build; 
@@ -66,14 +66,14 @@ python run-vracer-burger.py --ic $IC --run $RUN --NE $NEX \
     --iex $iex --noise $noise --seed $seed \
     --episodelength $esteps --NDNS $NDNS \
     --tf $tf --nt $nt --version $version --width $width \
-    --nunoise --specreward
+    --nunoise
 
 python run-vracer-burger.py --ic $IC --run $RUN --NE $NEX \
     --N $N --NA $NA --dt $dt --nu $nu \
     --iex $iex --noise $noise --seed $seed \
     --episodelength $esteps --NDNS $NDNS \
     --tf $tf --nt $nt --version $version --width $width \
-    --nunoise --specreward \
+    --nunoise
     --test
 
 python -m korali.rlview --dir "_result_${IC}_${RUN}" --out "vracer${RUN}.png"
