@@ -1,22 +1,26 @@
 import numpy as np
 from scipy.fftpack import fft, ifft, fftfreq
 import pickle
+import matplotlib.pyplot as plt
 
 
 L=100.0     # domainsize
-nu=0.02     # viscosity 
+nu=0.02     # viscosity
 A=np.sqrt(2)*1e-2 # scaling factor
-N=512       # grid size / num Fourier modes
+
+N=1024       # grid size / num Fourier modes
 dt=0.01     # time step
 s=20        # ratio of LES and DNS time steps
-M=10000000  # number of timestes
+M=1000000  # number of timestes
 P=1         # time steps between samples
 
 # grid
 x = np.linspace(0, L, N, endpoint=False)
 
 # fourier modes
-k = fftfreq(N, L / (2*np.pi*N))
+k1 = np.arange(0, N/2 + 0.5, 1)
+k2 = np.arange(-N/2+1, -0.5, 1)
+k = np.concatenate([k1, k2])*(2*np.pi/L)
 k1  = 1j * k
 
 u_old=np.sin(2.*np.pi*2.*x/L+np.random.normal()*2.*np.pi);
@@ -50,7 +54,7 @@ for m in range(1,M):
     if (m % 1000 == 0):
         print(f"Step {m}")
 
-    Fn=k1*fft(0.5*(u_old)**2)
+    Fn=k1*fft(0.5*(u)**2)
 
     if(m%s==0):
         f = np.zeros(N);
@@ -60,13 +64,13 @@ for m in range(1,M):
             f=f+C1*A/np.sqrt(kk*s*dt)*np.cos(2*np.pi*kk*x/L+2*np.pi*C2)
 
         fn=fft(f)
-    
+
     un=((1.0-C)*un_old-0.5*dt*(3.0*Fn-Fn_old)+dt*fn)/(1.0+C)
-    
+
     un_old=un
     u=np.real(ifft(un))
     Fn_old=Fn
-    
+
     if (m%P==0):
         f_store[:,z] = f
         z=z+1
@@ -74,7 +78,10 @@ for m in range(1,M):
 
 f_store = f_store[:,0::s]
 
-print(f"Storing U_DNS {U_DNS.shape}")
-pickle.dump(U_DNS, open('/scratch/wadaniel/DNS_Burgers_s_20.pickle', 'wb'))
-print(f"Storing f_store {f_store.shape}")
-pickle.dump(f_store, open('/scratch/wadaniel/DNS_Force_LES_s_20.pickle', 'wb'))
+plt.plot(x, u)
+plt.show()
+
+# print(f"Storing U_DNS {U_DNS.shape}")
+# pickle.dump(U_DNS, open('/scratch/wadaniel/DNS_Burgers_s_20.pickle', 'wb'))
+# print(f"Storing f_store {f_store.shape}")
+# pickle.dump(f_store, open('/scratch/wadaniel/DNS_Force_LES_s_20.pickle', 'wb'))
