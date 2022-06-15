@@ -17,11 +17,12 @@ sys.path.append('./../../_model/')
 import numpy as np
 from scipy.fft import fftfreq
 
+from Kuramoto_RL import *
 from Kuramoto import *
 
 #------------------------------------------------------------------------------
 # DNS defaults
-N    = 32
+N    = 1024
 L    = 2*np.pi
 nu   = 100
 dt   = 3*1e-6
@@ -31,56 +32,73 @@ tSim = tEnd - tTransient
 # dt   = 0.01
 # tSim = 100
 nSimSteps = int(tSim/dt)
-Cs = 0.001
 
 #------------------------------------------------------------------------------
 ## transient
 print("simulate transient")
 
-dns = Kuramoto(L=L, N=N, dt=dt, nu=nu, tend=tTransient, case='ETDRK4')
+dns = Kuramoto(L=L, N=N, dt=dt, nu=nu, tend=tTransient)
 dns.simulate()
 dns.fou2real()
 dns.compute_Ek()
 
 #------------------------------------------------------------------------------
-## restart
-# v_restart = dns.vv[-1,:].copy()
-# u_restart = dns.uu[-1,:].copy()
-#
-# print("simulate DNS")
-# # set IC
-# dns.IC( v0 = v_restart )
-# # continue simulation
-# dns.simulate( nsteps=int(tSim/dt), restart = True)
-# # convert to physical space
-# dns.fou2real()
-# # compute energies
-# dns.compute_Ek()
+# restart
+v_restart = dns.vv[-1,:].copy()
+u_restart = dns.uu[-1,:].copy()
 
+print("simulate DNS")
+# set IC
+dns.IC( v0 = v_restart )
+# continue simulation
+dns.simulate( nsteps=int(tSim/dt), restart = True)
+# convert to physical space
+dns.fou2real()
+# compute energies
+dns.compute_Ek()
+
+dns_RL = Kuramoto_RL(L=L, N=N, dt=dt, nu=nu, tend=tTransient)
+
+dns_RL.IC( v0 = v_restart )
+# continue simulation
+dns_RL.simulate( nsteps=int(tSim/dt), restart = True)
+# convert to physical space
+dns_RL.fou2real()
+# compute energies
+dns_RL.compute_Ek()
 #------------------------------------------------------------------------------
 
-# plot result
 u = dns.uu
-e_t = dns.Ek_t
-e_tt = dns.Ek_tt
-e_ktt = dns.Ek_ktt
+ek_kt = dns.Ek_kt
 
-k = dns.k[:N//2]
+u_ = dns_RL.uu
+ek_kt_ = dns_RL.Ek_kt
 
-#fig, axs = plt.subplots(1,3, figsize=(15,15))
-fig, axs = plt.subplots(1,3)
-print(dns.tt.shape)
-print(dns.x.shape)
-print(dns.uu.shape)
+print(np.linalg.norm(u-u_))
+print(np.linalg.norm(ek_kt-ek_kt_))
 
-axs[0].contourf(dns.x, dns.tt, dns.uu)
-axs[1].plot(dns.tt, e_t)
-axs[1].plot(dns.tt, e_tt)
-axs[2].plot(k, 2.0/N * np.abs(e_ktt[0,0:N//2]),'b:')
-axs[2].plot(k, 2.0/N * np.abs(e_ktt[nSimSteps//2,0:N//2]),'b--')
-axs[2].plot(k, 2.0/N * np.abs(e_ktt[-1,0:N//2]),'b')
-axs[2].set_xscale('log')
-axs[2].set_yscale('log')
+# plot result
+# u = dns.uu
+# ek_t = dns.Ek_t
+# e_tt = dns.Ek_tt
+# e_ktt = dns.Ek_ktt
 
-print("Plotting simulate.png")
-fig.savefig('simulate.png')
+# k = dns.k[:N//2]
+
+# fig, axs = plt.subplots(1,3, figsize=(15,15))
+# fig, axs = plt.subplots(1,3)
+# print(dns.tt.shape)
+# print(dns.x.shape)
+# print(dns.uu.shape)
+#
+# axs[0].contourf(dns.x, dns.tt, dns.uu)
+# axs[1].plot(dns.tt, e_t)
+# axs[1].plot(dns.tt, e_tt)
+# axs[2].plot(k, 2.0/N * np.abs(e_ktt[0,0:N//2]),'b:')
+# axs[2].plot(k, 2.0/N * np.abs(e_ktt[nSimSteps//2,0:N//2]),'b--')
+# axs[2].plot(k, 2.0/N * np.abs(e_ktt[-1,0:N//2]),'b')
+# axs[2].set_xscale('log')
+# axs[2].set_yscale('log')
+#
+# print("Plotting simulate.png")
+# fig.savefig('simulate.png')

@@ -18,6 +18,7 @@ import numpy as np
 from scipy.fft import fftfreq
 
 from Kuramoto import *
+from Kuramoto_RL import *
 
 #------------------------------------------------------------------------------
 # DNS defaults
@@ -39,7 +40,7 @@ Cs = +3.373e-08
 ## transient
 print("simulate transient")
 
-dns = Kuramoto(L=L, N=N, dt=dt, nu=nu, tend=tTransient)
+dns = Kuramoto_RL(L=L, N=N, dt=dt, nu=nu, tend=tTransient)
 dns.simulate()
 dns.fou2real()
 dns.compute_Ek()
