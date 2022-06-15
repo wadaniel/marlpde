@@ -2,7 +2,6 @@ import numpy as np
 import scipy
 import scipy.sparse as sparse
 from scipy.sparse import linalg
-import scipy.io as sio
 import math
 import matplotlib.pyplot as plt
 from tensorflow import keras
@@ -43,24 +42,18 @@ def shift_data(data1,data2):
 
   return data1, data2
 
-u_bar_dict = sio.loadmat("./u_bar_region_"+ region +".mat")
+u_bar_dict = np.load("/scratch/wadaniel/u_bar_region_" + region +".npy")
+full_input=u_bar_store=u_bar_dict.T
 
-full_input=u_bar_store=u_bar_dict['u_bar'].transpose()
-
-
-
-full_output = sio.loadmat("./PI_region_" + region +".mat")
-full_output=full_output['PI'].transpose()
+full_output = np.load("/scratch/wadaniel/PI_region_" + region +".npy")
+full_output = full_output.T
 
 full_input[:train_region,:], full_output[:train_region,:] = shift_data(full_input[:train_region,:],
                                                                  full_output[:train_region,:])
 
-
-
 norm_input, mean_input, std_input = normalize_data(full_input[:train_region,:])
 
 norm_output, mean_output, std_output = normalize_data(full_output[:train_region,:])
-
 
 training_input = norm_input
 training_output = norm_output
@@ -68,20 +61,16 @@ training_output = norm_output
 print('shape of input')
 print(np.shape(training_input))
 
-
 print('shape of output')
 print(np.shape(training_output))
 
-
 index=np.random.permutation(train_region)
-
 
 print(std_input)
 print(std_output)
 
 print(mean_input)
 print(mean_output)
-
 
 input_train=training_input[index[0:train_num],:]
 output_train=training_output[index[0:train_num],:]
