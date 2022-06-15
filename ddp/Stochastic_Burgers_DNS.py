@@ -1,8 +1,10 @@
+import os
 import numpy as np
 from scipy.fftpack import fft, ifft, fftfreq
 import pickle
 
 
+scratch = os.getenv("SCRATCH", default=".")
 L=100.0     # domainsize
 nu=0.02     # viscosity 
 A=np.sqrt(2)*1e-2 # scaling factor
@@ -75,6 +77,6 @@ for m in range(1,M):
 f_store = f_store[:,0::s]
 
 print(f"Storing U_DNS {U_DNS.shape}")
-pickle.dump(U_DNS, open('/scratch/wadaniel/DNS_Burgers_s_20.pickle', 'wb'))
+pickle.dump(U_DNS, open('{}/DNS_Burgers_s_20.pickle'.format(scratch), 'wb'))
 print(f"Storing f_store {f_store.shape}")
-pickle.dump(f_store, open('/scratch/wadaniel/DNS_Force_LES_s_20.pickle', 'wb'))
+pickle.dump(f_store, open('{}/DNS_Force_LES_s_20.pickle'.format(scratch), 'wb'))
