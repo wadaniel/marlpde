@@ -550,19 +550,16 @@ class Burger:
 
         except FloatingPointError:
             print("[Burger] Floating point exception occured in mse", flush=True)
-            return -np.inf
+            return -np.inf*np.ones(self.numAgents)
 
-        if self.numAgents > 1:
-            rewards = np.zeros(self.numAgents)
-            for agentId in range(self.numAgents):
-                a = agentId*self.N//self.numAgents
-                b = (agentId+1)*self.N//self.numAgents
-                rewards[agentId] = uDiffMse[a:b].mean()
-            
-            return -rewards
+        rewards = np.zeros(self.numAgents)
+        for agentId in range(self.numAgents):
+            a = agentId*self.N//self.numAgents
+            b = (agentId+1)*self.N//self.numAgents
+            rewards[agentId] = -uDiffMse[a:b].mean()
+        
+        return rewards
  
-        else:
-            return -uDiffMse.mean()
      
     def getState(self, nAgents = None):
         # Convert from spectral to physical space
@@ -598,17 +595,13 @@ class Burger:
                 print("[Burger] Version not recognized", flush=True)
                 sys.exit()
        
-        if self.numAgents > 1:
-            states = []
-            for agentId in range(self.numAgents):
-                a = agentId*self.N//self.numAgents
-                b = (agentId+1)*self.N//self.numAgents
-                states.append(state[:,a:b].flatten().tolist())
-            
-            return states
+        states = []
+        for agentId in range(self.numAgents):
+            a = agentId*self.N//self.numAgents
+            b = (agentId+1)*self.N//self.numAgents
+            states.append(state[:,a:b].flatten().tolist())
         
-        else:
-            return state.flatten().tolist()
+        return states
 
     def compute_Sgs(self, nURG):
         hidx = np.abs(self.k)>nURG//2

@@ -93,14 +93,16 @@ def environment( s ,
     else:
         sgs.IC( u0 = f_restart(sgs.x) )
  
+    ## copy random numbers
     sgs.randfac1 = dns.randfac1
     sgs.randfac2 = dns.randfac2
+
     sgs.setup_basis(numActions, basis)
     sgs.setGroundTruth(dns.tt, dns.x, dns.uu)
 
     ## get initial state
     state = sgs.getState()
-    s["State"] = state
+    s["State"] = state[0] if numAgents == 1 else state
 
     ## run controlled simulation
     error = 0
@@ -139,15 +141,13 @@ def environment( s ,
         
 
         # get new state
-        newstate = sgs.getState()
-        if(np.isfinite(newstate).all() == False):
+        state = sgs.getState()
+        if(np.isfinite(state).all() == False):
             print("[burger_environment] Nan state detected")
             error = 1
             break
-        else:
-            state = newstate
 
-        s["State"] = state
+        s["State"] = state[0] if numAgents == 1 else state
     
         # calculate spectral reward
         if spectralReward:
@@ -173,9 +173,9 @@ def environment( s ,
 
     print(cumreward)
     if error == 1:
-        s["State"] = state
-        s["Termination"] = "Truncated"
+        s["State"] = state[0] if numAgents == 1 else state
         s["Reward"] = -np.inf if numAgents == 1 else [-np.inf]*numAgents
+        s["Termination"] = "Truncated"
     
     else:
         s["Termination"] = "Terminal"
