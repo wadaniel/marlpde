@@ -72,7 +72,9 @@ for m in range(1,M):
         z=z+1
         U_DNS[:,z] = u
 
-f_store = f_store[:,0:s:-1] # weird but ok
+f_store = f_store[:,0::s] # weird but ok
 
+print(f"Storing U_DNS {U_DNS.shape}")
 pickle.dump(U_DNS, open('/scratch/wadaniel/DNS_Burgers_s_20.pickle', 'wb'))
+print(f"Storing f_store {f_store.shape}")
 pickle.dump(f_store, open('/scratch/wadaniel/DNS_Force_LES_s_20.pickle', 'wb'))
