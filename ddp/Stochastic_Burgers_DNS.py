@@ -8,7 +8,7 @@ scratch = os.getenv("SCRATCH", default=".")
 L=100.0     # domainsize
 nu=0.02     # viscosity 
 A=np.sqrt(2)*1e-2 # scaling factor
-N=512       # grid size / num Fourier modes
+N=1024      # grid size / num Fourier modes
 dt=0.01     # time step
 s=20        # ratio of LES and DNS time steps
 M=10000000  # number of timestes

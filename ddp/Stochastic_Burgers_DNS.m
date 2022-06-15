@@ -45,7 +45,7 @@ for m=2:M
     Fn=1i*kx.*fft(0.5*u.^2);
 
     if(mod(m,s)==0)  
-        f= zeros(size(f));
+        f = zeros(size(f));
 
         for kk=1:3
             C1=randn;

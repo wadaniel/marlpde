@@ -23,8 +23,9 @@ def calc_bar(U_DNS, f_store, NX, NY):
     
     tau = .5*(u2_bar - u_bar**2)
     mtau = np.roll(tau, 1)
-    
-    PI = (tau-mtau)/(Lx/NY)
+ 
+    dx = Lx/NY
+    PI = (tau-mtau)/dx
 
     return (u_bar, PI, f_bar)
 
@@ -53,9 +54,14 @@ for i in range(13,14):
     
     u_bar, PI, f_bar = calc_bar(u, f, 1024, N_bar)
     
+    print(u.shape)
+    print(u[:, 3])
     print(u_bar.shape)
-    print(f_bar.shape)
+    print(u_bar[:, 3])
     print(PI.shape)
+    print(PI[:, 3])
+    print(f_bar.shape)
+    print(f_bar[:, 3])
     
     np.save('{}/u_bar_region_{}.npy'.format(scratch, i),u_bar)
     np.save('{}/f_bar_region_{}.npy'.format(scratch, i),f_bar)
