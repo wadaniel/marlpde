@@ -147,11 +147,26 @@ for i in range(maxit):
 
   force=force_bar[:,i].reshape((NX,1))
 
-  F = D1*fft(.5*(u**2),axis=0)
-  F0 = D1*fft(.5*(u_old**2),axis=0)
+  # F = D1*fft(.5*(u**2),axis=0)
+  # F0 = D1*fft(.5*(u_old**2),axis=0)
+  #
+  # uRHS = -0.5*dt*(3*F- F0) - 0.5*dt*nu*(D2*u_fft)  + u_fft + dt*fft(force,axis=0) \
+  #            -fft(dt*3/2*subgrid_n + 1/2*dt*subgrid_prev_n,axis = 0)
 
-  uRHS = -0.5*dt*(3*F- F0) - 0.5*dt*nu*(D2*u_fft)  + u_fft + dt*fft(force,axis=0) \
-             -fft(dt*3/2*subgrid_n + 1/2*dt*subgrid_prev_n,axis = 0)
+  ## RK3
+  v = u_fft
+  fn = fft(force,axis=0)
+
+  v1 = v + dt * (-0.5*D1*fft(u**2) - nu*D2*v + fn)
+  u1 = np.real(ifft(v1))
+
+  v2 = 3./4.*v + 1./4.*v1 + 1./4. * dt * (-0.5*D1*fft(u1**2) - nu*D2*v1 + fn)
+  u2 = np.real(ifft(v2))
+
+  v3 = 1./3.*v + 2./3.*v2 + 2./3. * dt * (-0.5*D1*fft(u2**2) - nu*D2*v2 + fn)
+  v = v3
+
+  u=np.real(ifft(v))
 
 
   subgrid_prev_n = subgrid_n
