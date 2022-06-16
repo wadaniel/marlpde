@@ -164,16 +164,13 @@ for i in range(maxit):
   u2 = np.real(ifft(v2))
 
   v3 = 1./3.*v + 2./3.*v2 + 2./3. * dt * (-0.5*D1*fft(u2**2) - nu*D2*v2 + fn)
-  v = v3
-
-  u=np.real(ifft(v))
-
+  u_fft = v3
 
   subgrid_prev_n = subgrid_n
   u_old_fft = u_fft
   u_old = u
 
-  u_fft = uRHS/D2x.reshape([NX,1])
+  # u_fft = uRHS/D2x.reshape([NX,1])
   u = np.real(ifft(u_fft,axis=0))
   u_store[:,i] = u.squeeze()
   sub_store[:,i] = subgrid_n.squeeze()
