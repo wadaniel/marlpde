@@ -411,6 +411,7 @@ class Burger:
         """
         RK3 in time
         """
+        
         v1 = self.v + self.dt * (-0.5*self.k1*fft(self.u**2) + self.nu*self.k2*self.v + Fforcing)
         u1 = np.real(ifft(v1))
         
