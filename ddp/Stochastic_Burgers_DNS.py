@@ -1,8 +1,12 @@
+import os
 import numpy as np
 from scipy.fftpack import fft, ifft, fftfreq
+import matplotlib.pyplot as plt
 import pickle
 import matplotlib.pyplot as plt
 
+np.random.seed(1234)
+scratch = os.getenv("SCRATCH", default=".")
 
 L=100.0     # domainsize
 nu=0.02     # viscosity
@@ -13,68 +17,77 @@ dt=0.01     # time step
 s=20        # ratio of LES and DNS time steps
 M=1000000  # number of timestes
 P=1         # time steps between samples
+out=True    # plot files
 
 # grid
 x = np.linspace(0, L, N, endpoint=False)
 
 # fourier modes
-k1 = np.arange(0, N/2 + 0.5, 1)
-k2 = np.arange(-N/2+1, -0.5, 1)
-k = np.concatenate([k1, k2])*(2*np.pi/L)
+#ka = np.arange(0, N/2 + 0.5, 1)
+#kb = np.arange(-N/2+1, -0.5, 1)
+#k = np.concatenate([ka, kb])*(2*np.pi/L)
+k = fftfreq(N, L / (2*np.pi*N))
 k1  = 1j * k
+k2  = -k**2
 
-u_old=np.sin(2.*np.pi*2.*x/L+np.random.normal()*2.*np.pi);
-
-un_old=fft(u_old)
-Fn_old=k1*fft(0.5*(u_old)**2)
+u=np.sin(2.*np.pi*2.*x/L+np.random.normal()*2.*np.pi);
+v=fft(u)
+Fn_old=k1*fft(0.5*u**2)
 
 # Storage for DNS field
 U_DNS=np.zeros((N,M//P))
 # Storage for forcing terms
 f_store=np.zeros((N,M//P))
 
-U_DNS[:,0]=u_old
+U_DNS[:,0]=u
 z=0
 
-u=u_old
-un=np.zeros(N)
+fn=np.zeros(N)
+for m in range(M):
 
-f=np.zeros(N)
-for kk in range(1,4):
-    C1=np.random.normal()
-    C2=np.random.normal()
-    f=f+C1*A/np.sqrt(kk*s*dt)*np.cos(2*np.pi*kk*x/L+2*np.pi*C2);
-
-fn=fft(f)
-
-# For integration step
-C=0.5*k**2*nu*dt
-
-for m in range(1,M):
     if (m % 1000 == 0):
         print(f"Step {m}")
 
-    Fn=k1*fft(0.5*(u)**2)
-
     if(m%s==0):
-        f = np.zeros(N);
+        f = np.zeros(N)
         for kk in range(1,4):
-            C1=np.random.normal()
-            C2=np.random.normal()
-            f=f+C1*A/np.sqrt(kk*s*dt)*np.cos(2*np.pi*kk*x/L+2*np.pi*C2)
+            r1=np.random.normal()
+            r2=np.random.normal()
+            f += r1*A/np.sqrt(kk*s*dt)*np.cos(2*np.pi*kk*x/L+2*np.pi*r2)
 
         fn=fft(f)
 
-    un=((1.0-C)*un_old-0.5*dt*(3.0*Fn-Fn_old)+dt*fn)/(1.0+C)
+    ## Adam Bashfort + RK
+    """
+    C=-0.5*k2*nu*dt
+    Fn=k1*fft(0.5*u**2)
+    v=((1.0-C)*v-0.5*dt*(3.0*Fn-Fn_old)+dt*fn)/(1.0+C)
+    Fn_old = Fn.copy()
+    """
 
-    un_old=un
-    u=np.real(ifft(un))
-    Fn_old=Fn
+    ## RK3
+    v1 = v + dt * (-0.5*k1*fft(u**2) + nu*k2*v + fn)
+    u1 = np.real(ifft(v1))
+
+    v2 = 3./4.*v + 1./4.*v1 + 1./4. * dt * (-0.5*k1*fft(u1**2) + nu*k2*v1 + fn)
+    u2 = np.real(ifft(v2))
+
+    v3 = 1./3.*v + 2./3.*v2 + 2./3. * dt * (-0.5*k1*fft(u2**2) + nu*k2*v2 + fn)
+    v = v3
+
+    u=np.real(ifft(v))
 
     if (m%P==0):
         f_store[:,z] = f
-        z=z+1
         U_DNS[:,z] = u
+        z=z+1
+
+    if (out == True and ((m % (M//10)) == 0)):
+        plt.plot(x,u)
+        fname = "u_field_{}_{}.pdf".format(m,N)
+        print("Plotting " + fname)
+        plt.savefig(fname)
+        plt.close()
 
 f_store = f_store[:,0::s]
 

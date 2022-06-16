@@ -1,3 +1,4 @@
+import os
 import pickle
 import numpy as np
 from scipy.fftpack import fft, ifft, fftfreq
@@ -22,23 +23,25 @@ def calc_bar(U_DNS, f_store, NX, NY):
     
     tau = .5*(u2_bar - u_bar**2)
     mtau = np.roll(tau, 1)
-    
-    PI = (tau-mtau)/(Lx/NY)
+ 
+    dx = Lx/NY
+    PI = (tau-mtau)/dx
 
     return (u_bar, PI, f_bar)
 
-print("Loading data..")
-U_DNS = pickle.load( open('/scratch/wadaniel/DNS_Burgers_s_20.pickle', 'rb') )
-f_store = pickle.load( open('/scratch/wadaniel/DNS_Force_LES_s_20.pickle', 'rb') )
-
-print(U_DNS.shape)
-print(f_store.shape)
-
+scratch = os.getenv("SCRATCH", default=".")
 N_bar= 128              # gridpoints / fourier modes of filtered field
 s = 20                  # ratio of LES and DNS time steps
 num_in_set = 1250000    # size of dataset
 
 assert num_in_set % s == 0
+
+print("Loading data..")
+U_DNS = pickle.load( open('{}/DNS_Burgers_s_20.pickle'.format(scratch), 'rb') )
+f_store = pickle.load( open('{}/DNS_Force_LES_s_20.pickle'.format(scratch), 'rb') )
+
+print(U_DNS.shape)
+print(f_store.shape)
 
 # shift between start of datasets
 set_size = 250000
@@ -51,10 +54,15 @@ for i in range(13,14):
     
     u_bar, PI, f_bar = calc_bar(u, f, 1024, N_bar)
     
+    print(u.shape)
+    print(u[:, 3])
     print(u_bar.shape)
-    print(f_bar.shape)
+    print(u_bar[:, 3])
     print(PI.shape)
+    print(PI[:, 3])
+    print(f_bar.shape)
+    print(f_bar[:, 3])
     
-    np.save('/scratch/wadaniel/u_bar_region_{}.npy'.format(i),u_bar)
-    np.save('/scratch/wadaniel/f_bar_region_{}.npy'.format(i),f_bar)
-    np.save('/scratch/wadaniel/PI_region_{}.npy'.format(i),PI)
+    np.save('{}/u_bar_region_{}.npy'.format(scratch, i),u_bar)
+    np.save('{}/f_bar_region_{}.npy'.format(scratch, i),f_bar)
+    np.save('{}/PI_region_{}.npy'.format(scratch, i),PI)

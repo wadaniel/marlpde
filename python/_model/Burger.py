@@ -368,12 +368,13 @@ class Burger:
         
             forcing = np.zeros(self.N)
          
-            A = 1.
-            for k in range(1,32):
+            s = 20.
+            A=np.sqrt(2)*1e-2 
+            for k in range(1,4):
                 r1 = self.randfac1[k, self.ioutnum]
                 r2 = self.randfac2[k, self.ioutnum]
-                forcing += r1*A*np.sin(2.*np.pi*(k*self.x/self.L+r2))
-            
+                forcing += r1*A/np.sqrt(k*s*self.dt)*np.cos(2*np.pi*k*self.x/self.L+2*np.pi*r2);
+
             Fforcing = fft( forcing )
 
             """
@@ -410,6 +411,7 @@ class Burger:
         """
         RK3 in time
         """
+        
         v1 = self.v + self.dt * (-0.5*self.k1*fft(self.u**2) + self.nu*self.k2*self.v + Fforcing)
         u1 = np.real(ifft(v1))
         
@@ -418,7 +420,17 @@ class Burger:
 
         v3 = 1./3.*self.v + 2./3.*v2 + 2./3. * self.dt * (-0.5*self.k1*fft(u2**2) + self.nu*self.k2*v2 + Fforcing)
         self.v = v3
-     
+ 
+        """
+        Adam Bashfort / RK
+        """
+        """
+        C = 0.5*self.k2*self.nu*self.dt
+        Fn = 0.5*self.k1*fft(self.u**2)
+        Fn_old =  0.5*self.k1*fft(self.uu[self.ioutnum-1]**2) if self.ioutnum > 1 else Fn
+        self.v = ((1.0-C)*self.v-0.5*self.dt*(3.0*Fn-Fn_old)+self.dt*Fforcing)/(1.0+C)
+        """
+
         self.u = np.real(ifft(self.v))
         
         self.stepnum += 1
@@ -599,7 +611,11 @@ class Burger:
         for agentId in range(self.numAgents):
             a = agentId*self.N//self.numAgents
             b = (agentId+1)*self.N//self.numAgents
-            states.append(state[:,a:b].flatten().tolist())
+            
+            if self.version == 0:
+                states.append(state[a:b].flatten().tolist())
+            else:
+                states.append(state[:,a:b].flatten().tolist())
         
         return states
 

@@ -1,3 +1,5 @@
+import os
+import pickle
 import numpy as np
 import scipy
 import scipy.sparse as sparse
@@ -42,10 +44,11 @@ def shift_data(data1,data2):
 
   return data1, data2
 
-u_bar_dict = np.load("/scratch/wadaniel/u_bar_region_" + region +".npy")
+scratch     = os.getenv("SCRATCH", default=".")
+u_bar_dict  = np.load( scratch + "/u_bar_region_" + region + ".npy")
 full_input=u_bar_store=u_bar_dict.T
 
-full_output = np.load("/scratch/wadaniel/PI_region_" + region +".npy")
+full_output = np.load( scratch + "/PI_region_" + region + ".npy")
 full_output = full_output.T
 
 full_input[:train_region,:], full_output[:train_region,:] = shift_data(full_input[:train_region,:],
@@ -126,8 +129,8 @@ sub_store = np.zeros((NX,maxit))
 
 reg = 13
 
-force_dict = sio.loadmat("./f_bar_all_regions.mat")
-force_bar=force_dict['f_bar'][:,int((reg-1)*12500)+int(pred_start/s):]
+force_dict = pickle.load( open('{}/f_bar_all_regions.pickle'.format(scratch), 'rb') )
+force_bar=force_dict[:,int((reg-1)*12500)+int(pred_start/s):]
 
 u_old = full_input[pred_start-1,:].reshape([NX,1])
 u = full_input[pred_start,:].reshape([NX,1])
@@ -158,5 +161,5 @@ for i in range(maxit):
   u_store[:,i] = u.squeeze()
   sub_store[:,i] = subgrid_n.squeeze()
 
-sio.savemat('./DDP_results_trained_'+str(int(train_num/1000))+'_region_' + region + '_new.mat',
+np.save( scratch + '/DDP_results_trained_'+str(int(train_num/1000))+'_region_' + region + '_new.mat',
            {'u_pred':u_store, 'sub_pred':sub_store})

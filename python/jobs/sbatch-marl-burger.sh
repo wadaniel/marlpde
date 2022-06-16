@@ -1,6 +1,9 @@
 #!/bin/bash -l
 
-RUN=10
+nagents=2
+mar="Individual"
+
+RUN=1
 ENV="burger"
 IC="sinus"
 NEX=1000000
@@ -17,13 +20,14 @@ nt=20
 esteps=500
 version=1
 width=256
-nagents=2
-mar="Cooperative"
 
 
 ###############################################################################
-# Comment: testing with cooperative mar
+# Comment: initial run, comparison without MARL
 ##############################################################################
+
+module purge
+module load daint-gpu gcc GSL/2.7-CrayGNU-21.09 cray-hdf5-parallel cray-python cdt-cuda craype-accel-nvidia60
 
 pushd .
 
@@ -88,9 +92,6 @@ python -m korali.rlview --dir "_result_${IC}_${RUN}" --out "vracer${RUN}.png"
 
 popd
 EOF
-
-module purge
-module load daint-gpu gcc GSL/2.7-CrayGNU-21.09 cray-hdf5-parallel cray-python cdt-cuda craype-accel-nvidia60
 
 chmod 755 run.sbatch
 sbatch run.sbatch
