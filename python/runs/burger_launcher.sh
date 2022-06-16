@@ -1,7 +1,7 @@
 #!/bin/bash
 
 IC='sinus'
-run=1
+run=2
 NEX=1000000
 N=32
 NA=32
