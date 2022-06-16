@@ -14,6 +14,7 @@ from tensorflow.keras.optimizers import SGD, Adagrad, Adadelta, RMSprop
 from scipy.io import savemat
 from scipy.io import loadmat
 from scipy.fftpack import fft, ifft
+from helpers import *
 
 def swish(x):
    beta = 1.0
@@ -97,6 +98,7 @@ model.compile(loss='mse', optimizer='Adam', metrics=['mae'])
 model.fit(input_train, output_train,epochs=100,batch_size=200,shuffle=True,validation_split=0.2)
 
 model.save_weights('./weights_trained_ANN')
+exit()
 
 pred_start = train_region + 50000
 
