@@ -8,14 +8,14 @@ N=32
 NA=32
 NDNS=512
 dt=0.001
-noise=1.
+noise=0.1
 nu=0.02
 iex=0.1
 seed=42
 tf=50
 nt=20
 esteps=500
-version=0
+version=1
 width=256
 
 pushd .
@@ -65,19 +65,16 @@ python run-vracer-burger.py --ic $IC --run $RUN --NE $NEX \
     --N $N --NA $NA --dt $dt --nu $nu \
     --iex $iex --noise $noise --seed $seed \
     --episodelength $esteps --NDNS $NDNS \
-    --tf $tf --nt $nt --version $version --width $width \
-    --nunoise
+    --tf $tf --nt $nt --version $version --width $width
 
 python run-vracer-burger.py --ic $IC --run $RUN --NE $NEX \
     --N $N --NA $NA --dt $dt --nu $nu \
     --iex $iex --noise $noise --seed $seed \
     --episodelength $esteps --NDNS $NDNS \
-    --tf $tf --nt $nt --version $version --width $width \
-    --nunoise
+    --tf $tf --nt $nt --version $version --width $width
     --test
 
 python -m korali.rlview --dir "_result_${IC}_${RUN}" --out "vracer${RUN}.png"
-
 
 popd
 EOF

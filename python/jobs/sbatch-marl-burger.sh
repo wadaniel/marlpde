@@ -1,6 +1,9 @@
 #!/bin/bash -l
 
-RUN=10
+nagents=2
+mar="Individual"
+
+RUN=1
 ENV="burger"
 IC="sinus"
 NEX=1000000
@@ -8,7 +11,7 @@ N=32
 NA=32
 NDNS=512
 dt=0.001
-noise=0.1
+noise=1.
 nu=0.02
 iex=0.1
 seed=42
@@ -17,12 +20,10 @@ nt=20
 esteps=500
 version=1
 width=256
-nagents=2
-mar="Cooperative"
 
 
 ###############################################################################
-# Comment: testing with cooperative mar
+# Comment: initial run, comparison without MARL
 ##############################################################################
 
 pushd .
