@@ -610,7 +610,11 @@ class Burger:
         for agentId in range(self.numAgents):
             a = agentId*self.N//self.numAgents
             b = (agentId+1)*self.N//self.numAgents
-            states.append(state[:,a:b].flatten().tolist())
+            
+            if self.version == 0:
+                states.append(state[a:b].flatten().tolist())
+            else:
+                states.append(state[:,a:b].flatten().tolist())
         
         return states
 

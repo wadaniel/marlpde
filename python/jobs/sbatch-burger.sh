@@ -1,6 +1,6 @@
 #!/bin/bash -l
 
-RUN=1
+RUN=3
 ENV="burger"
 IC="sinus"
 NEX=1000000
@@ -15,8 +15,11 @@ seed=42
 tf=50
 nt=20
 esteps=500
-version=1
+version=0
 width=256
+
+module purge
+module load daint-gpu gcc GSL/2.7-CrayGNU-21.09 cray-hdf5-parallel cray-python cdt-cuda craype-accel-nvidia60
 
 pushd .
 
@@ -71,16 +74,13 @@ python run-vracer-burger.py --ic $IC --run $RUN --NE $NEX \
     --N $N --NA $NA --dt $dt --nu $nu \
     --iex $iex --noise $noise --seed $seed \
     --episodelength $esteps --NDNS $NDNS \
-    --tf $tf --nt $nt --version $version --width $width
+    --tf $tf --nt $nt --version $version --width $width \
     --test
 
 python -m korali.rlview --dir "_result_${IC}_${RUN}" --out "vracer${RUN}.png"
 
 popd
 EOF
-
-module purge
-module load daint-gpu gcc GSL/2.7-CrayGNU-21.09 cray-hdf5-parallel cray-python cdt-cuda craype-accel-nvidia60
 
 chmod 755 run.sbatch
 sbatch run.sbatch
