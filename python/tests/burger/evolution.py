@@ -23,8 +23,8 @@ from Burger import *
 
 #------------------------------------------------------------------------------
 ## set parameters and initialize simulation
-L       = 100
-dt      = 0.01
+L       = 2*np.pi
+dt      = 0.0001
 tEnd    = 5
 nu      = 0.02
 #ic      = 'zero'
