@@ -1,4 +1,5 @@
 import os
+import pickle
 import numpy as np
 import scipy
 import scipy.sparse as sparse
@@ -128,7 +129,7 @@ sub_store = np.zeros((NX,maxit))
 
 reg = 13
 
-force_dict = np.load( scratch + "/f_bar_all_regions.py" )
+force_dict = pickle.load( open('{}/f_bar_all_regions.pickle'.format(scratch), 'rb') )
 force_bar=force_dict[:,int((reg-1)*12500)+int(pred_start/s):]
 
 u_old = full_input[pred_start-1,:].reshape([NX,1])

@@ -41,6 +41,7 @@ for kk=1:3
 end
 fn=fft(f);
 
+
 for m=2:M
     Fn=1i*kx.*fft(0.5*u.^2);
 
