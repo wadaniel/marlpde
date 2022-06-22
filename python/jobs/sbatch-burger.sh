@@ -1,6 +1,6 @@
 #!/bin/bash -l
 
-RUN=3
+RUN=1
 ENV="burger"
 IC="sinus"
 NEX=1000000
@@ -79,7 +79,6 @@ python run-vracer-burger.py --ic $IC --run $RUN --NE $NEX \
 
 python -m korali.rlview --dir "_result_${IC}_${RUN}" --out "vracer${RUN}.png"
 
-popd
 EOF
 
 chmod 755 run.sbatch
