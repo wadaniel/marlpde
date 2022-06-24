@@ -208,7 +208,13 @@ def environment( s ,
                 tend=tEnd, 
                 forcing=forcing, 
                 noise=0.)
-
+        
+        ## copy random numbers
+        base.randfac1 = dns.randfac1
+        base.randfac2 = dns.randfac2
+        base.setup_basis(numActions, basis)
+        base.setGroundTruth(dns.x, dns.tt, dns.uu)
+ 
         if spectralReward:
             print("[burger_env] Init spectrum.")
             v0 = np.concatenate((dns.v0[:((gridSize+1)//2)], dns.v0[-(gridSize-1)//2:]))
@@ -216,12 +222,12 @@ def environment( s ,
 
         else:
             print("[burger_env] Init interpolation.")
-            base.IC( u0 = sgs.f_truth(newx) )
-
-        base.randfac1 = dns.randfac1
-        base.randfac2 = dns.randfac2
-        base.setup_basis(numActions, basis)
-        base.setGroundTruth(dns.x, dns.tt, dns.uu)
+            midx = np.argmax(newx)
+            if midx == len(newx)-1:
+                ic = base.f_truth(newx, 0)
+            else:
+                ic = np.concatenate(((base.f_truth(newx[:midx+1], 0.)), base.f_truth(newx[midx+1:], 0.)))
+            base.IC( u0 = ic )
 
         # reinit vars
         error = 0
@@ -243,7 +249,7 @@ def environment( s ,
                 
                 # calculate MSE reward
                 if spectralReward == False:
-                    reward += rewardFactor*sgs.getMseReward(offset) / nIntermediate
+                    reward += rewardFactor*base.getMseReward(offset) / nIntermediate
 
             except Exception as e:
                 print("[burger_environment] Exception occured during stepping:")
