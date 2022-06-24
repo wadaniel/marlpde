@@ -1,13 +1,13 @@
 #!/bin/bash
 
 IC='sinus'
-run=0
+run=2
 NEX=1000000
 N=32
 NA=32
 NDNS=512
 dt=0.001
-noise=0.0
+noise=0.1
 nu=0.02
 iex=0.1
 seed=42

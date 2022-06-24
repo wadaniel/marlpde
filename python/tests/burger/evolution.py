@@ -7,7 +7,7 @@ initial condition is set to be approx k^-5/3.
 
 # Discretization grid
 N = 1024
-N2 = 128
+N2 = 1024
 
 import matplotlib
 matplotlib.use('Agg')
@@ -31,13 +31,17 @@ nu      = 0.02
 #ic      = 'turbulence'
 ic      = 'sinus'
 #ic      = 'forced'
-noise   = 0.0
+noise   = 0.
 seed    = 42
-forcing = False #True
+#forcing = False
+forcing = True
 
-dns = Burger(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case=ic, noise=noise, seed=seed, forcing=forcing)
-sgs0 = dns #Burger(L=L, N=N2, dt=dt, nu=nu, tend=tEnd, case=ic, noise=noise, seed=seed, forcing=forcing)
-sgs = dns #Burger(L=L, N=N2, dt=dt, nu=nu, tend=tEnd, case=ic, noise=noise, seed=seed, forcing=forcing)
+dns = Burger(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case=ic, noise=0.1, seed=seed, forcing=forcing)
+
+sgs0 = Burger(L=L, N=N2, dt=dt, nu=nu, tend=tEnd, case=ic, noise=noise, seed=seed, forcing=forcing)
+sgs0.randfac1 = dns.randfac1
+sgs0.randfac2 = dns.randfac2
+sgs = sgs0
 
 #v0 = np.concatenate((dns.v0[:((N2+1)//2)], dns.v0[-(N2-1)//2:]))
 #sgs0.IC( v0 = v0 * N2 / N )
@@ -54,10 +58,10 @@ print("Simulate DNS ..")
 dns.simulate()
 dns.fou2real()
 dns.compute_Ek()
-print("Compute SGS ..")
+
+#print("Compute SGS ..")
 #dns.compute_Sgs(N2)
 
-"""
 print("Simulate SGS..")
 ## simulate
 sgs0.simulate()
@@ -65,12 +69,13 @@ sgs0.simulate()
 sgs0.fou2real()
 sgs0.compute_Ek()
 
-
+"""
 print("Simulate SGS ..")
 sgs.simulate()
 sgs.fou2real()
 sgs.compute_Ek()
+"""
+
 #------------------------------------------------------------------------------
 ## plot
-"""
 makePlot(dns, sgs0, sgs, "evolution", False)

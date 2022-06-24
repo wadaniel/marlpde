@@ -120,8 +120,8 @@ if __name__ == "__main__":
     fdns_rk3 = interpolate.interp2d(xdns, tdns, dns_rk3, kind='cubic')
     fdns_abcn = interpolate.interp2d(xdns, tdns, dns_abcn, kind='cubic')
 
-    N    = 16
-    dt   = 0.0001
+    N    = 32
+    dt   = 0.001
 
     x, t, sol_rk3, trk3 = simulate_burger_rk3(N,L,dt,tEnd,nu)
     mse = np.mean((sol_rk3 - 0.5*fdns_rk3(x, t) - 0.5*fdns_abcn(x, t))**2)

@@ -15,7 +15,6 @@ def setup_dns_default(N, dt, nu , ic, forcing, seed):
     print("Setting up default dns with args ({}, {}, {}, {}, {}, {})".format(N, dt, nu, ic, forcing, seed))
     dns = Burger(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case=ic, forcing=forcing, noise=0., seed=seed)
     dns.simulate()
-    dns.fou2real()
     dns.compute_Ek()
     return dns
 
@@ -43,11 +42,12 @@ def environment( s ,
  
     testing = True if s["Custom Settings"]["Mode"] == "Testing" else False
     noise = 0. if testing else noise
+    offset = np.random.normal(loc=0., scale=noise) if noise > 0. else 0.
  
     if testing == True:
         nu = s["Custom Settings"]["Viscosity"]
 
-    if noise > 0. or nunoise:
+    if nunoise:
         dns = Burger(L=L, 
                 N=N, 
                 dt=dt, 
@@ -55,14 +55,13 @@ def environment( s ,
                 tend=tEnd, 
                 case=ic, 
                 forcing=forcing, 
-                noise=noise, 
+                noise=0., 
                 seed=seed, 
                 version=version, 
                 nunoise=nunoise, 
                 numAgents = 1)
 
         dns.simulate()
-        dns.fou2real()
         dns.compute_Ek()
 
         nu = dns.nu
@@ -71,35 +70,42 @@ def environment( s ,
     
     # reward defaults
     rewardFactor = 1. if spectralReward else 1.
-
-    ## create interpolated IC
-    f_restart = interpolate.interp1d(dns.x, dns.u0, kind='cubic')
-
-    # Initialize LES
+     
+    #Initialize LES
     sgs = Burger(L=L, 
             N=gridSize, 
             dt=dt, 
             nu=nu, 
             tend=tEnd, 
+            case=ic, 
             forcing=forcing, 
             dforce=dforce, 
-            noise=0., 
+            noise=noise, 
             version=version,
             numAgents = numAgents)
-
-    if spectralReward:
-        v0 = np.concatenate((dns.v0[:((gridSize+1)//2)], dns.v0[-(gridSize-1)//2:])) * gridSize / dns.N
-        sgs.IC( v0 = v0 )
-    else:
-        sgs.IC( u0 = f_restart(sgs.x) )
- 
+   
     ## copy random numbers
     sgs.randfac1 = dns.randfac1
     sgs.randfac2 = dns.randfac2
 
     sgs.setup_basis(numActions, basis)
-    sgs.setGroundTruth(dns.tt, dns.x, dns.uu)
+    sgs.setGroundTruth(dns.x, dns.tt, dns.uu)
+ 
+    newx = sgs.x + offset
+    newx[newx>L] = newx[newx>L] - L
+    newx[newx<0] = newx[newx<0] + L
 
+    if spectralReward:
+        v0 = np.concatenate((dns.v0[:((gridSize+1)//2)], dns.v0[-(gridSize-1)//2:])) * gridSize / dns.N
+        sgs.IC( v0 = v0 )
+    else:
+        midx = np.argmax(newx)
+        if midx == len(newx)-1:
+            ic = sgs.f_truth(newx, 0)
+        else:
+            ic = np.concatenate(((sgs.f_truth(newx[:midx+1], 0.)), sgs.f_truth(newx[midx+1:], 0.)))
+        sgs.IC( u0 = ic )
+ 
     ## get initial state
     state = sgs.getState()
     s["State"] = state[0] if numAgents == 1 else state
@@ -109,11 +115,12 @@ def environment( s ,
     step = 0
     nIntermediate = int(tEnd / dt / episodeLength)
     prevkMseLogErr = 0.
-    kMseLogErr = 0.
-    reward = 0.
     cumreward = 0.
 
     while step < episodeLength and error == 0:
+    
+        # init reward
+        reward = 0.
         
         # Getting new action
         s.update()
@@ -129,10 +136,10 @@ def environment( s ,
             
                 # calculate MSE reward
                 if spectralReward == False:
-                    reward += rewardFactor*sgs.getMseReward()/nIntermediate
+                    reward += rewardFactor*sgs.getMseReward(offset) / nIntermediate
 
-            sgs.compute_Ek()
-            sgs.fou2real()
+
+        
         except Exception as e:
             print("[burger_environment] Exception occured during stepping:")
             print(str(e))
@@ -151,11 +158,12 @@ def environment( s ,
     
         # calculate spectral reward
         if spectralReward:
-            kMseLogErr = np.mean((np.abs(dns.Ek_ktt[sgs.ioutnum,1:gridSize//2] - sgs.Ek_ktt[sgs.ioutnum,1:gridSize//2])/dns.Ek_ktt[sgs.ioutnum,1:gridSize//2])**2)
-            reward = rewardFactor*(prevkMseLogErr-kMseLogErr)
-            prevkMseLogErr = kMseLogErr
+            sgs.compute_Ek()
+            kRelErr = np.mean((np.abs(dns.Ek_ktt[sgs.ioutnum,1:gridSize//2] - sgs.Ek_ktt[sgs.ioutnum,1:gridSize//2])/dns.Ek_ktt[sgs.ioutnum,1:gridSize//2])**2)
+            reward = rewardFactor*(kPrevRelErr-kRelErr)
+            kPrevRelErr = kRelErr
         
-        # accumulat reward
+        # accumulate reward
         cumreward += reward
 
         if (np.isfinite(reward) == False).any():
@@ -185,7 +193,7 @@ def environment( s ,
         fileName = s["Custom Settings"]["Filename"]
 
         print("[burger_env] Storing sgs to file {}".format(fileName))
-        np.savez(fileName, x = sgs.x, t = sgs.tt, uu = sgs.uu, vv = sgs.vv, L=L, N=gridSize, dt=dt, nu=nu, tEnd=tEnd, ssm = ssm, dsm = dsm, actions=sgs.actionHistory)
+        #np.savez(fileName, x = sgs.x, t = sgs.tt, uu = sgs.uu, vv = sgs.vv, L=L, N=gridSize, dt=dt, nu=nu, tEnd=tEnd, ssm = ssm, dsm = dsm, actions=sgs.actionHistory)
          
 #------------------------------------------------------------------------------
         
@@ -208,32 +216,35 @@ def environment( s ,
 
         else:
             print("[burger_env] Init interpolation.")
-            base.IC( u0 = f_restart(base.x) )
+            base.IC( u0 = sgs.f_truth(newx) )
 
         base.randfac1 = dns.randfac1
         base.randfac2 = dns.randfac2
         base.setup_basis(numActions, basis)
-        base.setGroundTruth(dns.tt, dns.x, dns.uu)
+        base.setGroundTruth(dns.x, dns.tt, dns.uu)
 
         # reinit vars
         error = 0
         step = 0
-        prevkMseLogErr = 0.
-        kMseLogErr = 0.
-        reward = 0.
+        kPrevRelErr = 0.
         cumreward = 0.
 
         actions = np.zeros(numActions)
 
         while step < episodeLength and error == 0:
         
+            # init reward
+            reward = 0.
+        
             # apply action and advance environment
             try:
                 for _ in range(nIntermediate):
                     base.step(actions)
+                
+                # calculate MSE reward
+                if spectralReward == False:
+                    reward += rewardFactor*sgs.getMseReward(offset) / nIntermediate
 
-                base.compute_Ek()
-                base.fou2real()
             except Exception as e:
                 print("[burger_environment] Exception occured during stepping:")
                 print(str(e))
@@ -243,14 +254,10 @@ def environment( s ,
 
             # calculate reward
             if spectralReward:
-                kMseLogErr = np.mean((np.abs(dns.Ek_ktt[base.ioutnum,:gridSize//2] - base.Ek_ktt[base.ioutnum,:gridSize//2])/dns.Ek_ktt[base.ioutnum,:gridSize//2])**2)
-                reward = rewardFactor*(prevkMseLogErr-kMseLogErr)
-                prevkMseLogErr = kMseLogErr
-
-            else:
-                uTruthToCoarse = base.mapGroundTruth()
-                uDiffMse = ((uTruthToCoarse[base.ioutnum-nIntermediate:base.ioutnum,:] - base.uu[base.ioutnum-nIntermediate:base.ioutnum,:])**2).mean()
-                reward = -rewardFactor*uDiffMse
+                base.compute_Ek()
+                kRelErr = np.mean((np.abs(dns.Ek_ktt[base.ioutnum,:gridSize//2] - base.Ek_ktt[base.ioutnum,:gridSize//2])/dns.Ek_ktt[base.ioutnum,:gridSize//2])**2)
+                reward = rewardFactor*(kPrevRelErr-kRelErr)
+                kPrevRelErr = kRelErr
 
             # accumulat reward
             cumreward += reward
