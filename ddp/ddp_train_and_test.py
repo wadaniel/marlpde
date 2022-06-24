@@ -111,8 +111,9 @@ dt = s*1e-2
 
 Lx    = 100
 dx    = Lx/NX
-x     = np.linspace(0, Lx-dx, num=NX)
-kx    = (2*math.pi/Lx)*np.concatenate((np.arange(0,NX/2+1,dtype=float),np.arange((-NX/2+1),0,dtype=float))).reshape([NX,1])
+x     = np.linspace(0, Lx, num=NX)
+#kx    = (2*math.pi/Lx)*np.concatenate((np.arange(0,NX/2+1,dtype=float),np.arange((-NX/2+1),0,dtype=float))).reshape([NX,1])
+kx     = fftfreq(N, L / (2*np.pi*N))
 
 
 maxit=100000
@@ -175,5 +176,5 @@ for i in range(maxit):
   u_store[:,i] = u.squeeze()
   sub_store[:,i] = subgrid_n.squeeze()
 
-np.save( scratch + '/DDP_results_trained_'+str(int(train_num/1000))+'_region_' + region + '_new.mat',
+np.save( scratch + '/DDP_results_trained_'+str(int(train_num/1000))+'_region_' + region + '_new.npy',
            {'u_pred':u_store, 'sub_pred':sub_store})
