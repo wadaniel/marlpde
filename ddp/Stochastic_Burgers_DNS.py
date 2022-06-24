@@ -56,15 +56,14 @@ for m in range(M):
 
         fn=fft(f)
     
-    ## Adam Bashfort + RK
-    """
+    ## Adam Bashfort + CN
     C=-0.5*k2*nu*dt
     Fn=k1*fft(0.5*u**2)
     v=((1.0-C)*v-0.5*dt*(3.0*Fn-Fn_old)+dt*fn)/(1.0+C)
     Fn_old = Fn.copy()
-    """
     
     ## RK3
+    """
     v1 = v + dt * (-0.5*k1*fft(u**2) + nu*k2*v + fn)
     u1 = np.real(ifft(v1))
         
@@ -73,6 +72,7 @@ for m in range(M):
 
     v3 = 1./3.*v + 2./3.*v2 + 2./3. * dt * (-0.5*k1*fft(u2**2) + nu*k2*v2 + fn)
     v = v3
+    """
 
     u=np.real(ifft(v))
     

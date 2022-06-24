@@ -32,7 +32,14 @@ class Burger:
         # Randomness
         np.random.seed(None)
         self.noise = noise*L
-        self.seed = seed
+        self.offset = np.random.normal(loc=0., scale=self.noise) if self.noise > 0. else 0.
+
+        assert(np.abs(self.offset) < L)
+        
+        # seed of turbulent IC
+        self.tseed = seed
+
+        # Apply forcing term?
         self.forcing = forcing
 
         # Initialize
@@ -79,13 +86,16 @@ class Burger:
         self.uut = -1
         # field in real space
         self.uu = None
-        # ground truth in real space
-        self.uu_truth = None
         # interpolation of truth
         self.f_truth = None
+        # temporal quantity for ABCN scheme
+        self.Fn_old = None
  
         # initialize simulation arrays
         self.__setup_timeseries()
+  
+        # precompute Fourier-related quantities
+        self.__setup_fourier()
  
         # set initial condition
         if (case is not None):
@@ -100,9 +110,7 @@ class Burger:
             print("[Burger] IC ambigous")
             sys.exit()
         
-        # precompute Fourier-related quantities
-        self.__setup_fourier()
-        
+       
     def __setup_timeseries(self, nout=None):
         if (nout != None):
             self.nout = int(nout)
@@ -161,28 +169,26 @@ class Burger:
         
         np.testing.assert_allclose(np.sum(self.basis, axis=0), 1)
 
-    def IC(self, u0=None, v0=None, case='box'):
+    def IC(self, u0=None, v0=None, case='zero'):
         
         # Set initial condition
         if (v0 is None):
             if (u0 is None):
                     
-                    offset = np.random.normal(loc=0., scale=self.noise) if self.noise > 0 else 0.
-                    
                     # Gaussian initialization
                     if case == 'gaussian':
-                        # Gaussian noise (according to https://arxiv.org/pdf/1906.07672.pdf)
-                        #u0 = np.random.normal(0., 1, self.N)
+                        assert False, "Disabled"
                         sigma = self.L/8
-                        u0 = gaussian(self.x, mean=0.5*self.L+offset, sigma=sigma)
+                        u0 = gaussian(self.x+self.offset, mean=0.5*self.L, sigma=sigma)
                         
                     # Box initialization
                     elif case == 'box':
-                        u0 = np.abs(self.x-self.L/2-offset)<self.L/8
+                        assert False, "Disabled"
+                        u0 = np.abs(self.x+self.offset-self.L/2)<self.L/8
                     
                     # Sinus
                     elif case == 'sinus':
-                        u0 = np.sin(self.x+offset)
+                        u0 = np.sin(self.x+self.offset)
  
                     # Turbulence
                     elif case == 'turbulence':
@@ -190,7 +196,7 @@ class Burger:
                         # A priori and a posteriori evaluations 
                         # of sub-grid scale models for the Burgers' eq. (Li, Wang, 2016)
                         
-                        rng = 123456789 + self.seed
+                        rng = 123456789 + self.tseed
                         a = 1103515245
                         c = 12345
                         m = 2**13
@@ -198,12 +204,11 @@ class Burger:
                         A = 1
                         u0 = np.ones(self.N)
                         for k in range(1, self.N):
-                            offset = np.random.normal(loc=0., scale=self.noise) if self.noise > 0 else 0.
                             rng = (a * rng + c) % m
                             phase = rng/m*2.*np.pi
 
                             Ek = A*5**(-5/3) if k <= 5 else A*k**(-5/3) 
-                            u0 += np.sqrt(2*Ek)*np.sin(k*2*np.pi*self.x/self.L + phase + offset)
+                            u0 += np.sqrt(2*Ek)*np.sin(k*2*np.pi*(self.x+self.offset)/self.L + phase)
                             
                         # rescale IC
                         idx = 0
@@ -225,6 +230,7 @@ class Burger:
                         u0 = np.zeros(self.N)
                     
                     elif case == 'forced':
+                        assert False, "Disabled"
                         u0 = np.zeros(self.N)
             
                         #A = 1
@@ -278,10 +284,12 @@ class Burger:
         self.uu[0,:] = u0
         self.vv[0,:] = v0
         self.tt[0]   = 0.
+        
+        # init temporal quantity for ABCN
+        self.Fn_old =  self.k1*fft(0.5*self.u**2) 
        
-    def setGroundTruth(self, t, x, uu):
-        self.uu_truth = uu
-        self.f_truth = interpolate.interp2d(x, t, self.uu_truth, kind='cubic')
+    def setGroundTruth(self, x, t, uu_truth):
+        self.f_truth = interpolate.interp2d(x, t, uu_truth, kind='cubic')
  
     def mapGroundTruth(self):
         t = np.arange(0,self.uu.shape[0])*self.dt
@@ -371,9 +379,10 @@ class Burger:
             s = 20.
             A=np.sqrt(2)*1e-2 
             for k in range(1,4):
-                r1 = self.randfac1[k, self.ioutnum]
-                r2 = self.randfac2[k, self.ioutnum]
-                forcing += r1*A/np.sqrt(k*s*self.dt)*np.cos(2*np.pi*k*self.x/self.L+2*np.pi*r2);
+                ridx = self.ioutnum % 20
+                r1 = self.randfac1[k, ridx]
+                r2 = self.randfac2[k, ridx] 
+                forcing += r1*A/np.sqrt(k*s*self.dt)*np.cos(2*np.pi*k*(self.x+self.offset)/self.L+2*np.pi*r2);
 
             Fforcing = fft( forcing )
 
@@ -411,7 +420,7 @@ class Burger:
         """
         RK3 in time
         """
-        
+        """
         v1 = self.v + self.dt * (-0.5*self.k1*fft(self.u**2) + self.nu*self.k2*self.v + Fforcing)
         u1 = np.real(ifft(v1))
         
@@ -420,16 +429,16 @@ class Burger:
 
         v3 = 1./3.*self.v + 2./3.*v2 + 2./3. * self.dt * (-0.5*self.k1*fft(u2**2) + self.nu*self.k2*v2 + Fforcing)
         self.v = v3
- 
         """
-        Adam Bashfort / RK
+
         """
+        Adam Bashfort / CN
         """
-        C = 0.5*self.k2*self.nu*self.dt
-        Fn = 0.5*self.k1*fft(self.u**2)
-        Fn_old =  0.5*self.k1*fft(self.uu[self.ioutnum-1]**2) if self.ioutnum > 1 else Fn
-        self.v = ((1.0-C)*self.v-0.5*self.dt*(3.0*Fn-Fn_old)+self.dt*Fforcing)/(1.0+C)
-        """
+
+        C  = -0.5*self.k2*self.nu*self.dt
+        Fn = self.k1*fft(0.5*self.u**2)
+        self.v =((1.0-C)*self.v-0.5*self.dt*(3.0*Fn-self.Fn_old)+self.dt*Fforcing)/(1.0+C)
+        self.Fn_old = Fn.copy()
 
         self.u = np.real(ifft(self.v))
         
@@ -480,12 +489,6 @@ class Burger:
             self.vv.resize((self.nout+1,self.N)) # nout+1 because the IC is in [0]
             self.tt.resize(self.nout+1)          # nout+1 because the IC is in [0]
             return -1
-
-    def fou2real(self):
-        # Convert from spectral to physical space
-        if self.uut < self.stepnum:
-            self.uut = self.stepnum
-            self.uu = np.real(ifft(self.vv))
 
     def compute_Ek(self):
         #
@@ -554,11 +557,18 @@ class Burger:
         # compute u_resid
         self.uu_resid = self.uu - self.uu_filt
 
-    def getMseReward(self):
+    def getMseReward(self, shift):
 
         try:
-            uTruthToCoarse = self.mapGroundTruth()
-            uDiffMse = ((uTruthToCoarse[self.ioutnum,:] - self.uu[self.ioutnum,:])**2)
+            newx = self.x + shift
+            newx[newx>self.L] = newx[newx>self.L] - self.L
+            newx[newx<0] = newx[newx<0] + self.L
+            midx = np.argmax(newx)
+            if midx == len(newx)-1:
+                uTruthToCoarse = self.f_truth(newx, self.t)
+            else:
+                uTruthToCoarse = np.concatenate(((self.f_truth(newx[:midx+1], self.t)), self.f_truth(newx[midx+1:], self.t)))
+            uDiffMse = ((uTruthToCoarse - self.uu[self.ioutnum,:])**2)
 
         except FloatingPointError:
             print("[Burger] Floating point exception occured in mse", flush=True)
@@ -575,7 +585,6 @@ class Burger:
      
     def getState(self, nAgents = None):
         # Convert from spectral to physical space
-        self.fou2real()
         try:
             # Extract state
             u = self.uu[self.ioutnum,:]
