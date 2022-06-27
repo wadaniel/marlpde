@@ -7,7 +7,7 @@ initial condition is set to be approx k^-5/3.
 
 # Discretization grid
 N = 1024
-N2 = 1024
+N2 = 48
 
 import matplotlib
 matplotlib.use('Agg')
@@ -36,9 +36,9 @@ seed    = 42
 #forcing = False
 forcing = True
 
-dns = Burger(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case=ic, noise=0.1, seed=seed, forcing=forcing)
+dns = Burger(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case=ic, noise=noise, seed=seed, forcing=forcing)
 
-sgs0 = Burger(L=L, N=N2, dt=dt, nu=nu, tend=tEnd, case=ic, noise=noise, seed=seed, forcing=forcing)
+sgs0 = Burger(L=L, N=N2, dt=dt, nu=nu, tend=tEnd, case=ic, noise=0., seed=seed, forcing=forcing)
 sgs0.randfac1 = dns.randfac1
 sgs0.randfac2 = dns.randfac2
 sgs = sgs0
@@ -56,7 +56,6 @@ sgs = sgs0
 print("Simulate DNS ..")
 ## simulate
 dns.simulate()
-dns.fou2real()
 dns.compute_Ek()
 
 #print("Compute SGS ..")
@@ -66,7 +65,6 @@ print("Simulate SGS..")
 ## simulate
 sgs0.simulate()
 # convert to physical space
-sgs0.fou2real()
 sgs0.compute_Ek()
 
 """
