@@ -17,6 +17,17 @@ esteps=500
 version=1
 width=256
 
+pushd .
+cd ~/projects/korali
+bname=`git rev-parse --abbrev-ref HEAD`
+echo "[Korali] On branch ${bname}"
+if [ $bname != "safe-rl" ]; then
+    echo "[Korali] Please install branch safe-rl"
+    echo "[Korali] exit.."
+    popd
+    exit
+fi
+
 launchname="${0##*/}"
 cp $launchname "./burger_launcher_${run}.sh"
 

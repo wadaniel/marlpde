@@ -20,6 +20,17 @@ tf=50
 nt=20
 esteps=500
 
+pushd .
+cd ~/projects/korali
+bname=`git rev-parse --abbrev-ref HEAD`
+echo "[Korali] On branch ${bname}"
+if [ $bname != "MARL-new-safe-rl" ]; then
+    echo "[Korali] Please install branch MARL-new-safe-rl"
+    echo "[Korali] exit.."
+    popd
+    exit
+fi
+
 launchname="${0##*/}"
 cp $launchname "./burger_marl_launcher_${run}.sh"
 
