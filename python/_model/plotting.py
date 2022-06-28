@@ -15,16 +15,18 @@ def makePlot(dns, base, sgs, fileName, spectralReward=True):
     
     tEnd = dns.tend
     dt = dns.dt
+    sgs_dt = sgs.dt
     colors = ['black','royalblue','seagreen']
     fig2, axs2 = plt.subplots(4,4, sharex=True, sharey=True, figsize=(15,15))
     for i in range(16):
         t = i * tEnd / 16
         tidx = int(t/dt)
+        tidx_sgs = int(t/sgs_dt)
         k = int(i / 4)
         l = i % 4
         
-        axs2[k,l].plot(base.x, base.uu[tidx,:], '-', color=colors[1])
-        axs2[k,l].plot(sgs.x, sgs.uu[tidx,:], '-', color=colors[2])
+        axs2[k,l].plot(base.x, base.uu[tidx_sgs,:], '-', color=colors[1])
+        axs2[k,l].plot(sgs.x, sgs.uu[tidx_sgs,:], '-', color=colors[2])
         axs2[k,l].plot(dns.x, dns.uu[tidx,:], '--', color=colors[0])
 
     fig2.savefig(figName2)
