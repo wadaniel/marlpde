@@ -137,8 +137,6 @@ def environment( s ,
                 # calculate MSE reward
                 if spectralReward == False:
                     reward += rewardFactor*sgs.getMseReward(offset) / nIntermediate
-
-
         
         except Exception as e:
             print("[burger_environment] Exception occured during stepping:")
@@ -192,7 +190,7 @@ def environment( s ,
         
         fileName = s["Custom Settings"]["Filename"]
 
-        print("[burger_env] Storing sgs to file {}".format(fileName))
+        #print("[burger_env] Storing sgs to file {}".format(fileName))
         #np.savez(fileName, x = sgs.x, t = sgs.tt, uu = sgs.uu, vv = sgs.vv, L=L, N=gridSize, dt=dt, nu=nu, tEnd=tEnd, ssm = ssm, dsm = dsm, actions=sgs.actionHistory)
          
 #------------------------------------------------------------------------------
@@ -265,7 +263,7 @@ def environment( s ,
                 reward = rewardFactor*(kPrevRelErr-kRelErr)
                 kPrevRelErr = kRelErr
 
-            # accumulat reward
+            # accumulate reward
             cumreward += reward
 
             if (np.isfinite(reward) == False):

@@ -1,21 +1,33 @@
 #!/bin/bash
 
 IC='sinus'
-run=3
+run=6
 NEX=1000000
 N=32
 NA=32
-NDNS=512
+NDNS=1024
 dt=0.001
 noise=0.1
 nu=0.02
-iex=0.001
+iex=0.0001
 seed=42
 tf=50
-nt=20
+nt=25
 esteps=500
 version=1
 width=256
+
+pushd .
+cd ~/projects/korali
+bname=`git rev-parse --abbrev-ref HEAD`
+echo "[Korali] On branch ${bname}"
+if [ $bname != "safe-rl" ]; then
+    echo "[Korali] Please install branch safe-rl"
+    echo "[Korali] exit.."
+    popd
+    exit
+fi
+popd
 
 launchname="${0##*/}"
 cp $launchname "./burger_launcher_${run}.sh"

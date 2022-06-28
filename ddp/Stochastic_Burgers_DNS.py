@@ -29,7 +29,7 @@ k = fftfreq(N, L / (2*np.pi*N))
 k1  = 1j * k
 k2  = -k**2
 
-u=np.sin(2.*np.pi*2.*x/L+np.random.normal()*2.*np.pi);
+u=np.sin(2.*np.pi*2.*x/L+np.random.normal()*2.*np.pi)
 v=fft(u)
 Fn_old=k1*fft(0.5*u**2)
 

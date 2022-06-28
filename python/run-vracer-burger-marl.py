@@ -98,7 +98,7 @@ e["Problem"]["Policy Testing Episodes"] = args.nt
 e["Problem"]["Agents Per Environment"] = args.nagents
 e["Problem"]["Policies Per Environment"] = 1
  
-e["Solver"]["Multi Agent Relationship"] = "Individual"
+e["Solver"]["Multi Agent Relationship"] = args.mar
 e["Solver"]["Multi Agent Correlation"] = args.mac
 #e["Solver"]["Strong Truncation Variant"] = False
 

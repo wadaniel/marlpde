@@ -22,10 +22,6 @@ version=1
 width=256
 
 
-###############################################################################
-# Comment: initial run, comparison without MARL
-##############################################################################
-
 module purge
 module load daint-gpu gcc GSL/2.7-CrayGNU-21.09 cray-hdf5-parallel cray-python cdt-cuda craype-accel-nvidia60
 
