@@ -244,10 +244,10 @@ def environment( s ,
             try:
                 for _ in range(nIntermediate):
                     base.step(actions)
-                
-                # calculate MSE reward
-                if spectralReward == False:
-                    reward += rewardFactor*base.getMseReward(offset) / nIntermediate
+                 
+                    # calculate MSE reward
+                    if spectralReward == False:
+                        reward += rewardFactor*sgs.getMseReward(offset) / nIntermediate
 
             except Exception as e:
                 print("[burger_environment] Exception occured during stepping:")
