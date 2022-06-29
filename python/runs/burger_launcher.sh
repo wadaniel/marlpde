@@ -27,6 +27,7 @@ if [ $bname != "safe-rl" ]; then
     popd
     exit
 fi
+popd
 
 launchname="${0##*/}"
 cp $launchname "./burger_launcher_${run}.sh"

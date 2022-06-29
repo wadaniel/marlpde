@@ -1,11 +1,12 @@
 #!/bin/bash
 
-run=11
+run=13
 nagents=2
 noise=0.1
-iex=0.001
+iex=0.0001
 version=1
-mar="Cooperation"
+#mar="Cooperation"
+mar="Individual"
 
 IC='sinus'
 NEX=1000000
@@ -30,6 +31,7 @@ if [ $bname != "MARL-new-safe-rl" ]; then
     popd
     exit
 fi
+popd
 
 launchname="${0##*/}"
 cp $launchname "./burger_marl_launcher_${run}.sh"
