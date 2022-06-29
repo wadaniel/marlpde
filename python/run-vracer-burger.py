@@ -82,7 +82,7 @@ e["Problem"]["Policy Testing Episodes"] = args.nt
 e["Solver"]["Type"] = "Agent / Continuous / VRACER"
 e["Solver"]["Mode"] = "Testing" if args.test else "Training"
 e["Solver"]["Episodes Per Generation"] = 10
-e["Solver"]["Experiences Between Policy Updates"] = 1.
+e["Solver"]["Experiences Between Policy Updates"] = 0.5
 e["Solver"]["Learning Rate"] = 0.0001
 e["Solver"]["Discount Factor"] = 1.
 e["Solver"]["Mini Batch"]["Size"] = 256
@@ -92,6 +92,8 @@ e["Solver"]["Mini Batch"]["Size"] = 256
 if args.version == 0:
     nState  = args.N
 elif args.version == 1:
+    nState  = 2*args.N
+elif args.version == 2:
     nState  = 2*args.N
 else:
     print("[run-vracer-burger] version not recognized")
@@ -154,7 +156,7 @@ e["File Output"]["Use Multiple Files"] = False
 
 if args.test:
 
-    nus = [0.001, 0.005, 0.01, 0.015, 0.02, 0.025, 0.03, 0.035, 0.04]
+    nus = [0.015, 0.02, 0.03, 0.04]
 
     for nu in nus:
         fileName = 'test_burger_{}_{}_{}'.format(args.ic, nu, args.run)

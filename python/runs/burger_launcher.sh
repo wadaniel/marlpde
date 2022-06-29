@@ -1,20 +1,20 @@
 #!/bin/bash
 
 IC='sinus'
-run=1
+run=10
 NEX=1000000
 N=32
 NA=32
-NDNS=512
+NDNS=1024
 dt=0.001
-noise=0.1
+noise=0.01
 nu=0.02
 iex=0.1
 seed=42
 tf=50
-nt=1
+nt=25
 esteps=500
-version=1
+version=0
 width=256
 
 pushd .

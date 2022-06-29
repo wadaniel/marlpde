@@ -7,7 +7,7 @@ initial condition is set to be approx k^-5/3.
 
 # Discretization grid
 N = 1024
-N2 = 48
+N2 = 32
 
 import matplotlib
 matplotlib.use('Agg')
@@ -23,8 +23,9 @@ from Burger import *
 
 #------------------------------------------------------------------------------
 ## set parameters and initialize simulation
-L       = 2*np.pi
-dt      = 0.0001
+L       = 2*pi
+dt      = 0.001
+s       = 1
 tEnd    = 5
 nu      = 0.02
 #ic      = 'zero'
@@ -33,12 +34,12 @@ ic      = 'sinus'
 #ic      = 'forced'
 noise   = 0.
 seed    = 42
-#forcing = False
 forcing = True
+#forcing = False
 
-dns = Burger(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case=ic, noise=noise, seed=seed, forcing=forcing)
+dns = Burger(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case=ic, noise=noise, seed=seed, forcing=forcing, s=s)
 
-sgs0 = Burger(L=L, N=N2, dt=dt, nu=nu, tend=tEnd, case=ic, noise=0., seed=seed, forcing=forcing)
+sgs0 = Burger(L=L, N=N2, dt=dt*s, nu=nu, tend=tEnd, case=ic, noise=noise, seed=seed, forcing=forcing, s=s)
 sgs0.randfac1 = dns.randfac1
 sgs0.randfac2 = dns.randfac2
 sgs = sgs0

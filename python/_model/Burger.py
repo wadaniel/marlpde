@@ -21,7 +21,26 @@ class Burger:
     # u_t + u*u_x = nu*u_xx0 + Forcing
     # with periodic BCs on x \in [0, L]: u(0,t) = u(L,t).
 
-    def __init__(self, L=2.*np.pi, N=512, dt=0.001, nu=0.0, dforce=True, nsteps=None, tend=5., u0=None, v0=None, case=None, forcing=False, ssm=False, dsm=False, noise=0., seed=42, version=0, nunoise=False, numAgents=1):
+    def __init__(self, 
+            L=2.*np.pi, 
+            N=512, 
+            dt=0.001, 
+            nu=0.0, 
+            dforce=True, 
+            nsteps=None, 
+            tend=5., 
+            u0=None, 
+            v0=None, 
+            case=None, 
+            forcing=False, 
+            ssm=False, 
+            dsm=False, 
+            noise=0., 
+            seed=42, 
+            version=0, 
+            nunoise=False, 
+            numAgents=1,
+            s=1):
         
         # Number of agents (>1 for MARL)
         self.numAgents = numAgents
@@ -33,6 +52,7 @@ class Burger:
         np.random.seed(None)
         self.noise = noise*L
         self.offset = np.random.normal(loc=0., scale=self.noise) if self.noise > 0. else 0.
+        self.s = s
 
         assert(np.abs(self.offset) < L)
         
@@ -188,7 +208,7 @@ class Burger:
                     
                     # Sinus
                     elif case == 'sinus':
-                        u0 = np.sin(self.x+self.offset)
+                        u0 = np.sin(2.*np.pi*(self.x+self.offset)/self.L)
  
                     # Turbulence
                     elif case == 'turbulence':
@@ -376,13 +396,12 @@ class Burger:
         
             forcing = np.zeros(self.N)
          
-            s = 20.
-            A=np.sqrt(2)*1e-2 
+            A=np.sqrt(2)/self.L
             for k in range(1,4):
-                ridx = self.ioutnum % 20
+                ridx = self.ioutnum % self.s
                 r1 = self.randfac1[k, ridx]
                 r2 = self.randfac2[k, ridx] 
-                forcing += r1*A/np.sqrt(k*s*self.dt)*np.cos(2*np.pi*k*(self.x+self.offset)/self.L+2*np.pi*r2);
+                forcing += r1*A/np.sqrt(k*20*0.01)*np.cos(2*np.pi*k*(self.x+self.offset)/self.L+2*np.pi*r2);
 
             Fforcing = fft( forcing )
 
@@ -527,36 +546,6 @@ class Burger:
                     problem=True
         return self.Ek_kt
 
-    def space_filter(self, k_cut=2):
-        #
-        # spatially filter the time series
-        self.uu_filt  = np.zeros([self.nout+1, self.N])
-        for n in range(self.nout+1):
-            v_filt = np.copy(self.vv[n,:])    # copy vv[n,:] (otherwise python treats it as reference and overwrites vv on the next line)
-            v_filt[np.abs(self.k)>=k_cut] = 0 # set to zero wavenumbers > k_cut
-            self.uu_filt[n,:] = np.real(ifft(v_filt))
-        #
-        # compute u_resid
-        self.uu_resid = self.uu - self.uu_filt
-
-    def space_filter_int(self, k_cut=2, N_int=10):
-        #
-        # spatially filter the time series
-        self.N_int        = N_int
-        self.uu_filt      = np.zeros([self.nout+1, self.N])
-        self.uu_filt_int  = np.zeros([self.nout+1, self.N_int])
-        self.x_int        = 2*pi*self.L*np.r_[0:self.N_int]/self.N_int
-        for n in range(self.nout+1):
-            v_filt = np.copy(self.vv[n,:])   # copy vv[n,:] (otherwise python treats it as reference and overwrites vv on the next line)
-            v_filt[np.abs(self.k)>=k_cut] = 313e6
-            v_filt_int = v_filt[v_filt != 313e6] * self.N_int/self.N
-            self.uu_filt_int[n,:] = np.real(ifft(v_filt_int))
-            v_filt[np.abs(self.k)>=k_cut] = 0
-            self.uu_filt[n,:] = np.real(ifft(v_filt))
-        #
-        # compute u_resid
-        self.uu_resid = self.uu - self.uu_filt
-
     def getMseReward(self, shift):
 
         try:
@@ -600,6 +589,8 @@ class Burger:
                 state = d2udx2
             elif self.version == 1:
                 state = np.vstack((dudt,d2udx2))
+            elif self.version == 2:
+                state = np.vstack((u,u**2))
             else:
                 print("[Burger] Version not recognized", flush=True)
                 sys.exit()
@@ -612,6 +603,8 @@ class Burger:
                 state = np.inf*np.ones((1,self.N))
             elif self.version == 1:
                 state = np.inf*np.ones((2,self.N))
+            elif self.version == 2:
+                state = np.inf*np.ones((2,self.N))
             else:
                 print("[Burger] Version not recognized", flush=True)
                 sys.exit()
@@ -623,8 +616,13 @@ class Burger:
             
             if self.version == 0:
                 states.append(state[a:b].flatten().tolist())
-            else:
+            elif self.version == 1:
                 states.append(state[:,a:b].flatten().tolist())
+            elif self.version == 2:
+                states.append(state[:,a:b].flatten().tolist())
+            else:
+                print("[Burger] Version not recognized", flush=True)
+                sys.exit()
         
         return states
 
