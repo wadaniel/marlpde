@@ -1,5 +1,7 @@
 #!/bin/bash
 
+export OMP_NUM_THREADS=4
+
 run=11
 nagents=2
 noise=0.1
@@ -30,6 +32,7 @@ if [ $bname != "MARL-new-safe-rl" ]; then
     popd
     exit
 fi
+popd
 
 launchname="${0##*/}"
 cp $launchname "./burger_marl_launcher_${run}.sh"

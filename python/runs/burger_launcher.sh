@@ -1,7 +1,10 @@
 #!/bin/bash
 
-IC='sinus'
-run=10
+export OMP_NUM_THREADS=4
+
+#IC='sinus'
+IC='turbulence'
+run=13
 NEX=1000000
 N=32
 NA=32
@@ -14,7 +17,7 @@ seed=42
 tf=50
 nt=25
 esteps=500
-version=0
+version=2
 width=256
 
 pushd .
@@ -41,13 +44,15 @@ python3 run-vracer-burger.py --ic $IC --run $run --NE $NEX \
     --N $N --NA $NA --dt $dt --nu $nu \
     --iex $iex --noise $noise --seed $seed \
     --episodelength $esteps --NDNS $NDNS \
-    --tf $tf --nt $nt --version $version --width $width
+    --tf $tf --nt $nt --version $version --width $width  \
+    --specreward --forcing
 
 python3 run-vracer-burger.py --ic $IC --run $run --NE $NEX \
     --N $N --NA $NA --dt $dt --nu $nu \
     --iex $iex --noise $noise --seed $seed \
     --episodelength $esteps --NDNS $NDNS \
     --tf $tf --nt $nt --version $version --width $width \
+    --specreward --forcing \
     --test
 
 python3 -m korali.rlview --dir "_result_${run}" --out "vracer${run}.png"
