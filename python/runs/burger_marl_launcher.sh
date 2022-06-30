@@ -1,24 +1,25 @@
 #!/bin/bash
+export OMP_NUM_THREADS=4
 
-run=13
-nagents=2
-noise=0.1
-iex=0.0001
-version=1
-#mar="Cooperation"
-mar="Individual"
+run=5
+nagents=4
+noise=0.001
+iex=0.01
+version=0
+mar="Cooperation"
+#mar="Individual"
 
 IC='sinus'
 NEX=1000000
 N=32
 NA=32
 width=256
-NDNS=512
+NDNS=1024
 dt=0.001
 nu=0.02
 seed=42
 tf=50
-nt=20
+nt=25
 esteps=500
 
 pushd .
@@ -45,14 +46,14 @@ python3 run-vracer-burger-marl.py --ic $IC --run $run --NE $NEX \
     --N $N --NA $NA --dt $dt --nu $nu \
     --iex $iex --noise $noise --seed $seed \
     --episodelength $esteps --NDNS $NDNS \
-    --tf $tf --nt $nt --version $version --width $width \
+    --tf $tf --nt $nt --version $version --width $width --dforce \
     --nagents $nagents --mar $mar
 
 python3 run-vracer-burger-marl.py --ic $IC --run $run --NE $NEX \
     --N $N --NA $NA --dt $dt --nu $nu \
     --iex $iex --noise $noise --seed $seed \
     --episodelength $esteps --NDNS $NDNS \
-    --tf $tf --nt $nt --version $version --width $width \
+    --tf $tf --nt $nt --version $version --width $width --dforce \
     --nagents $nagents --mar $mar \
     --test
 
