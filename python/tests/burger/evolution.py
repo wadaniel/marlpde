@@ -29,26 +29,25 @@ s       = 1
 tEnd    = 5
 nu      = 0.02
 #ic      = 'zero'
-ic      = 'turbulence'
-#ic      = 'sinus'
+#ic      = 'turbulence'
+ic      = 'sinus'
 #ic      = 'forced'
 noise   = 0.
 seed    = 42
-forcing = True
-#forcing = False
+#forcing = True
+forcing = False
 
 dns = Burger(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case=ic, noise=noise, seed=seed, forcing=forcing, s=s)
-
 sgs0 = Burger(L=L, N=N2, dt=dt*s, nu=nu, tend=tEnd, case=ic, noise=noise, seed=seed, forcing=forcing, s=s)
+
+dnsv0 = dns.v0*np.exp(1j*2*np.pi*0.5*dns.k)
+v0 = np.concatenate((dnsv0[:((N2+1)//2)], dnsv0[-(N2-1)//2:]))
+sgs0.IC( v0 = v0 * N2 / N )
+
 sgs0.randfac1 = dns.randfac1
 sgs0.randfac2 = dns.randfac2
+
 sgs = sgs0
-
-#v0 = np.concatenate((dns.v0[:((N2+1)//2)], dns.v0[-(N2-1)//2:]))
-#sgs0.IC( v0 = v0 * N2 / N )
-#sgs0.randfac1 = dns.randfac1
-#sgs0.randfac2 = dns.randfac2
-
 #sgs.IC( v0 = v0 * N2 / N )
 #sgs.randfac1 = dns.randfac1
 #sgs.randfac2 = dns.randfac2

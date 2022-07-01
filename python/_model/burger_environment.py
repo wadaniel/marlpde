@@ -96,7 +96,8 @@ def environment( s ,
     newx[newx<0] = newx[newx<0] + L
 
     if spectralReward:
-        v0 = np.concatenate((dns.v0[:((gridSize+1)//2)], dns.v0[-(gridSize-1)//2:])) * gridSize / dns.N
+        v0off = dns.v0*np.exp(1j*2*np.pi*offset*dns.k)
+        v0 = np.concatenate((v0off[:((gridSize+1)//2)], v0off[-(gridSize-1)//2:])) * gridSize / dns.N
         sgs.IC( v0 = v0 )
     else:
         midx = np.argmax(newx)
@@ -217,8 +218,9 @@ def environment( s ,
  
         if spectralReward:
             print("[burger_env] Init spectrum.")
-            v0 = np.concatenate((dns.v0[:((gridSize+1)//2)], dns.v0[-(gridSize-1)//2:]))
-            base.IC( v0 = v0 * gridSize / dns.N )
+            v0off = dns.v0*np.exp(1j*2*np.pi*offset*dns.k)
+            v0 = np.concatenate((v0off[:((gridSize+1)//2)], v0off[-(gridSize-1)//2:])) * gridSize / dns.N
+            base.IC( v0 = v0 )
 
         else:
             print("[burger_env] Init interpolation.")

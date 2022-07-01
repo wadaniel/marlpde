@@ -156,7 +156,7 @@ e["File Output"]["Use Multiple Files"] = False
 
 if args.test:
 
-    nus = [0.015, 0.02, 0.03, 0.04]
+    nus = [0.015, 0.02, 0.25]
 
     for nu in nus:
         fileName = 'test_burger_{}_{}_{}'.format(args.ic, nu, args.run)
