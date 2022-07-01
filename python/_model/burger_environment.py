@@ -230,8 +230,8 @@ def environment( s ,
             base.IC( u0 = ic )
 
         # reinit vars
-        error = 0
         step = 0
+        error = 0
         kPrevRelErr = 0.
         cumreward = np.zeros(numAgents)
 
@@ -270,7 +270,7 @@ def environment( s ,
             # accumulate reward
             cumreward += reward
 
-            if (np.isfinite(reward) == False):
+            if (np.isfinite(reward).all() == False):
                 print("[burger_environment] Nan reward detected")
                 error = 1
                 break
