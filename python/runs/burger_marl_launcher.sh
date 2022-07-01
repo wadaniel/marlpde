@@ -1,15 +1,16 @@
 #!/bin/bash
 export OMP_NUM_THREADS=4
 
-run=5
-nagents=4
-noise=0.001
-iex=0.01
+run=6
+nagents=2
+noise=0.1
+iex=0.001
 version=0
 mar="Cooperation"
 #mar="Individual"
 
-IC='sinus'
+IC='turbulence'
+#IC='sinus'
 NEX=1000000
 N=32
 NA=32
@@ -47,6 +48,7 @@ python3 run-vracer-burger-marl.py --ic $IC --run $run --NE $NEX \
     --iex $iex --noise $noise --seed $seed \
     --episodelength $esteps --NDNS $NDNS \
     --tf $tf --nt $nt --version $version --width $width --dforce \
+    --specreward \
     --nagents $nagents --mar $mar
 
 python3 run-vracer-burger-marl.py --ic $IC --run $run --NE $NEX \
@@ -54,6 +56,7 @@ python3 run-vracer-burger-marl.py --ic $IC --run $run --NE $NEX \
     --iex $iex --noise $noise --seed $seed \
     --episodelength $esteps --NDNS $NDNS \
     --tf $tf --nt $nt --version $version --width $width --dforce \
+    --specreward \
     --nagents $nagents --mar $mar \
     --test
 

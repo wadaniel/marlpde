@@ -404,7 +404,7 @@ class Burger:
                 forcing += r1*A/np.sqrt(k*20*0.01)*np.cos(2*np.pi*k*(self.x+self.offset)/self.L+2*np.pi*r2);
 
             Fforcing = fft( forcing )
-
+        
             """
             hidx = (np.abs(self.k)>70) 
             z = self.v.copy()

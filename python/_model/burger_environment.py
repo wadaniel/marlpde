@@ -113,9 +113,9 @@ def environment( s ,
     ## run controlled simulation
     error = 0
     step = 0
+    kPrevRelErr = 0.
     nIntermediate = int(tEnd / dt / episodeLength)
-    prevkMseLogErr = 0.
-    cumreward = 0.
+    cumreward = np.zeros(numAgents)
 
     while step < episodeLength and error == 0:
     
@@ -158,7 +158,9 @@ def environment( s ,
         if spectralReward:
             sgs.compute_Ek()
             kRelErr = np.mean((np.abs(dns.Ek_ktt[sgs.ioutnum,1:gridSize//2] - sgs.Ek_ktt[sgs.ioutnum,1:gridSize//2])/dns.Ek_ktt[sgs.ioutnum,1:gridSize//2])**2)
-            reward = rewardFactor*(kPrevRelErr-kRelErr)
+            #print(sgs.Ek_ktt[sgs.ioutnum,:gridSize//2])
+            #print(dns.Ek_ktt[sgs.ioutnum,:gridSize//2])
+            reward = np.full(numAgents, [rewardFactor*(kPrevRelErr-kRelErr)])
             kPrevRelErr = kRelErr
         
         # accumulate reward
@@ -231,7 +233,7 @@ def environment( s ,
         error = 0
         step = 0
         kPrevRelErr = 0.
-        cumreward = 0.
+        cumreward = np.zeros(numAgents)
 
         actions = np.zeros(numActions)
 
@@ -259,8 +261,10 @@ def environment( s ,
             # calculate reward
             if spectralReward:
                 base.compute_Ek()
+                #print(dns.Ek_ktt[base.ioutnum,:gridSize//2])
+                #print(dns.Ek_ktt[base.ioutnum,:gridSize//2])
                 kRelErr = np.mean((np.abs(dns.Ek_ktt[base.ioutnum,:gridSize//2] - base.Ek_ktt[base.ioutnum,:gridSize//2])/dns.Ek_ktt[base.ioutnum,:gridSize//2])**2)
-                reward = rewardFactor*(kPrevRelErr-kRelErr)
+                reward = np.full(numAgents, [rewardFactor*(kPrevRelErr-kRelErr)])
                 kPrevRelErr = kRelErr
 
             # accumulate reward
