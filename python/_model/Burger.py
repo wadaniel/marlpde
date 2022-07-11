@@ -611,15 +611,16 @@ class Burger:
        
         states = []
         for agentId in range(self.numAgents):
-            a = agentId*self.N//self.numAgents
-            b = (agentId+1)*self.N//self.numAgents
+            a = agentId*self.N//self.numAgents - 1
+            b = (agentId+1)*self.N//self.numAgents + 1
+            index = np.arange(a,b) % self.N
             
             if self.version == 0:
-                states.append(state[a:b].flatten().tolist())
+                states.append(state[index].flatten().tolist())
             elif self.version == 1:
-                states.append(state[:,a:b].flatten().tolist())
+                states.append(state[:,index].flatten().tolist())
             elif self.version == 2:
-                states.append(state[:,a:b].flatten().tolist())
+                states.append(state[:,index].flatten().tolist())
             else:
                 print("[Burger] Version not recognized", flush=True)
                 sys.exit()
