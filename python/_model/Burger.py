@@ -591,6 +591,8 @@ class Burger:
                 state = np.vstack((dudt,d2udx2))
             elif self.version == 2:
                 state = np.vstack((u,u**2))
+            elif self.version == 3:
+                state = d2udx2
             else:
                 print("[Burger] Version not recognized", flush=True)
                 sys.exit()
@@ -600,11 +602,13 @@ class Burger:
 
             print("[Burger] Floating point exception occured in getState", flush=True)
             if self.version == 0:
-                state = np.inf*np.ones((1,self.N))
+                state = np.inf*np.ones(self.N)
             elif self.version == 1:
                 state = np.inf*np.ones((2,self.N))
             elif self.version == 2:
                 state = np.inf*np.ones((2,self.N))
+            elif self.version == 3:
+                state = np.inf*np.ones(self.N)
             else:
                 print("[Burger] Version not recognized", flush=True)
                 sys.exit()
@@ -615,11 +619,14 @@ class Burger:
             b = (agentId+1)*self.N//self.numAgents
             
             if self.version == 0:
-                states.append(state[a:b].flatten().tolist())
+                states.append(state[a:b].tolist())
             elif self.version == 1:
                 states.append(state[:,a:b].flatten().tolist())
             elif self.version == 2:
                 states.append(state[:,a:b].flatten().tolist())
+            elif self.version == 3:
+                ek = 1./2.*np.real( self.v.conj()*self.v / self.N ) * self.dx
+                states.append(state[a:b].tolist() + ek[:self.N//2].tolist())
             else:
                 print("[Burger] Version not recognized", flush=True)
                 sys.exit()
