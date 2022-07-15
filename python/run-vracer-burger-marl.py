@@ -124,7 +124,7 @@ else:
 
 # States 
 assert nState/args.nagents % 1 == 0., "Number of agents must be a divisor of num states"
-numEffectiveStates = nState // args.nagents
+numEffectiveStates = nState // args.nagents + 2
 for i in range(numEffectiveStates):
 	e["Variables"][i]["Name"] = "Field Information " + str(i)
 	e["Variables"][i]["Type"] = "State"
@@ -184,7 +184,7 @@ e["File Output"]["Use Multiple Files"] = False
 
 if args.test:
 
-    nus = [0.001, 0.005, 0.01, 0.015, 0.02, 0.025, 0.03, 0.035, 0.04]
+    nus = [0.015, 0.02, 0.025]
 
     for nu in nus:
         fileName = 'test_burger_{}_{}_{}'.format(args.ic, nu, args.run)
