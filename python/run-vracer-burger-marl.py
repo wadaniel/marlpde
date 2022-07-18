@@ -118,6 +118,10 @@ if args.version == 0:
     nState  = args.N
 elif args.version == 1:
     nState  = 2*args.N
+elif args.version == 2:
+    nState  = 2*args.N
+elif args.version == 3:
+    nState  = args.N + args.nagents * int(0.5*args.N)
 else:
     print("[run-vracer-burger] version not recognized")
     sys.exit()

@@ -80,7 +80,6 @@ def makePlot(dns, base, sgs, fileName, spectralReward=True):
       
         errBaseK_t = np.mean(((np.abs(dns.Ek_ktt[:,1:gridSize//2] - base.Ek_ktt[:,1:gridSize//2])/dns.Ek_ktt[:,1:gridSize//2]))**2, axis=1)
         errBaseK = np.cumsum(errBaseK_t)/np.arange(1, len(errBaseK_t)+1)
-
        
         errEk_t = dns.Ek_t - sgs.Ek_t
         errEk_tt = dns.Ek_tt - sgs.Ek_tt
@@ -192,14 +191,17 @@ def makePlot(dns, base, sgs, fileName, spectralReward=True):
         figName3 = fileName + "_action.png"
         print("Plotting {} ...".format(figName3))
       
-        dnsSgs = dns.sgsHistory
-        
+        xi = (np.arange(N) % (N//gridSize)) == 0
+        dnsSgs = dns.sgsHistory[:, xi==True]
+
         print(np.mean(dnsSgs.flatten()))
         print(np.std(dnsSgs.flatten()))
         
         print(np.mean(sgs.sgsHistory.flatten()))
         print(np.std(sgs.sgsHistory.flatten()))
      
+        dnsSgs = urgSgs
+
         smax = max(dnsSgs.max(), sgs.sgsHistory.max())
         smin = min(dnsSgs.min(), sgs.sgsHistory.min())
         slevels = np.linspace(smin, smax, 50)
@@ -207,7 +209,6 @@ def makePlot(dns, base, sgs, fileName, spectralReward=True):
        
         #fig3, axs3 = plt.subplots(2, 2, sharex='col', sharey='col', subplot_kw=dict(box_aspect=1), figsize=(10,10))
         fig3, axs3 = plt.subplots(2, 2, sharex='col', sharey='col', figsize=(10,10))
-        
 
         up = np.roll(dns.uu,-1,axis=1)
         um = np.roll(dns.uu,1,axis=1)
@@ -226,9 +227,9 @@ def makePlot(dns, base, sgs, fileName, spectralReward=True):
         llevels = np.linspace(lmin, lmax, 50)
 
         idx = 0
-        axs3[idx,0].contourf(dns.x, dns.tt, dnsSgs) #, slevels)
-        #axs3[idx,2].contourf(dns.x, dns.tt, dns.sgsHistoryAlt, slevels)
-        #axs3[idx,3].contourf(base.x, base.tt, dns.sgsHistoryAlt2, slevels)
+        axs3[idx,0].contourf(xi, dns.tt, dnsSgs) #, slevels)
+        #axs3[idx,2].contourf(xi, dns.tt, dns.sgsHistoryAlt, slevels)
+        #axs3[idx,3].contourf(xi, base.tt, dns.sgsHistoryAlt2, slevels)
         
         dnsDensity = gaussian_kde(dnsSgs.flatten())
         dnsDensityVals = dnsDensity(svals)
