@@ -52,9 +52,10 @@ class Burger:
         np.random.seed(None)
         self.noise = noise*L
         self.offset = np.random.normal(loc=0., scale=self.noise) if self.noise > 0. else 0.
-        self.s = s
+        while np.abs(self.offset) > L:
+            self.offset = np.random.normal(loc=0., scale=self.noise) if self.noise > 0. else 0.
 
-        assert(np.abs(self.offset) < L)
+        self.s = s
         
         # seed of turbulent IC
         self.tseed = seed
