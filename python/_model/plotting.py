@@ -187,7 +187,6 @@ def makePlot(dns, base, sgs, fileName, spectralReward=True):
 
 #------------------------------------------------------------------------------
     plt.close('all')
-    return  
 
     try:
         figName3 = fileName + "_action.png"
@@ -206,7 +205,8 @@ def makePlot(dns, base, sgs, fileName, spectralReward=True):
         slevels = np.linspace(smin, smax, 50)
         svals = np.linspace(smin,smax,500)
        
-        fig3, axs3 = plt.subplots(2, 2, sharex='col', sharey='col', subplot_kw=dict(box_aspect=1), figsize=(10,10))
+        #fig3, axs3 = plt.subplots(2, 2, sharex='col', sharey='col', subplot_kw=dict(box_aspect=1), figsize=(10,10))
+        fig3, axs3 = plt.subplots(2, 2, sharex='col', sharey='col', figsize=(10,10))
         
 
         up = np.roll(dns.uu,-1,axis=1)
@@ -260,7 +260,8 @@ def makePlot(dns, base, sgs, fileName, spectralReward=True):
         sgsMean = np.mean(sgs.sgsHistory)
         sgsSdev = np.std(sgs.sgsHistory)
         svals2  = np.linspace(sgsMean-sfac*sgsSdev,sgsMean+sfac*sgsSdev,500)
-        fig4, axs4 = plt.subplots(1, 1, subplot_kw=dict(box_aspect=1), figsize=(10,10))
+        #fig4, axs4 = plt.subplots(1, 1, subplot_kw=dict(box_aspect=1), figsize=(10,10))
+        fig4, axs4 = plt.subplots(1, 1, figsize=(10,10))
         axs4.plot(svals2, dnsDensity(svals2), color=colors[0], linestyle='--')
         axs4.plot(svals2, sgsDensity(svals2), color=colors[2])
         axs4.set_yscale('log')

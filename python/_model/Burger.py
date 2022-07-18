@@ -614,24 +614,32 @@ class Burger:
                 sys.exit()
        
         states = []
-        for agentId in range(self.numAgents):
-            a = agentId*self.N//self.numAgents - 1
-            b = (agentId+1)*self.N//self.numAgents + 1
-            index = np.arange(a,b) % self.N
-            
-            if self.version == 0:
-                states.append(state[index].flatten().tolist())
-            elif self.version == 1:
-                states.append(state[:,index].flatten().tolist())
-            elif self.version == 2:
-                states.append(state[:,index].flatten().tolist())
-            elif self.version == 3:
+
+        if self.numAgents == 1:
+            states = [state.flatten().tolist()]
+            if self.version == 3:
                 ek = 1./2.*np.real( self.v.conj()*self.v / self.N ) * self.dx
-                states.append(state[index].tolist() + ek[:self.N//2].tolist())
-            else:
-                print("[Burger] Version not recognized", flush=True)
-                sys.exit()
-        
+                states[0] += ek[:self.N//2].tolist()
+
+        else:
+            for agentId in range(self.numAgents):
+                a = agentId*self.N//self.numAgents - 1
+                b = (agentId+1)*self.N//self.numAgents + 1
+                index = np.arange(a,b) % self.N
+                
+                if self.version == 0:
+                    states.append(state[index].flatten().tolist())
+                elif self.version == 1:
+                    states.append(state[:,index].flatten().tolist())
+                elif self.version == 2:
+                    states.append(state[:,index].flatten().tolist())
+                elif self.version == 3:
+                    ek = 1./2.*np.real( self.v.conj()*self.v / self.N ) * self.dx
+                    states.append(state[index].tolist() + ek[:self.N//2].tolist())
+                else:
+                    print("[Burger] Version not recognized", flush=True)
+                    sys.exit()
+            
         return states
 
     def compute_Sgs(self, nURG):
