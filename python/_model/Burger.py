@@ -251,7 +251,6 @@ class Burger:
                         u0 = np.zeros(self.N)
                     
                     elif case == 'forced':
-                        assert False, "Disabled"
                         u0 = np.zeros(self.N)
             
                         #A = 1

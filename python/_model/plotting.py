@@ -11,11 +11,17 @@ def makePlot(dns, base, sgs, fileName, spectralReward=True):
 #------------------------------------------------------------------------------
 
     figName2 = fileName + "_evolution.pdf"
-    print("Plotting {} ...".format(figName2))
+    print(f"[plotting] Plotting {figName2} ...")
     
     tEnd = dns.tend
     dt = dns.dt
     sgs_dt = sgs.dt
+
+    # step factor
+    s = dns.s
+    assert base.s == s
+    assert sgs.s == s
+
     colors = ['black','royalblue','seagreen']
     fig2, axs2 = plt.subplots(4,4, sharex=True, sharey=True, figsize=(15,15))
     for i in range(16):
@@ -54,7 +60,7 @@ def makePlot(dns, base, sgs, fileName, spectralReward=True):
     ulevels = np.linspace(umin, umax, 50)
 
 #------------------------------------------------------------------------------
-    print("plot DNS")
+    print("[plotting] plot DNS")
 
     idx = 0
     axs1[0,0].contourf(dns.x, dns.tt, dns.uu, ulevels)
@@ -69,8 +75,8 @@ def makePlot(dns, base, sgs, fileName, spectralReward=True):
 #------------------------------------------------------------------------------
     try:
 
-        errBaseEk_t = dns.Ek_t - base.Ek_t
-        errBaseEk_tt = dns.Ek_tt - base.Ek_tt
+        print(dns.Ek_ktt.shape)
+        tidx = np.arange(start=0,stop=nt+1,step=dns.s)
 
         f_dns = interpolate.interp2d(dns.x, dns.tt, dns.uu, kind='cubic')
         udns_int = f_dns(base.x, base.tt)
@@ -78,18 +84,15 @@ def makePlot(dns, base, sgs, fileName, spectralReward=True):
         mseBaseU_t = np.mean(errBaseU**2, axis=1)
         mseBaseU = np.cumsum(mseBaseU_t)/np.arange(1, len(mseBaseU_t)+1)
       
-        errBaseK_t = np.mean(((np.abs(dns.Ek_ktt[:,1:gridSize//2] - base.Ek_ktt[:,1:gridSize//2])/dns.Ek_ktt[:,1:gridSize//2]))**2, axis=1)
+        errBaseK_t = np.mean(((np.abs(dns.Ek_ktt[tidx,1:gridSize//2] - base.Ek_ktt[:,1:gridSize//2])/dns.Ek_ktt[tidx,1:gridSize//2]))**2, axis=1)
         errBaseK = np.cumsum(errBaseK_t)/np.arange(1, len(errBaseK_t)+1)
        
-        errEk_t = dns.Ek_t - sgs.Ek_t
-        errEk_tt = dns.Ek_tt - sgs.Ek_tt
-        
         udns_int = f_dns(sgs.x, sgs.tt)
         errU = np.abs(sgs.uu-udns_int)
         mseU_t = np.mean(errU**2, axis=1)
         mseU = np.cumsum(mseU_t)/np.arange(1, len(mseU_t)+1)
 
-        errK_t = np.mean(((np.abs(dns.Ek_ktt[:,1:gridSize//2] - sgs.Ek_ktt[:,1:gridSize//2])/dns.Ek_ktt[:,1:gridSize//2]))**2, axis=1)
+        errK_t = np.mean(((np.abs(dns.Ek_ktt[tidx,1:gridSize//2] - sgs.Ek_ktt[:,1:gridSize//2])/dns.Ek_ktt[tidx,1:gridSize//2]))**2, axis=1)
         errK = np.cumsum(errK_t)/np.arange(1, len(errK_t)+1)
 
 #------------------------------------------------------------------------------
@@ -100,7 +103,7 @@ def makePlot(dns, base, sgs, fileName, spectralReward=True):
 
 #------------------------------------------------------------------------------
 
-        print("plot baseline")
+        print("[plotting] plot baseline")
         idx = idx + 1
 
         # Plot solution
@@ -124,7 +127,7 @@ def makePlot(dns, base, sgs, fileName, spectralReward=True):
         
         # Plot energy spectrum at start, mid and end of simulation
         axs1[idx,3].plot(k2, np.abs(base.Ek_ktt[0,1:gridSize//2]),':',color=colors[idx])
-        axs1[idx,3].plot(k2, np.abs(base.Ek_ktt[nt//2,1:gridSize//2]),'--',color=colors[idx])
+        axs1[idx,3].plot(k2, np.abs(base.Ek_ktt[nt//(2*s),1:gridSize//2]),'--',color=colors[idx])
         axs1[idx,3].plot(k2, np.abs(base.Ek_ktt[-1,1:gridSize//2]),'-',color=colors[idx])
         axs1[idx,3].set_xscale('log')
         axs1[idx,3].set_yscale('log')
@@ -132,7 +135,7 @@ def makePlot(dns, base, sgs, fileName, spectralReward=True):
 
         # Plot energy spectrum difference
         axs1[idx,4].plot(k2, np.abs((dns.Ek_ktt[0,1:gridSize//2] - base.Ek_ktt[0,1:gridSize//2])/dns.Ek_ktt[0,1:gridSize//2]),'r:')
-        axs1[idx,4].plot(k2, np.abs((dns.Ek_ktt[nt//2,1:gridSize//2] - base.Ek_ktt[nt//2,1:gridSize//2])/dns.Ek_ktt[nt//2,1:gridSize//2]),'r--')
+        axs1[idx,4].plot(k2, np.abs((dns.Ek_ktt[nt//2,1:gridSize//2] - base.Ek_ktt[nt//(2*s),1:gridSize//2])/dns.Ek_ktt[nt//2,1:gridSize//2]),'r--')
         axs1[idx,4].plot(k2, np.abs((dns.Ek_ktt[-1,1:gridSize//2] - base.Ek_ktt[-1,1:gridSize//2])/dns.Ek_ktt[-1,1:gridSize//2]),'r-')
         print(np.mean(np.abs((dns.Ek_ktt[-1,1:gridSize//2] - base.Ek_ktt[-1,1:gridSize//2])/dns.Ek_ktt[-1,1:gridSize//2])**2))
         
@@ -142,7 +145,7 @@ def makePlot(dns, base, sgs, fileName, spectralReward=True):
 
 #------------------------------------------------------------------------------
 
-        print("plot sgs")
+        print("[plotting] plot sgs")
         idx = idx + 1
 
         # Plot solution
@@ -163,12 +166,12 @@ def makePlot(dns, base, sgs, fileName, spectralReward=True):
 
         # Plot time averaged energy spectrum at start, mid and end of simulation
         axs1[idx,3].plot(k2, np.abs(sgs.Ek_ktt[0,1:gridSize//2]),':',color=colors[idx])
-        axs1[idx,3].plot(k2, np.abs(sgs.Ek_ktt[nt//2,1:gridSize//2]),'--',color=colors[idx])
+        axs1[idx,3].plot(k2, np.abs(sgs.Ek_ktt[nt//(2*s),1:gridSize//2]),'--',color=colors[idx])
         axs1[idx,3].plot(k2, np.abs(sgs.Ek_ktt[-1,1:gridSize//2]),'-',color=colors[idx])
 
         # Plot time averaged energy spectrum difference
         axs1[idx,4].plot(k2, np.abs((dns.Ek_ktt[0,1:gridSize//2] - sgs.Ek_ktt[0,1:gridSize//2])/dns.Ek_ktt[0,1:gridSize//2]),'r:')
-        axs1[idx,4].plot(k2, np.abs((dns.Ek_ktt[nt//2,1:gridSize//2] - sgs.Ek_ktt[nt//2,1:gridSize//2])/dns.Ek_ktt[nt//2,1:gridSize//2]),'r--')
+        axs1[idx,4].plot(k2, np.abs((dns.Ek_ktt[nt//2,1:gridSize//2] - sgs.Ek_ktt[nt//(2*s),1:gridSize//2])/dns.Ek_ktt[nt//2,1:gridSize//2]),'r--')
         axs1[idx,4].plot(k2, np.abs((dns.Ek_ktt[-1,1:gridSize//2] - sgs.Ek_ktt[-1,1:gridSize//2])/dns.Ek_ktt[-1,1:gridSize//2]),'r-')
         print(np.mean(np.abs((dns.Ek_ktt[-1,1:gridSize//2] - sgs.Ek_ktt[-1,1:gridSize//2])/dns.Ek_ktt[-1,1:gridSize//2])**2))
 
@@ -178,18 +181,19 @@ def makePlot(dns, base, sgs, fileName, spectralReward=True):
 
         plt.tight_layout()
         figName = fileName + ".png"
+        print(f"[plotting] Plotting {figName} ...")
         fig1.savefig(figName)
 
     except Exception as e:
-        print("Exception during plotting:")
+        print("[plotting] Exception during plotting:")
         print(e)
 
 #------------------------------------------------------------------------------
     plt.close('all')
 
+    print("[plotting] plot actions..")
     try:
         figName3 = fileName + "_action.png"
-        print("Plotting {} ...".format(figName3))
       
         xi = (np.arange(N) % (N//gridSize)) == 0
         dnsSgs = dns.sgsHistory[:, xi==True]
@@ -200,8 +204,6 @@ def makePlot(dns, base, sgs, fileName, spectralReward=True):
         print(np.mean(sgs.sgsHistory.flatten()))
         print(np.std(sgs.sgsHistory.flatten()))
      
-        dnsSgs = urgSgs
-
         smax = max(dnsSgs.max(), sgs.sgsHistory.max())
         smin = min(dnsSgs.min(), sgs.sgsHistory.min())
         slevels = np.linspace(smin, smax, 50)
@@ -250,12 +252,12 @@ def makePlot(dns, base, sgs, fileName, spectralReward=True):
         axs3[idx,1].plot(svals, dnsDensityVals, color=colors[0], linestyle='--')
         axs3[idx,1].plot(svals, sgsDensityVals, color=colors[2])
         
+        print(f"[plotting] Plotting {figName3} ...")
         fig3.savefig(figName3)
         
 #------------------------------------------------------------------------------
 
         figName4 = fileName + "_action_closeup.png"
-        print("Plotting {} ...".format(figName4))
      
         sfac = 3
         sgsMean = np.mean(sgs.sgsHistory)
@@ -266,10 +268,11 @@ def makePlot(dns, base, sgs, fileName, spectralReward=True):
         axs4.plot(svals2, dnsDensity(svals2), color=colors[0], linestyle='--')
         axs4.plot(svals2, sgsDensity(svals2), color=colors[2])
         axs4.set_yscale('log')
+        print(f"[plotting] Plotting {figName4} ...")
         fig4.savefig(figName4)
         
     except Exception as e:
-        print("Exception during plotting:")
+        print("[plotting] Exception during plotting:")
         print(e)
 
     plt.close('all')
