@@ -1,4 +1,5 @@
 import argparse
+import numpy as np
 ### Parsing arguments
 
 parser = argparse.ArgumentParser()
@@ -11,12 +12,15 @@ parser.add_argument('--iex', help='Initial exploration', required=False, type=fl
 parser.add_argument('--episodelength', help='Actual length of episode / number of actions', required=False, type=int, default=500)
 parser.add_argument('--noise', help='Standard deviation of IC', required=False, type=float, default=0.)
 parser.add_argument('--ic', help='Initial condition', required=False, type=str, default='sinus')
+parser.add_argument('--L', help='Length of domain', required=False, type=float, default=2*np.pi)
 parser.add_argument('--dforce', help='Do direct forcing', action='store_true', required=False)
 parser.add_argument('--specreward', help='Use spectral reward', action='store_true', required=False)
 parser.add_argument('--forcing', help='Use forcing term in equation', action='store_true', required=False)
 parser.add_argument('--nunoise', help='Enable noisy nu', action='store_true', required=False)
 parser.add_argument('--seed', help='Random seed', required=False, type=int, default=42)
+parser.add_argument('--stepper', help='Step factor in URG', required=False, type=int, default=1)
 parser.add_argument('--dt', help='Simulator time step', required=False, type=float, default=0.001)
+parser.add_argument('--T', help='Duration simulation', required=False, type=float, default=5.)
 parser.add_argument('--nu', help='Viscosity', required=False, type=float, default=0.02)
 parser.add_argument('--tend', help='Simulation length', required=False, type=int, default=10)
 parser.add_argument('--nt', help='Number of testing runs', required=False, type=int, default=20)
@@ -36,7 +40,7 @@ sys.path.append('_model')
 import burger_environment as be
 
 dns_default = None
-dns_default = be.setup_dns_default(args.NDNS, args.dt, args.nu, args.ic, args.forcing, args.seed)
+dns_default = be.setup_dns_default(args.L, args.NDNS, args.T, args.dt, args.nu, args.ic, args.forcing, args.seed, args.stepper)
 
 ### Defining Korali Problem
 
@@ -57,6 +61,8 @@ e["Problem"]["Type"] = "Reinforcement Learning / Continuous"
 e["Problem"]["Custom Settings"]["Mode"] = "Testing" if args.test else "Training"
 e["Problem"]["Environment Function"] = lambda s : be.environment( 
         s, 
+        L = args.L,
+        T = args.T, 
         N = args.NDNS, 
         gridSize = args.N, 
         numActions = args.NA, 
@@ -68,7 +74,8 @@ e["Problem"]["Environment Function"] = lambda s : be.environment(
         forcing = args.forcing,
         dforce = args.dforce, 
         noise = args.noise, 
-        seed = args.seed, 
+        seed = args.seed,
+        stepper = args.stepper,
         nunoise = args.nunoise,
         version = args.version,
         ssm = args.ssm,
@@ -161,7 +168,7 @@ if args.test:
     nus = [0.015, 0.02, 0.25]
 
     for nu in nus:
-        fileName = 'test_burger_{}_{}_{}'.format(args.ic, nu, args.run)
+        fileName = './plots/test_burger_{}_{}_{}'.format(args.ic, nu, args.run)
         e["Solver"]["Testing"]["Sample Ids"] = [0]
         e["Problem"]["Custom Settings"]["Filename"] = fileName
         e["Problem"]["Custom Settings"]["Viscosity"] = nu

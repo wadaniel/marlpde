@@ -27,7 +27,7 @@ from Burger import *
 L       = 100
 dt      = 0.01
 s       = 20
-tEnd    = 10
+tEnd    = 20
 nu      = 0.02
 #ic      = 'zero'
 #ic      = 'turbulence'

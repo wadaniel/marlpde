@@ -1,24 +1,22 @@
 from Burger import *
 from plotting import makePlot
 
-# dns defaults
-L    = 2*np.pi
-tEnd = 5
-
 # reward defaults
 rewardFactor = 1.
 
 # basis defaults
 basis = 'hat'
 
-def setup_dns_default(N, dt, nu , ic, forcing, seed):
-    print("Setting up default dns with args ({}, {}, {}, {}, {}, {})".format(N, dt, nu, ic, forcing, seed))
-    dns = Burger(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case=ic, forcing=forcing, noise=0., seed=seed)
+def setup_dns_default(L, N, T, dt, nu , ic, forcing, seed, stepper):
+    print(f"Setting up default dns with args ({L}, {N}, {T}, {dt}, {nu}, {ic} {forcing}, {seed}, {stepper})")
+    dns = Burger(L=L, N=N, dt=dt, nu=nu, tend=T, case=ic, forcing=forcing, noise=0., seed=seed, s=stepper)
     dns.simulate()
     dns.compute_Ek()
     return dns
 
 def environment( s , 
+        L,
+        T,
         N, 
         gridSize, 
         numActions, 
@@ -31,6 +29,7 @@ def environment( s ,
         dforce, 
         noise, 
         seed, 
+        stepper,
         nunoise=False, 
         version=0,
         ssm=False, 
@@ -52,11 +51,12 @@ def environment( s ,
                 N=N, 
                 dt=dt, 
                 nu=nu, 
-                tend=tEnd, 
+                tend=T, 
                 case=ic, 
                 forcing=forcing, 
                 noise=0., 
                 seed=seed, 
+                s=stepper,
                 version=version, 
                 nunoise=nunoise, 
                 numAgents = 1)
@@ -74,13 +74,15 @@ def environment( s ,
     #Initialize LES
     sgs = Burger(L=L, 
             N=gridSize, 
-            dt=dt, 
+            dt=dt*stepper, 
             nu=nu, 
-            tend=tEnd, 
+            tend=T, 
             case=ic, 
             forcing=forcing, 
             dforce=dforce, 
             noise=noise, 
+            seed=seed,
+            s=stepper,
             version=version,
             numAgents = numAgents)
    
@@ -115,7 +117,9 @@ def environment( s ,
     error = 0
     step = 0
     kPrevRelErr = 0.
-    nIntermediate = int(tEnd / dt / episodeLength)
+    nIntermediate = int(T / (dt*stepper) / episodeLength)
+    assert nIntermediate > 0, "dt or episodeLendth too long"
+
     cumreward = np.zeros(numAgents)
 
     while step < episodeLength and error == 0:
@@ -194,21 +198,23 @@ def environment( s ,
         fileName = s["Custom Settings"]["Filename"]
 
         #print("[burger_env] Storing sgs to file {}".format(fileName))
-        #np.savez(fileName, x = sgs.x, t = sgs.tt, uu = sgs.uu, vv = sgs.vv, L=L, N=gridSize, dt=dt, nu=nu, tEnd=tEnd, ssm = ssm, dsm = dsm, actions=sgs.actionHistory)
+        #np.savez(fileName, x = sgs.x, t = sgs.tt, uu = sgs.uu, vv = sgs.vv, L=L, N=gridSize, dt=dt, nu=nu, tEnd=T, ssm = ssm, dsm = dsm, actions=sgs.actionHistory)
          
 #------------------------------------------------------------------------------
         
         print("[burger_env] Calculating SGS terms from DNS..")
         dns.compute_Sgs(gridSize)
 
-        print("[burger_env] Running UGS..")
+        print("[burger_env] Running URS..")
         base = Burger(L=L, 
                 N=gridSize, 
-                dt=dt, 
+                dt=dt*stepper, 
                 nu=nu, 
-                tend=tEnd, 
-                forcing=forcing, 
-                noise=0.)
+                tend=T, 
+                forcing=forcing,
+                noise=0.,
+                seed=seed,
+                s=stepper)
         
         ## copy random numbers
         base.randfac1 = dns.randfac1
