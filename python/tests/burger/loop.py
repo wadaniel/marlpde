@@ -7,10 +7,15 @@ from Burger import *
 from plotting import *
  
 parser = argparse.ArgumentParser()
-parser.add_argument('--gridSize', help='Discretization / number of grid points', required=False, type=int, default=32)
+parser.add_argument('--N', help='DNS gridsize', required=False, type=int, default=1024)
+parser.add_argument('--gridSize', help='Discretization / number of grid points', required=False, type=int, default=64)
 parser.add_argument('--ic', help='Initial condition', required=False, type=str, default='sinus')
-parser.add_argument('--dt', help='Time step', required=False, type=float, default=0.001)
+parser.add_argument('--L', help='Domain width', required=False, type=float, default=2*np.pi)
+parser.add_argument('--T', help='Simulation length', required=False, type=float, default=5)
+parser.add_argument('--dt', help='Time step', required=False, type=float, default=0.01)
+parser.add_argument('--stepper', help='Time multiplicator SGS', required=False, type=int, default=1)
 parser.add_argument('--seed', help='Random seed', required=False, type=int, default=42)
+parser.add_argument('--forcing', help='Random forcing', action='store_true')
 parser.add_argument('--episodelength', help='Actual length of episode / number of actions', required=False, type=int, default=500)
 parser.add_argument('--dsm', help='Run with dynamic Smagorinsky model', action='store_true')
 parser.add_argument('--ssm', help='Run with dynamic Smagorinsky model', action='store_true')
@@ -18,16 +23,20 @@ parser.add_argument('--ssm', help='Run with dynamic Smagorinsky model', action='
 args = parser.parse_args()
 
 # dns defaults
-N    = 512
-L    = 2*np.pi
-dt   = 0.001
-tEnd = 5
-nu   = 0.02
-noise = 0.
+N    = args.N
+L    = args.L
+dt   = args.dt
+tEnd = args.T
 ic   = args.ic
 seed = args.seed
-forcing = False
+forcing = args.forcing
 dforce = False
+nu   = 0.02
+noise = 0.
+offset = 0.
+
+# reward structure
+spectralReward = True
 
 # action defaults
 basis = 'hat'
@@ -36,17 +45,14 @@ numActions = 1 #args.gridSize
 # sgs & rl defaults
 gridSize = args.gridSize
 episodeLength = args.episodelength
-
-# reward structure
-spectralReward = False
+stepper = args.stepper
 
 # reward defaults
 rewardFactor = 1. if spectralReward else 1.
 
-
 # DNS baseline
 print("Setting up DNS..")
-dns = Burger(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case=ic, forcing=forcing, dforce=dforce, noise=noise, seed=seed)
+dns = Burger(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case=ic, forcing=forcing, noise=0., seed=seed, s=args.stepper)
 dns.simulate()
 dns.compute_Ek()
 
@@ -55,21 +61,24 @@ tAvgEnergy = dns.Ek_tt
 print("Done!")
 
 # Initialize LES
-sgs = Burger(L=L, N=gridSize, dt=dt, nu=nu, tend=tEnd, case=ic, forcing=forcing, dforce=dforce, noise=0., ssm=args.ssm, dsm=args.dsm)
+print("Setting up SGS..")
+sgs = Burger(L=L, N=gridSize, dt=stepper*dt, nu=nu, tend=tEnd, case=ic, forcing=forcing, dforce=dforce, noise=0., s=stepper, ssm=args.ssm, dsm=args.dsm)
+sgs.offset = offset
 sgs.randfac1 = dns.randfac1
 sgs.randfac2 = dns.randfac2
 
 sgs.setup_basis(numActions, basis)
 sgs.setGroundTruth(dns.x, dns.tt, dns.uu)
 
-r = 2.
-newx = sgs.x + r
+newx = sgs.x + offset
 newx[newx>=L] = newx[newx>=L] - L
 newx[newx<=0] = newx[newx<=0] + L
 
 if spectralReward:
-    v0 = np.concatenate((dns.v0[:((gridSize+1)//2)], dns.v0[-(gridSize-1)//2:]))
-    sgs.IC( v0 = v0 * gridSize / dns.N )
+    v0off = dns.v0*np.exp(1j*2*np.pi*offset*dns.k)
+    v0 = np.concatenate((v0off[:((gridSize+1)//2)], v0off[-(gridSize-1)//2:])) * gridSize / dns.N
+    sgs.IC( v0 = v0 )
+
 else:
 
     print(newx)
@@ -81,7 +90,9 @@ else:
 ## run controlled simulation
 error = 0
 step = 0
-nIntermediate = int(tEnd / dt / episodeLength)
+kPrevRelErr = 0.
+nIntermediate = int(tEnd / (stepper*dt) / episodeLength)
+assert nIntermediate > 0, print(f"{nIntermediate}, {tEnd}, {stepper}, {dt}, {episodeLength}")
 
 prevkMseLogErr = 0.
 kMseLogErr = 0.
@@ -107,9 +118,10 @@ while step < episodeLength and error == 0:
     
     # calculate reward
     if spectralReward:
-        kMseLogErr = np.mean((np.abs(dns.Ek_ktt[sgs.ioutnum,:gridSize] - sgs.Ek_ktt[sgs.ioutnum,:gridSize])/dns.Ek_ktt[sgs.ioutnum,:gridSize])**2)
-        reward = rewardFactor*(prevkMseLogErr-kMseLogErr)
-        prevkMseLogErr = kMseLogErr
+        sgs.compute_Ek()
+        kRelErr = np.mean((np.abs(dns.Ek_ktt[sgs.ioutnum,1:gridSize//2] - sgs.Ek_ktt[sgs.ioutnum,1:gridSize//2])/dns.Ek_ktt[sgs.ioutnum,1:gridSize//2])**2)
+        reward = rewardFactor*(kPrevRelErr-kRelErr)
+        kPrevRelErr = kRelErr
 
     cumreward += reward
     if (np.isnan(reward)):

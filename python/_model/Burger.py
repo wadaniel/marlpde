@@ -58,6 +58,7 @@ class Burger:
         self.s = s
         
         # seed of turbulent IC
+        np.random.seed(seed)
         self.tseed = seed
 
         # Apply forcing term?
