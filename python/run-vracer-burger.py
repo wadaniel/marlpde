@@ -22,7 +22,6 @@ parser.add_argument('--stepper', help='Step factor in URG', required=False, type
 parser.add_argument('--dt', help='Simulator time step', required=False, type=float, default=0.001)
 parser.add_argument('--T', help='Duration simulation', required=False, type=float, default=5.)
 parser.add_argument('--nu', help='Viscosity', required=False, type=float, default=0.02)
-parser.add_argument('--tend', help='Simulation length', required=False, type=int, default=10)
 parser.add_argument('--nt', help='Number of testing runs', required=False, type=int, default=20)
 parser.add_argument('--tf', help='Testing frequenct in episodes', required=False, type=int, default=50)
 parser.add_argument('--ssm', help='Static Smagorinksy Model', action='store_true', required=False)
