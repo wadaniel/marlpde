@@ -1,4 +1,5 @@
 import argparse
+import numpy as np
 
 ### Parsing arguments
 
@@ -47,7 +48,7 @@ sys.path.append('_model')
 import burger_environment as be
 
 dns_default = None
-dns_default = be.setup_dns_default(args.L, args.NDNS, args.T, args.dt, args.nu, args.ic, args.forcing, args.seed, args.s)
+dns_default = be.setup_dns_default(args.L, args.NDNS, args.T, args.dt, args.nu, args.ic, args.forcing, args.seed, args.stepper)
 
 import korali
 k = korali.Engine()
@@ -72,6 +73,8 @@ e["Problem"]["Type"] = "Reinforcement Learning / Continuous"
 e["Problem"]["Custom Settings"]["Mode"] = "Testing" if args.test else "Training"
 e["Problem"]["Environment Function"] = lambda s : be.environment( 
         s,
+        L = args.L,
+        T = args.T, 
         N = args.NDNS, 
         gridSize = args.N, 
         numActions = args.NA, 
@@ -84,6 +87,7 @@ e["Problem"]["Environment Function"] = lambda s : be.environment(
         dforce = args.dforce, 
         noise = args.noise, 
         seed = args.seed, 
+        stepper = args.stepper,
         nunoise = args.nunoise,
         version = args.version,
         ssm = args.ssm,

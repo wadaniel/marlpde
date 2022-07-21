@@ -41,7 +41,6 @@ def environment( s ,
  
     testing = True if s["Custom Settings"]["Mode"] == "Testing" else False
     noise = 0. if testing else noise
-    offset = np.random.normal(loc=0., scale=noise) if noise > 0. else 0.
  
     if testing == True:
         nu = s["Custom Settings"]["Viscosity"]
@@ -93,12 +92,12 @@ def environment( s ,
     sgs.setup_basis(numActions, basis)
     sgs.setGroundTruth(dns.x, dns.tt, dns.uu)
  
-    newx = sgs.x + offset
+    newx = sgs.x + sgs.offset
     newx[newx>L] = newx[newx>L] - L
     newx[newx<0] = newx[newx<0] + L
 
     if spectralReward:
-        v0off = dns.v0*np.exp(1j*2*np.pi*offset*dns.k)
+        v0off = dns.v0*np.exp(1j*2*np.pi*sgs.offset*dns.k)
         v0 = np.concatenate((v0off[:((gridSize+1)//2)], v0off[-(gridSize-1)//2:])) * gridSize / dns.N
         sgs.IC( v0 = v0 )
     else:
@@ -141,7 +140,7 @@ def environment( s ,
             
                 # calculate MSE reward
                 if spectralReward == False:
-                    reward += rewardFactor*sgs.getMseReward(offset) / nIntermediate
+                    reward += rewardFactor*sgs.getMseReward(sgs.offset) / nIntermediate
         
         except Exception as e:
             print("[burger_environment] Exception occured during stepping:")
@@ -224,7 +223,7 @@ def environment( s ,
  
         if spectralReward:
             print("[burger_env] Init spectrum.")
-            v0off = dns.v0*np.exp(1j*2*np.pi*offset*dns.k)
+            v0off = dns.v0*np.exp(1j*2*np.pi*sgs.offset*dns.k)
             v0 = np.concatenate((v0off[:((gridSize+1)//2)], v0off[-(gridSize-1)//2:])) * gridSize / dns.N
             base.IC( v0 = v0 )
 
@@ -257,7 +256,7 @@ def environment( s ,
                  
                     # calculate MSE reward
                     if spectralReward == False:
-                        reward += rewardFactor*sgs.getMseReward(offset) / nIntermediate
+                        reward += rewardFactor*sgs.getMseReward(sgs.offset) / nIntermediate
 
             except Exception as e:
                 print("[burger_environment] Exception occured during stepping:")
