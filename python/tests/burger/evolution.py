@@ -1,10 +1,5 @@
 #!/bin/python3
 
-"""
-This scripts simulates the Diffusion equation on a grid (N) until t=tEnd. The 
-initial condition is set to be approx k^-5/3.
-"""
-
 # Discretization grid
 N = 1024
 N2 = 64
