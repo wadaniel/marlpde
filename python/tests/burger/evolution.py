@@ -2,7 +2,7 @@
 
 # Discretization grid
 N = 1024
-N2 = 64
+N2 = 32
 
 import matplotlib
 matplotlib.use('Agg')
@@ -18,18 +18,18 @@ from Burger import *
 
 #------------------------------------------------------------------------------
 ## set parameters and initialize simulation
-#L       = 2*pi
-L       = 100
-dt      = 0.01
+L       = 2*pi
+#L       = 100
+dt      = 0.001
 s       = 20
 tEnd    = 100
 nu      = 0.02
 #ic      = 'zero'
-#ic      = 'turbulence'
-ic      = 'sinus'
+ic      = 'turbulence'
+#ic      = 'sinus'
 #ic      = 'forced'
 noise   = 0.
-seed    = 13
+seed    = 42
 forcing = True
 #forcing = False
 

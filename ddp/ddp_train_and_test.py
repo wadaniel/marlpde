@@ -18,18 +18,12 @@ from scipy.fftpack import fft, ifft
 from helpers import *
 
 train_num = 500000
-region = "13"
+region = 1
 
 train_region = 1000000
-train_start = 0
-num_pred = 20000
-
-
-scratch     = os.getenv("SCRATCH", default=".")
-u_bar_dict  = np.load(f'{scratch}/u_bar_region_{region}.npy')
 full_input=u_bar_store=u_bar_dict.T
 
-full_output = np.load('{scratch}/PI_region_{region}.npy')
+full_output = np.load(f'{scratch}/PI_region_{region}_set_{set_size}.npy')
 full_output = full_output.T
 
 full_input[:train_region,:], full_output[:train_region,:] = shift_data(full_input[:train_region,:], full_output[:train_region,:])

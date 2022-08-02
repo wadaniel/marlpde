@@ -16,32 +16,35 @@ import tensorflow.keras.layers
 from tensorflow.python.keras.models import Sequential
 from tensorflow.python.keras.layers import Dense
 
-M=int(1e5)
+M=int(1e6)
 
-#L=2*np.pi   # domainsize
-L=100   # domainsize
-N=1024      # grid size / num Fourier modes
-N_bar=128   # sgs grid size / num Fourier modes
-#dt=0.001    # time step
-dt=0.01    # time step
-nu=0.02     # viscosity 
-#T=5         # terminal time
-T=1000       # terminal time
-#ic="turbulence" # initial condition
-#ic="forced" # initical condition
-ic="sinus" # initical condition
-#forcing=False # apply forcing term during step
+N=1024        # grid size / num Fourier modes
+N_bar=32      # sgs grid size / num Fourier modes
+nu=0.02       # viscosity 
+noise=0.1     # noise for ic
+seed=42       # random seed
 forcing=True  # apply forcing term during step
-noise=0.1   # noise for ic
-seed=42     # random seed
-#s=1         # ratio of LES and DNS time steps
-s=20         # ratio of LES and DNS time steps
+s=20          # ratio of LES and DNS time steps
+
+#L  = 2*np.pi   # domainsize
+#dt = 0.001      # time step
+#T  = 100         # terminal time
+#ic = "turbulence" # initial condition
+
+L  = 100       # domainsize
+dt = 0.01      # time step
+T  = 1000       # terminal time
+ic = "sinus"   # initial condition
 
 nunoise=False
 
 plot=True   # create plot
 dump=True   # dump fields
 load=False  # load fields
+
+train_region = int(0.8*M)
+train_num = 500000
+assert train_num < train_region
 
 # domain discretization
 x = np.arange(N)/L
@@ -63,7 +66,7 @@ if load == False:
                 case=ic, 
                 forcing=forcing, 
                 noise=noise, 
-                seed=seed, 
+                seed=seed+i, 
                 s=s,
                 version=0, 
                 nunoise=nunoise, 
@@ -96,9 +99,9 @@ if load == False:
 
     if dump:
         print(f"Storing U_DNS {U_DNS.shape}")
-        pickle.dump(U_DNS, open(f'{scratch}/DNS_Burgers_{ic}_s{s}_M{M}_N{N}.pickle'), 'wb')
+        pickle.dump(U_DNS, open(f'{scratch}/DNS_Burgers_{ic}_s{s}_M{M}_N{N}.pickle', 'wb'))
         print(f"Storing f_store {f_store.shape}")
-        pickle.dump(f_store, open(f'{scratch}/DNS_Force_{ic}_LES_s{s}_M{M}_N{N}.pickle'), 'wb')
+        pickle.dump(f_store, open(f'{scratch}/DNS_Force_{ic}_LES_s{s}_M{M}_N{N}.pickle', 'wb'))
         print(f"Storing u_bar {u_bar.shape}")
         np.save('{}/u_bar.npy'.format(scratch),u_bar)
         print(f"Storing f_bar {f_bar.shape}")
@@ -117,13 +120,14 @@ full_output = full_output.T
 
 full_input, full_output = helpers.shift_data(full_input, full_output)
 
-
-train_region = int(0.8*M)
 norm_input, mean_input, std_input = helpers.normalize_data(full_input[:train_region,:])
 norm_output, mean_output, std_output = helpers.normalize_data(full_output[:train_region,:])
 
-training_input = norm_input
-training_output = norm_output
+random_index = np.random.permutation(train_region)
+train_index = random_index[:train_num]
+
+training_input = norm_input[train_index,:]
+training_output = norm_output[train_index,:]
 
 print(f'shape of input {training_input.shape}')
 print(f'shape of output {training_output.shape}')
