@@ -9,14 +9,17 @@ N_bar= 128              # gridpoints / fourier modes of filtered field
 s = 20                  # ratio of LES and DNS time steps
 num_in_set = 1250000    # size of dataset
 
+M = 1e6
+N = 1024
+
 assert num_in_set % s == 0
 
 print("Loading data..")
-U_DNS = pickle.load( open('{}/DNS_Burgers_s_20.pickle'.format(scratch), 'rb') )
-f_store = pickle.load( open('{}/DNS_Force_LES_s_20.pickle'.format(scratch), 'rb') )
+U_DNS = pickle.load( open(f'{scratch}/DNS_Burgers_s{s}_M{M}_N{N}.pickle', 'rb') )
+f_store = pickle.load( open(f'{scratch}/DNS_Force_LES_s{s}_M{M}_N{N}.pickle', 'rb') )
 
-print(U_DNS.shape)
-print(f_store.shape)
+print(f'U_DNS {U_DNS.shape}')
+print(f'f_store {f_store.shape}')
 
 # shift between start of datasets
 set_size = 250000
@@ -29,15 +32,6 @@ for i in range(13,14):
     
     u_bar, PI, f_bar = calc_bar(u, f, 1024, N_bar)
     
-    print(u.shape)
-    print(u[:, 3])
-    print(u_bar.shape)
-    print(u_bar[:, 3])
-    print(PI.shape)
-    print(PI[:, 3])
-    print(f_bar.shape)
-    print(f_bar[:, 3])
-    
-    np.save('{}/u_bar_region_{}.npy'.format(scratch, i),u_bar)
-    np.save('{}/f_bar_region_{}.npy'.format(scratch, i),f_bar)
-    np.save('{}/PI_region_{}.npy'.format(scratch, i),PI)
+    np.save(f'{scratch}/u_bar_region_{i}_set_{set_size}.npy',u_bar)
+    np.save(f'{scratch}/f_bar_region_{i}_set_{set_size}.npy',f_bar)
+    np.save(f'{scratch}/PI_region_{i}_set_{set_size}.npy',PI)

@@ -22,14 +22,14 @@ from Burger import *
 L       = 100
 dt      = 0.01
 s       = 20
-tEnd    = 20
+tEnd    = 100
 nu      = 0.02
 #ic      = 'zero'
 #ic      = 'turbulence'
-#ic      = 'sinus'
-ic      = 'forced'
+ic      = 'sinus'
+#ic      = 'forced'
 noise   = 0.
-seed    = 42
+seed    = 13
 forcing = True
 #forcing = False
 

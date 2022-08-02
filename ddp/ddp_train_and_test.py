@@ -1,5 +1,6 @@
 import os
 import pickle
+from helpers import *
 import numpy as np
 import scipy
 import scipy.sparse as sparse
@@ -16,11 +17,6 @@ from scipy.io import loadmat
 from scipy.fftpack import fft, ifft
 from helpers import *
 
-def swish(x):
-   beta = 1.0
-   return beta * x * keras.backend.sigmoid(x)
-
-
 train_num = 500000
 region = "13"
 
@@ -28,32 +24,15 @@ train_region = 1000000
 train_start = 0
 num_pred = 20000
 
-def normalize_data(data):
-
-  std_data = np.std(data)
-  mean_data = np.mean(data)
-
-  norm_data = (data-mean_data)/std_data
-
-  return norm_data, mean_data, std_data
-
-def shift_data(data1,data2):
-  shifts = np.random.randint(0,data1.shape[1],data1.shape[0])
-  for i in range(data1.shape[0]):
-    data1[i,:] = np.concatenate((data1[i,shifts[i]:], data1[i,:shifts[i]]))
-    data2[i,:] = np.concatenate((data2[i,shifts[i]:], data2[i,:shifts[i]]))
-
-  return data1, data2
 
 scratch     = os.getenv("SCRATCH", default=".")
-u_bar_dict  = np.load( scratch + "/u_bar_region_" + region + ".npy")
+u_bar_dict  = np.load(f'{scratch}/u_bar_region_{region}.npy')
 full_input=u_bar_store=u_bar_dict.T
 
-full_output = np.load( scratch + "/PI_region_" + region + ".npy")
+full_output = np.load('{scratch}/PI_region_{region}.npy')
 full_output = full_output.T
 
-full_input[:train_region,:], full_output[:train_region,:] = shift_data(full_input[:train_region,:],
-                                                                 full_output[:train_region,:])
+full_input[:train_region,:], full_output[:train_region,:] = shift_data(full_input[:train_region,:], full_output[:train_region,:])
 
 norm_input, mean_input, std_input = normalize_data(full_input[:train_region,:])
 
@@ -132,7 +111,7 @@ sub_store = np.zeros((NX,maxit))
 
 reg = 13
 
-force_dict = pickle.load( open('{}/f_bar_all_regions.pickle'.format(scratch), 'rb') )
+force_dict = pickle.load( open(f'{scratch}/f_bar_all_regions.pickle', 'rb') )
 force_bar=force_dict[:,int((reg-1)*12500)+int(pred_start/s):]
 
 u_old = full_input[pred_start-1,:].reshape([NX,1])
@@ -176,5 +155,4 @@ for i in range(maxit):
   u_store[:,i] = u.squeeze()
   sub_store[:,i] = subgrid_n.squeeze()
 
-np.save( scratch + '/DDP_results_trained_'+str(int(train_num/1000))+'_region_' + region + '_new.npy',
-           {'u_pred':u_store, 'sub_pred':sub_store})
+np.save(f'{scratch}/DDP_results_trained_{int(train_num/1000)}_region_{region}_new.npy', {'u_pred':u_store, 'sub_pred':sub_store})

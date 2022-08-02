@@ -141,6 +141,7 @@ class Burger:
         self.uu = np.zeros([self.nout+1, self.N])
         self.vv = np.zeros([self.nout+1, self.N], dtype=np.complex64)
         self.tt = np.zeros(self.nout+1)
+        self.f  = np.zeros([self.nout+1, self.N])
         self.sgsHistory = np.zeros([self.nout+1, self.N])
         self.actionHistory = np.zeros([self.nout+1, self.N])
         
@@ -210,8 +211,8 @@ class Burger:
                     
                     # Sinus
                     elif case == 'sinus':
-                        u0 = np.sin(2.*np.pi*(self.x+self.offset)/self.L)
- 
+                        u0 = np.sin(4.*np.pi*(self.x+self.offset)/self.L)
+                    
                     # Turbulence
                     elif case == 'turbulence':
                         # Taken from: 
@@ -253,7 +254,6 @@ class Burger:
                     
                     elif case == 'forced':
                         u0 = np.zeros(self.N)
-            
                         #A = 1
                         A = 1./self.N
                         for k in range(1,self.N):
@@ -397,15 +397,16 @@ class Burger:
         
             forcing = np.zeros(self.N)
          
-            A=np.sqrt(2)/self.L
+            A=np.sqrt(2.)/self.L
             for k in range(1,4):
                 ridx = self.ioutnum % self.s
                 r1 = self.randfac1[k, ridx]
                 r2 = self.randfac2[k, ridx] 
-                forcing += r1*A/np.sqrt(k*20*0.01)*np.cos(2*np.pi*k*(self.x+self.offset)/self.L+2*np.pi*r2);
+                forcing += r1*A/np.sqrt(k*self.s*self.dt)*np.cos(2*np.pi*k*(self.x+self.offset)/self.L+2*np.pi*r2);
 
             Fforcing = fft( forcing )
         
+            self.f[self.ioutnum, :] = forcing
             """
             hidx = (np.abs(self.k)>70) 
             z = self.v.copy()
@@ -459,7 +460,7 @@ class Burger:
         Fn = self.k1*fft(0.5*self.u**2)
         self.v =((1.0-C)*self.v-0.5*self.dt*(3.0*Fn-self.Fn_old)+self.dt*Fforcing)/(1.0+C)
         self.Fn_old = Fn.copy()
-
+ 
         self.u = np.real(ifft(self.v))
         
         self.stepnum += 1

@@ -13,10 +13,10 @@ A=np.sqrt(2)*1e-2 # scaling factor for forcing
 N=1024      # grid size / num Fourier modes
 dt=0.01     # time step
 s=20        # ratio of LES and DNS time steps
-M=int(1e3)  # number of timesteps
+M=int(1e5)  # number of timesteps
 P=1         # time steps between samples
-out=True    # plot files
-dump=False  # dump fields
+out=False # plot files
+dump=True # dump fields
 
 # grid
 x = np.linspace(0, L, N, endpoint=False)
@@ -92,6 +92,9 @@ if dump:
     f_store = f_store[:,0::s]
 
     print(f"Storing U_DNS {U_DNS.shape}")
-    pickle.dump(U_DNS, open(f'{scratch}/DNS_Burgers_s{s}_M{M}_N{N}.pickle'), 'wb')
+    with open(f'{scratch}/DNS_Burgers_s{s}_M{M}_N{N}.pickle', 'wb') as f:
+        pickle.dump(U_DNS, f)
+
     print(f"Storing f_store {f_store.shape}")
-    pickle.dump(f_store, open(f'{scratch}/DNS_Force_LES_s{20}_M{M}_N{N}.pickle', 'wb'))
+    with open(f'{scratch}/DNS_Force_LES_s{s}_M{M}_N{N}.pickle', 'wb') as f:
+        pickle.dump(f_store, f)
