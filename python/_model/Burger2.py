@@ -302,11 +302,13 @@ class Burger2:
         print("[Burger] TODO.. exit")
         sys.exit()
 
-    def step( self, actions=None ):
+    def step( self, actions=None, C=None):
 
         Fforcing = np.zeros(self.N, dtype=np.complex64)
 
         Cs = self.cs
+        if (C is not None):
+            Cs = C
         dx = self.dx
         dx_ = 2*dx
         dx2 = dx*dx
