@@ -1,0 +1,729 @@
+import sys
+import time
+from numpy import pi
+from scipy import interpolate
+from scipy.fftpack import fft, ifft, fftfreq
+import numpy as np
+
+np.seterr(over='raise', invalid='raise')
+def gaussian( x, mean, sigma ):
+    return 1/np.sqrt(2*np.pi*sigma**2)*np.exp(-1/2*( (x-mean)/sigma )**2)
+
+def hat( x, mean, dx ):
+    left  = np.clip((x + dx - mean)/dx, a_min = 0., a_max = 1.)
+    right = np.clip((dx - x + mean)/dx, a_min = 0., a_max = 1.)
+    return left + right - 1.
+
+class Burger2:
+    #
+    # Solution of the Burgers equation
+    #
+    # u_t + u*u_x = nu*u_xx0 + Forcing
+    # with periodic BCs on x \in [0, L]: u(0,t) = u(L,t).
+
+    def __init__(self, L=2.*np.pi, N=512, dt=0.001, nu=0.0, dforce=True, nsteps=None, tend=5., u0=None, v0=None, case=None, forcing=False, ssm=False, dsm=False, noise=0., seed=42, version=0, nunoise=False, numAgents=1, nURG=32):
+
+        # Number of agents (>1 for MARL)
+        self.numAgents = numAgents
+
+        # SGS models
+        assert( (ssm and dsm) == False )
+
+        # Randomness
+        np.random.seed(None)
+        self.noise = noise*L
+        self.seed = seed
+        self.forcing = forcing
+
+        # Initialize
+        self.L  = float(L);
+        self.dt = float(dt);
+        self.tend = float(tend)
+
+        if (nsteps is None):
+            nsteps = int(tend/dt)
+        else:
+            nsteps = int(nsteps)
+            # override tend
+            tend = dt*nsteps
+
+        # save to self
+        self.N      = N
+        self.nURG   = nURG
+        self.dx     = L/N
+        self.x      = np.linspace(0, self.L, N, endpoint=False)
+        self.nu     = nu
+        if nunoise:
+            self.nu = 0.01+0.02*np.random.uniform()
+        self.nsteps = nsteps
+        self.nout   = nsteps
+
+        # random factors for forcing
+        self.randfac1 = np.random.normal(loc=0., scale=1., size=(32,nsteps)) # scale
+        self.randfac2 = np.random.normal(loc=0., scale=1., size=(32,nsteps)) # phase
+
+        # Basis
+        self.M = 0
+        self.basis = None
+        self.actions = None
+        self.version = version
+
+        # Static Smagorinsky Constant
+        self.cs = 0.1
+        self.ssm = ssm
+        self.dsm = dsm
+
+        # determine sharp spectral filter
+        if (dsm is True):
+            self.Gker = np.zeros(N)
+            self.dx_ = 2*self.dx # test scale width
+            self.Gker[0] = 1
+            for i in range(N-1):
+                val = (i+1)*self.dx
+                self.Gker[i+1] = np.sin(np.pi*val/self.dx_)/(np.pi*val)
+
+        # direct forcing or not
+        self.dforce = dforce
+
+        # time when field space transformed
+        self.uut = -1
+        # field in real space
+        self.uu = None
+        # ground truth in real space
+        self.uu_truth = None
+        # interpolation of truth
+        self.f_truth = None
+
+        # initialize simulation arrays
+        self.__setup_timeseries()
+
+        # set initial condition
+        if (case is not None):
+            self.IC(case=case)
+        elif (u0 is None) and (v0 is None):
+            self.IC()
+        elif (u0 is not None):
+            self.IC(u0 = u0)
+        elif (v0 is not None):
+            self.IC(v0 = v0)
+        else:
+            print("[Burger] IC ambigous")
+            sys.exit()
+
+        # precompute Fourier-related quantities
+        self.__setup_fourier()
+
+    def __setup_timeseries(self, nout=None):
+        if (nout != None):
+            self.nout = int(nout)
+
+        # nout+1 because we store the IC as well
+        self.uu = np.zeros([self.nout+1, self.N])
+        self.vv = np.zeros([self.nout+1, self.N], dtype=np.complex64)
+        self.tt = np.zeros(self.nout+1)
+        self.sgsHistory = np.zeros([self.nout+1, self.N])
+        self.sgs = np.zeros([self.nout+1, self.N])
+        self.actionHistory = np.zeros([self.nout+1, self.N])
+
+        self.tt[0]   = 0.
+
+    def __setup_fourier(self, coeffs=None):
+        self.k   = fftfreq(self.N, self.L / (2*np.pi*self.N))
+        self.k1  = 1j * self.k
+        self.k2  = self.k1**2
+
+        # Fourier multipliers for the linear term Lu
+        if (coeffs is None):
+            # normal-form equation
+            self.l = self.nu*self.k**2
+        else:
+            # altered-coefficients
+            self.l = -      coeffs[0]*np.ones(self.k.shape) \
+                     -      coeffs[1]*1j*self.k             \
+                     + (1 + coeffs[2])  *self.k**2          \
+                     +      coeffs[3]*1j*self.k**3          \
+                     - (1 + coeffs[4])  *self.k**4
+
+    def setup_basis(self, M, kind = 'uniform'):
+        self.M = M
+
+        # Action record
+        if M > 1:
+            if kind == 'uniform':
+                self.basis = np.zeros((self.M, self.N))
+                for i in range(self.M):
+                    assert self.N % self.M == 0, "[Burger] Something went wrong in basis setup"
+                    idx1 = i * self.N//self.M
+                    idx2 = (i+1) * self.N//self.M
+                    self.basis[i,idx1:idx2] = 1.
+
+            elif kind == 'hat':
+                self.basis = np.ones((self.M, self.N))
+                dx = self.L/(self.M-1)
+                for i in range(self.M):
+                    mean = i*dx
+                    self.basis[i,:] = hat( self.x, mean, dx )
+
+            else:
+                print("[Burger] Basis function not known, exit..")
+                sys.exit()
+        else:
+            self.basis = np.ones((self.M, self.N))
+
+        np.testing.assert_allclose(np.sum(self.basis, axis=0), 1)
+
+    def IC(self, u0=None, v0=None, case='box'):
+
+        # Set initial condition
+        if (v0 is None):
+            if (u0 is None):
+
+                    offset = np.random.normal(loc=0., scale=self.noise) if self.noise > 0 else 0.
+
+                    # Gaussian initialization
+                    if case == 'gaussian':
+                        # Gaussian noise (according to https://arxiv.org/pdf/1906.07672.pdf)
+                        #u0 = np.random.normal(0., 1, self.N)
+                        sigma = self.L/8
+                        u0 = gaussian(self.x, mean=0.5*self.L+offset, sigma=sigma)
+
+                    # Box initialization
+                    elif case == 'box':
+                        u0 = np.abs(self.x-self.L/2-offset)<self.L/8
+
+                    # Sinus
+                    elif case == 'sinus':
+                        u0 = np.sin(self.x+offset)
+
+                    # Turbulence
+                    elif case == 'turbulence':
+                        # Taken from:
+                        # A priori and a posteriori evaluations
+                        # of sub-grid scale models for the Burgers' eq. (Li, Wang, 2016)
+
+                        rng = 123456789 + self.seed
+                        a = 1103515245
+                        c = 12345
+                        m = 2**13
+
+                        A = 1
+                        u0 = np.ones(self.N)
+                        for k in range(1, self.N):
+                            offset = np.random.normal(loc=0., scale=self.noise) if self.noise > 0 else 0.
+                            rng = (a * rng + c) % m
+                            phase = rng/m*2.*np.pi
+
+                            Ek = A*5**(-5/3) if k <= 5 else A*k**(-5/3)
+                            u0 += np.sqrt(2*Ek)*np.sin(k*2*np.pi*self.x/self.L + phase + offset)
+
+                        # rescale IC
+                        idx = 0
+                        criterion = np.sqrt(np.sum((u0-1.)**2)/self.N)
+                        while (criterion < 0.65 or criterion > 0.75):
+                            scale = 0.7/criterion
+                            u0 *= scale
+                            criterion = np.sqrt(np.sum((u0-1.)**2)/self.N)
+
+                            # exit
+                            idx += 1
+                            if idx > 100:
+                                break
+
+                        assert( criterion < 0.8 )
+                        assert( criterion > 0.6 )
+
+                    elif case == 'zero':
+                        u0 = np.zeros(self.N)
+
+                    elif case == 'forced':
+                        u0 = np.zeros(self.N)
+
+                        #A = 1
+                        A = 1./self.N
+                        for k in range(1,self.N):
+                            r1 = np.random.normal(loc=0., scale=1.)
+                            r2 = np.random.normal(loc=0., scale=1.)
+                            #A = A**(-5/3) if k <= 5 else A*k**(-5/3)
+                            u0 += r1*A*np.sin(2.*np.pi*(k*self.x/self.L+r2))
+
+                    else:
+                        print("[Burger] Error: IC case unknown")
+                        sys.exit()
+
+            else:
+                # check the input size
+                if (np.size(u0,0) != self.N):
+                    print("[Burger] Error: wrong IC array size (is {}, expected {}".format(np.size(u0,0),self.N))
+                    sys.exit()
+
+                else:
+                    # if ok cast to np.array
+                    u0 = np.array(u0)
+
+            # in any case, set v0:
+            v0 = fft(u0)
+
+        else:
+            # the initial condition is provided in v0
+            # check the input size
+            if (np.size(v0,0) != self.N):
+                print("[Burger] Error: wrong IC array size (is {}, expected {}".format(np.size(v0,0),self.N))
+                sys.exit()
+
+            else:
+                # if ok cast to np.array
+                v0 = np.array(v0)
+                # and transform to physical space
+                u0 = np.real(ifft(v0))
+
+        # and save to self
+        self.u0  = u0
+        self.u   = u0
+        self.v0  = v0
+        self.v   = v0
+        self.t   = 0.
+        self.stepnum = 0
+        self.ioutnum = 0 # [0] is the initial condition
+
+        # store the IC in [0]
+        self.uu[0,:] = u0
+        self.vv[0,:] = v0
+        self.tt[0]   = 0.
+
+    def setGroundTruth(self, t, x, uu):
+        self.uu_truth = uu
+        self.f_truth = interpolate.interp2d(x, t, self.uu_truth, kind='cubic')
+
+    def mapGroundTruth(self):
+        t = np.arange(0,self.uu.shape[0])*self.dt
+        return self.f_truth(self.x,t)
+
+    def getAnalyticalSolution(self, t):
+        print("[Burger] TODO.. exit")
+        sys.exit()
+
+    def step( self, actions=None ):
+
+        Fforcing = np.zeros(self.N, dtype=np.complex64)
+
+        Cs = self.cs
+        dx = self.dx
+        dx_ = 2*dx
+        dx2 = dx*dx
+        dx_2 = dx_*dx_
+
+        u = self.uu[self.ioutnum,:]
+
+        # spectral derivative
+        dudx = np.real(ifft(self.k1*fft(u)))
+        ## real space derivative
+        # um = np.roll(u, 1)
+        # dudx = (u - um)/self.dx
+
+        if self.ssm == True:
+
+            sgs = Cs*Cs*dx2*self.k1*fft(np.sqrt(2*np.dot(dudx,dudx))*dudx)
+            # print(sgs)
+            self.sgs[self.ioutnum,:] = np.real(ifft(sgs))
+            Fforcing += sgs
+
+        if self.dsm == True:
+
+
+            gamma = 2 # test filter width for dynamic Smagorinsky
+            hidx = np.abs(self.k)>self.N//(2*gamma)
+
+            ## transform into spectral space
+            v  = fft(self.u)
+            v2 = fft(self.u**2)
+            ## apply cutoff/filter
+            vh = v
+            vh[hidx] = 0
+            v2h = v2
+            v2h[hidx] = 0
+            ## transform back into real space
+            L = np.real(ifft(v2h)) - np.real(ifft(vh))
+
+            ## transform into spectral space
+            w  = fft(dudx)
+            w2 = fft(np.sqrt(2*np.dot(dudx,dudx))*dudx)
+            ## apply cutoff/filter
+            wh = w
+            wh[hidx] = 0
+            w2h = w2
+            w2h[hidx] = 0
+            ## transform back into real space
+            Duh = np.real(ifft(wh))
+
+            M = dx2*np.real(ifft(w2h)) - dx_2*np.sqrt(2*np.dot(Duh,Duh))*Duh
+
+            # u_ = np.convolve(u, self.Gker)
+            # u2_ = np.convolve(u*u, self.Gker)
+            # L = u2_ - u_*u_
+            #
+            # dudx_ = np.convolve(dudx, self.Gker)
+            # dudx_a = np.sqrt(2*np.dot(dudx_,dudx_))
+            # dudxa = np.sqrt(2*np.dot(dudx,dudx))
+            # M = dx2*np.convolve(dudxa*dudx, self.Gker) - dx_2*dudx_a*dudx_
+
+            C = np.dot(L,M)/(2*np.dot(M,M))
+            #print(C)
+            sgs = C*C*dx2*self.k1*fft(np.sqrt(2*np.dot(dudx,dudx))*dudx)
+            self.sgs[self.ioutnum,:] = np.real(ifft(sgs))
+            Fforcing += sgs
+            #Fforcing += sgsalt
+
+        if self.forcing:
+
+            forcing = np.zeros(self.N)
+
+            s = 20.
+            A=np.sqrt(2)*1e-2
+            for k in range(1,4):
+                r1 = self.randfac1[k, self.ioutnum]
+                r2 = self.randfac2[k, self.ioutnum]
+                forcing += r1*A/np.sqrt(k*s*self.dt)*np.cos(2*np.pi*k*self.x/self.L+2*np.pi*r2);
+
+            Fforcing = fft( forcing )
+
+            """
+            hidx = (np.abs(self.k)>70)
+            z = self.v.copy()
+            z[hidx] = 0
+            energy = sum(z**2)
+            eta = 1/2048
+            eps = self.nu**3/eta**4
+            gamma = eps / energy
+            Fforcing = -gamma * z
+            """
+
+        if (actions is not None):
+
+            actions = actions if self.numAgents == 1 else [a for acs in actions for a in acs]
+
+            assert self.basis is not None, "[Burger] Basis not set up (is None)."
+            assert len(actions) == self.M, "[Burger] Wrong number of actions (provided {}/{}".format(len(actions), self.M)
+
+            forcing = np.matmul(actions, self.basis)
+            self.actionHistory[self.ioutnum,:] = forcing
+
+            if self.dforce == False:
+                u = self.uu[self.ioutnum,:]
+                up = np.roll(u,1)
+                um = np.roll(u,-1)
+                d2udx2 = (up - 2.*u + um)/self.dx**2
+                forcing *= d2udx2
+
+            self.sgsHistory[self.ioutnum,:] = forcing
+            Fforcing += fft( forcing )
+
+        """
+        RK3 in time
+        """
+
+        v1 = self.v + self.dt * (-0.5*self.k1*fft(self.u**2) + self.nu*self.k2*self.v + Fforcing)
+        u1 = np.real(ifft(v1))
+
+        v2 = 3./4.*self.v + 1./4.*v1 + 1./4. * self.dt * (-0.5*self.k1*fft(u1**2) + self.nu*self.k2*v1 + Fforcing)
+        u2 = np.real(ifft(v2))
+
+        v3 = 1./3.*self.v + 2./3.*v2 + 2./3. * self.dt * (-0.5*self.k1*fft(u2**2) + self.nu*self.k2*v2 + Fforcing)
+        self.v = v3
+
+        """
+        Adam Bashfort / RK
+        """
+        """
+        C = 0.5*self.k2*self.nu*self.dt
+        Fn = 0.5*self.k1*fft(self.u**2)
+        Fn_old =  0.5*self.k1*fft(self.uu[self.ioutnum-1]**2) if self.ioutnum > 1 else Fn
+        self.v = ((1.0-C)*self.v-0.5*self.dt*(3.0*Fn-Fn_old)+self.dt*Fforcing)/(1.0+C)
+        """
+
+        self.u = np.real(ifft(self.v))
+
+        self.stepnum += 1
+        self.t       += self.dt
+
+        self.ioutnum += 1
+        self.uu[self.ioutnum,:] = self.u
+        self.vv[self.ioutnum,:] = self.v
+        self.tt[self.ioutnum]   = self.t
+
+    def simulate(self, nsteps=None, restart=False, correction=[]):
+        #
+        # If not provided explicitly, get internal values
+        if (nsteps is None):
+            nsteps = self.nsteps
+        else:
+            nsteps = int(nsteps)
+            self.nsteps = nsteps
+
+        if restart:
+            # update nout in case nsteps or iout were changed
+            nout      = nsteps
+            self.nout = nout
+            self.uut  = -1
+            self.stepnum = 0
+            self.ioutnum = 0
+            # reset simulation arrays with possibly updated size
+            self.__setup_timeseries(nout=self.nout)
+            self.vv[0,:] = self.v0
+            self.uu[0,:] = self.u0
+
+        # advance in time for nsteps steps
+        try:
+            if (correction==[]):
+                for n in range(1,self.nsteps+1):
+                    self.step()
+            else:
+                for n in range(1,self.nsteps+1):
+                    self.step()
+                    self.v += correction
+
+        except FloatingPointError:
+            print("[Burger] Floating point exception occured in simulate")
+            # something exploded
+            # cut time series to last saved solution and return
+            self.nout = self.ioutnum
+            self.vv.resize((self.nout+1,self.N)) # nout+1 because the IC is in [0]
+            self.tt.resize(self.nout+1)          # nout+1 because the IC is in [0]
+            return -1
+
+    def fou2real(self):
+        # Convert from spectral to physical space
+        if self.uut < self.stepnum:
+            self.uut = self.stepnum
+            self.uu = np.real(ifft(self.vv))
+
+    def compute_Ek(self):
+        #
+        # compute all forms of kinetic energy
+        #
+        # Kinetic energy as a function of wavenumber and time
+        self.__compute_Ek_kt()
+
+        # Time-averaged energy spectrum as a function of wavenumber
+        self.Ek_k = np.sum(self.Ek_kt, 0)/(self.ioutnum+1) # not self.nout because we might not be at the end; ioutnum+1 because the IC is in [0]
+
+        # Total kinetic energy as a function of time
+        self.Ek_t = np.sum(self.Ek_kt, 1)
+
+        # Time-cumulative average as a function of wavenumber and time
+        self.Ek_ktt = np.cumsum(self.Ek_kt, 0)[:self.ioutnum+1,:] / np.arange(1,self.ioutnum+2)[:,None] # not self.nout because we might not be at the end; ioutnum+1 because the IC is in [0] +1 more because we divide starting from 1, not zero
+
+        # Time-cumulative average as a function of time
+        self.Ek_tt = np.cumsum(self.Ek_t, 0)[:self.ioutnum+1] / np.arange(1,self.ioutnum+2) # not self.nout because we might not be at the end; ioutnum+1 because the IC is in [0] +1 more because we divide starting from 1, not zero
+
+    def __compute_Ek_kt(self):
+        try:
+            self.Ek_kt = 1./2.*np.real( self.vv.conj()*self.vv / self.N ) * self.dx
+        except FloatingPointError:
+            #
+            # probable overflow because the simulation exploded, try removing the last solution
+            problem=True
+            remove=1
+            self.Ek_kt = np.zeros([self.nout+1, self.N]) + 1e-313
+            while problem:
+                try:
+                    self.Ek_kt[0:self.nout+1-remove,:] = 1./2.*np.real( self.vv[0:self.nout+1-remove].conj()*self.vv[0:self.nout+1-remove] / self.N ) * self.dx
+                    problem=False
+                except FloatingPointError:
+                    remove+=1
+                    problem=True
+        return self.Ek_kt
+
+    def space_filter(self, k_cut=2):
+        #
+        # spatially filter the time series
+        self.uu_filt  = np.zeros([self.nout+1, self.N])
+        for n in range(self.nout+1):
+            v_filt = np.copy(self.vv[n,:])    # copy vv[n,:] (otherwise python treats it as reference and overwrites vv on the next line)
+            v_filt[np.abs(self.k)>=k_cut] = 0 # set to zero wavenumbers > k_cut
+            self.uu_filt[n,:] = np.real(ifft(v_filt))
+        #
+        # compute u_resid
+        self.uu_resid = self.uu - self.uu_filt
+
+    def space_filter_int(self, k_cut=2, N_int=10):
+        #
+        # spatially filter the time series
+        self.N_int        = N_int
+        self.uu_filt      = np.zeros([self.nout+1, self.N])
+        self.uu_filt_int  = np.zeros([self.nout+1, self.N_int])
+        self.x_int        = 2*pi*self.L*np.r_[0:self.N_int]/self.N_int
+        for n in range(self.nout+1):
+            v_filt = np.copy(self.vv[n,:])   # copy vv[n,:] (otherwise python treats it as reference and overwrites vv on the next line)
+            v_filt[np.abs(self.k)>=k_cut] = 313e6
+            v_filt_int = v_filt[v_filt != 313e6] * self.N_int/self.N
+            self.uu_filt_int[n,:] = np.real(ifft(v_filt_int))
+            v_filt[np.abs(self.k)>=k_cut] = 0
+            self.uu_filt[n,:] = np.real(ifft(v_filt))
+        #
+        # compute u_resid
+        self.uu_resid = self.uu - self.uu_filt
+
+    def getMseReward(self):
+
+        try:
+            uTruthToCoarse = self.mapGroundTruth()
+            uDiffMse = ((uTruthToCoarse[self.ioutnum,:] - self.uu[self.ioutnum,:])**2)
+
+        except FloatingPointError:
+            print("[Burger] Floating point exception occured in mse")
+            return -np.inf*np.ones(self.numAgents)
+
+        rewards = np.zeros(self.numAgents)
+        for agentId in range(self.numAgents):
+            a = agentId*self.N//self.numAgents
+            b = (agentId+1)*self.N//self.numAgents
+            rewards[agentId] = -uDiffMse[a:b].mean()
+
+        return rewards
+
+
+    def getState(self, nAgents = None):
+        # Convert from spectral to physical space
+        self.fou2real()
+        try:
+            # Extract state
+            u = self.uu[self.ioutnum,:]
+            umt = self.uu[self.ioutnum-1,:] if self.ioutnum > 0 else self.uu[self.ioutnum, :]
+
+            dudt = (u - umt)/self.dt
+
+            up = np.roll(u,1)
+            um = np.roll(u,-1)
+            d2udx2 = (up - 2.*u + um)/self.dx**2
+
+            if self.version == 0:
+                state = d2udx2
+            elif self.version == 1:
+                state = np.vstack((dudt,d2udx2))
+            else:
+                print("[Burger] Version not recognized")
+                sys.exit()
+
+
+        except FloatingPointError:
+
+            print("[Burger] Floating point exception occured in getState")
+            if self.version == 0:
+                state = np.inf*np.ones((1,self.N))
+            elif self.version == 1:
+                state = np.inf*np.ones((2,self.N))
+            else:
+                print("[Burger] Version not recognized")
+                sys.exit()
+
+        states = []
+        for agentId in range(self.numAgents):
+            a = agentId*self.N//self.numAgents
+            b = (agentId+1)*self.N//self.numAgents
+
+            if self.version == 0:
+                states.append(state[a:b].flatten().tolist())
+            else:
+                states.append(state[:,a:b].flatten().tolist())
+
+        return states
+
+    def filter_u(self):
+
+        self.uu_h = np.zeros(self.uu.shape)
+        hidx = np.abs(self.k)>self.nURG//2
+
+        for i in range(self.uu.shape[0]):
+            v  = fft(self.uu[i,:])
+            vh = v
+            vh[hidx] = 0
+            self.uu_h[i,:] = np.real(ifft(vh))
+
+    def diff_u(self):
+
+        self.uu_r = np.zeros(self.uu.shape)
+
+        for i in range(self.uu.shape[0]):
+            self.uu_r[i,:] = self.uu[i,:] - self.uu_h[i,:]
+
+    def compute_Sgs(self):
+
+        hidx = np.abs(self.k)>self.nURG//2
+
+        for i in range(self.uu.shape[0]):
+            u   = self.uu[i,:]
+            v   = fft(u)
+            vh  = v
+            vh[hidx] = 0
+            v2  = fft(u*u)
+            v2h = v2
+            v2h[hidx] = 0
+            # calculate residual stress tensor by performing cutoff filtering in spectral space
+            tau = np.real(ifft(v2h)) - np.power(np.real(ifft(vh)),2)
+            # take derivative to calculate sgs
+            self.sgs[i,:] = -0.5*np.real(ifft(self.k1*fft(tau)))
+
+
+    # def compute_Sgs(self):
+    #     nURG = self.nURG
+    #     hidx = np.abs(self.k)>nURG//2
+    #     self.sgsHistory = np.zeros(self.uu.shape)
+    #     self.sgsHistoryAlt = np.zeros(self.uu.shape)
+    #     self.sgsHistoryAlt2 = np.zeros((self.stepnum+1, nURG))
+    #
+    #     r = nURG/self.N
+    #
+    #     for idx in range(self.uu.shape[0]):
+    #         dtidx = idx+1 if idx < self.uu.shape[0]-1 else idx-1
+    #
+    #         # calc uhat(t+1)
+    #         upt = self.uu[dtidx,:]
+    #         vpt = fft(upt)
+    #         vpth = vpt
+    #         vpth[hidx] = 0 #filter
+    #         uhpt = np.real(ifft(vpth))
+    #
+    #         uhptAlt2 = np.real(ifft(np.concatenate((vpt[:(nURG+1)//2],vpt[-(nURG-1)//2:]))))*r
+    #
+    #         # calc uhat(t)
+    #         u = self.uu[idx,:]
+    #         u2 = u*u
+    #         v = fft(u)
+    #         v2 = fft(u2)
+    #         vh = v
+    #         v2h = v2
+    #         vh[hidx] = 0
+    #         v2h[hidx] = 0
+    #
+    #         uh = np.real(ifft(vh))
+    #         u2h = np.real(ifft(v2h))
+    #
+    #         uhAlt2 = np.real(ifft(np.concatenate((v[:(nURG+1)//2],v[-(nURG-1)//2:]))))*r
+    #
+    #         duhdt = (uhpt-uh)/self.dt
+    #         duhdtAlt2 = (uhptAlt2-uhAlt2)/self.dt
+    #         if (idx == self.uu.shape[0]-1):
+    #             duhdt *= -1
+    #             duhdtAlt2 *= -1
+    #
+    #         uhp = np.roll(uh,-1)
+    #         uhm = np.roll(uh,+1)
+    #         u2hm = np.roll(u2h,+1)
+    #
+    #         uhpAlt2 = np.roll(uhAlt2,-1)
+    #         uhmAlt2 = np.roll(uhAlt2,+1)
+    #
+    #         # calc latteral derivatives
+    #         duhdx = (uh - uhm)/self.dx
+    #         d2uhdx2 = (uhp-2.*uh+uhm)/self.dx**2
+    #
+    #         du2hdx = (u2h - u2hm)/self.dx
+    #
+    #         duhdxAlt2 = (uhAlt2-uhmAlt2)/self.dx*r
+    #         d2uhdx2Alt2 = (uhpAlt2-2.*uhAlt2+uhmAlt2)/self.dx**2*r**2
+    #
+    #         self.sgsHistory[idx,:] = -uh*duhdx  + 0.5*du2hdx
+    #         self.sgsHistoryAlt[idx,:] = duhdt + uh*duhdx - self.nu*d2uhdx2
+    #         self.sgsHistoryAlt2[idx,:] = duhdtAlt2 + uhAlt2*duhdxAlt2 - self.nu*d2uhdx2Alt2
+    #
+    #     self.sgs = self.sgsHistory
