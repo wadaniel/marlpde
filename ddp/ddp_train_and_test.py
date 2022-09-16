@@ -17,13 +17,20 @@ from scipy.io import loadmat
 from scipy.fftpack import fft, ifft
 from helpers import *
 
+scratch = os.getenv("SCRATCH", default=".")
+basedir = f'{scratch}/ddp/'
+
 train_num = 500000
 region = 1
+set_size = 1250000
+num_pred = 20000
 
 train_region = 1000000
-full_input=u_bar_store=u_bar_dict.T
 
-full_output = np.load(f'{scratch}/PI_region_{region}_set_{set_size}.npy')
+full_input = np.load(f'{basedir}/u_bar_region_{region}_set_{set_size}.npy')
+full_input = full_input.T
+
+full_output = np.load(f'{basedir}/PI_region_{region}_set_{set_size}.npy')
 full_output = full_output.T
 
 full_input[:train_region,:], full_output[:train_region,:] = shift_data(full_input[:train_region,:], full_output[:train_region,:])
@@ -105,7 +112,7 @@ sub_store = np.zeros((NX,maxit))
 
 reg = 13
 
-force_dict = pickle.load( open(f'{scratch}/f_bar_all_regions.pickle', 'rb') )
+force_dict = pickle.load( open(f'{basedir}/f_bar_all_regions.pickle', 'rb') )
 force_bar=force_dict[:,int((reg-1)*12500)+int(pred_start/s):]
 
 u_old = full_input[pred_start-1,:].reshape([NX,1])
@@ -149,4 +156,4 @@ for i in range(maxit):
   u_store[:,i] = u.squeeze()
   sub_store[:,i] = subgrid_n.squeeze()
 
-np.save(f'{scratch}/DDP_results_trained_{int(train_num/1000)}_region_{region}_new.npy', {'u_pred':u_store, 'sub_pred':sub_store})
+np.save(f'{basedir}/DDP_results_trained_{int(train_num/1000)}_region_{region}_new.npy', {'u_pred':u_store, 'sub_pred':sub_store})

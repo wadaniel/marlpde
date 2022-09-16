@@ -4,27 +4,29 @@ from scipy.fftpack import fft, ifft, fftfreq
 import matplotlib.pyplot as plt
 import pickle
 
-np.random.seed(1234)
+np.random.seed(42)
 scratch = os.getenv("SCRATCH", default=".")
+basedir = f'{scratch}/ddp'
+if not os.path.exists(basedir):
+    os.mkdir(basedir)
+
 
 L=100.0     # domainsize
 nu=0.02     # viscosity 
-A=np.sqrt(2)*1e-2 # scaling factor for forcing
 N=1024      # grid size / num Fourier modes
 dt=0.01     # time step
 s=20        # ratio of LES and DNS time steps
 M=int(1e6)  # number of timesteps
 P=1         # time steps between samples
+
 out=False # plot files
 dump=True # dump fields
 
 # grid
 x = np.linspace(0, L, N, endpoint=False)
 
+A=np.sqrt(2)*1e-2 # scaling factor for forcing
 # fourier modes
-#ka = np.arange(0, N/2 + 0.5, 1)
-#kb = np.arange(-N/2+1, -0.5, 1)
-#k = np.concatenate([ka, kb])*(2*np.pi/L)
 k = fftfreq(N, L / (2*np.pi*N))
 k1  = 1j * k
 k2  = -k**2
@@ -92,9 +94,9 @@ if dump:
     f_store = f_store[:,0::s]
 
     print(f"Storing U_DNS {U_DNS.shape}")
-    with open(f'{scratch}/DNS_Burgers_s{s}_M{M}_N{N}.pickle', 'wb') as f:
+    with open(f'{basedir}/DNS_Burgers_s{s}_M{M}_N{N}.pickle', 'wb') as f:
         pickle.dump(U_DNS, f)
 
     print(f"Storing f_store {f_store.shape}")
-    with open(f'{scratch}/DNS_Force_LES_s{s}_M{M}_N{N}.pickle', 'wb') as f:
+    with open(f'{basedir}/DNS_Force_LES_s{s}_M{M}_N{N}.pickle', 'wb') as f:
         pickle.dump(f_store, f)
