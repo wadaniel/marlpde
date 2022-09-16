@@ -22,7 +22,7 @@ from tensorflow.python.keras.layers import Dense
 M=int(1e6)
 
 N=1024        # grid size / num Fourier modes
-N_bar=32      # sgs grid size / num Fourier modes
+N_bar=128     # sgs grid size / num Fourier modes
 nu=0.02       # viscosity 
 noise=0.1     # noise for ic
 seed=42       # random seed
@@ -41,8 +41,9 @@ ic = "sinus"   # initial condition
 
 nunoise=False
 
-train_region = 1000000
+train_num = 500000
 train_num = 1000000
+train_region = M
 assert train_num <= train_region
 
 # domain discretization
@@ -52,20 +53,21 @@ U_DNS=np.zeros((N,M), dtype=np.float16)
 # Storage for forcing terms
 f_store=np.zeros((N,M), dtype=np.float16)
 
-full_input = np.load( f'{basedir}/u_bar.npy')
+full_input = np.load( f'{basedir}/u_bar_{N}_{N_bar}.npy')
 full_input = full_input.T
 
-full_output = np.load( f'{basedir}/PI.npy')
+full_output = np.load( f'{basedir}/PI_{N}_{N_bar}.npy')
 full_output = full_output.T
 
-
+# Randomly shift data left/right
 full_input[:train_region,:], full_output[:train_region,:] = helpers.shift_data(full_input[:train_region,:], full_output[:train_region,:])
 
 norm_input, mean_input, std_input = helpers.normalize_data(full_input[:train_region,:])
 norm_output, mean_output, std_output = helpers.normalize_data(full_output[:train_region,:])
 
-np.savez(f'{basedir}/normalization.npz', mean_input=mean_input, std_input=std_input)
+np.savez(f'{basedir}/normalization_{N}_{N_bar}.npz', mean_input=mean_input, std_input=std_input)
 
+# Shuffle ordering
 random_index = np.random.permutation(train_region)
 train_index = random_index[:train_num]
 
@@ -81,8 +83,7 @@ print(f'std_output: {std_output}')
 print(f'mean_input: {mean_input}')
 print(f'mean_output: {mean_output}')
 
-#filepath = 'best_model_weights.epoch{epoch:02d}-loss{val_loss:.2f}.npz'
-filepath = 'best_model_weights.npz'
+filepath = f'best_model_weights_{N}_{N_bar}.npz'
 model_checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(
     filepath=f'{basedir}/{filepath}',
     save_weights_only=True,
@@ -103,8 +104,8 @@ model.add(Dense(250,activation=swish))
 model.add(Dense(250,activation=swish))
 model.add(Dense(N_bar,activation=None))
 
-model.compile(loss='mse', optimizer='Adam', metrics=['mae'])
-#model.fit(training_input, training_output, epochs=20, batch_size=200, shuffle=True, validation_split=0.2, callbacks=callbacks)
-model.fit(training_input, training_output, epochs=200, batch_size=200, shuffle=True, validation_split=0.2, callbacks=callbacks)
+opt = tf.keras.optimizers.Adam(learning_rate=0.0001)
+model.compile(loss='mse', optimizer=opt, metrics=['mae'])
+model.fit(training_input, training_output, epochs=100, batch_size=200, shuffle=True, validation_split=0.2, callbacks=callbacks)
 
-model.save_weights(f'{basedir}/weights_trained_ANN')
+model.save_weights(f'{basedir}/weights_trained_ANN_{N}_{N_bar}')

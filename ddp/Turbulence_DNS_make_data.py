@@ -1,7 +1,6 @@
 import os
 import sys
 from tqdm import trange
-sys.path.append('../python/_model')
 from Burger import Burger
 
 #import h5py
@@ -19,21 +18,16 @@ if not os.path.exists(basedir):
 M=int(1e6)
 
 N=1024        # grid size / num Fourier modes
-N_bar=32      # sgs grid size / num Fourier modes
+N_bar=128     # sgs grid size / num Fourier modes
 nu=0.02       # viscosity 
-noise=0.1     # noise for ic
+noise=0       # noise for ic
 seed=42       # random seed
 forcing=True  # apply forcing term during step
 s=20          # ratio of LES and DNS time steps
 
-#L  = 2*np.pi   # domainsize
-#dt = 0.001      # time step
-#T  = 100         # terminal time
-#ic = "turbulence" # initial condition
-
 L  = 100       # domainsize
 dt = 0.01      # time step
-T  = 10000     # terminal time
+T  = 10000    # terminal time
 ic = "sinus"   # initial condition
 
 nunoise=False
@@ -65,18 +59,16 @@ if (simulate == True):
                 noise=noise, 
                 seed=seed+i, 
                 s=s,
-                version=0, 
-                nunoise=nunoise, 
-                numAgents=1)
+                nunoise=nunoise)
 
         dns.simulate()
         
         U_DNS[:,i*ns:(i+1)*ns] = np.transpose(dns.uu[:ns,:])
         f_store[:,i*ns:(i+1)*ns] = np.transpose(dns.f[:ns,:])
 else:
-    U_DNS = np.load( f'{basedir}/u_bar.npy')
+    U_DNS = np.load( f'{basedir}/u_bar_{N}_{N_bar}.npy')
     print(f"Loaded U_DNS: {U_DNS.shape}")
-    f_store = np.load( f'{basedir}/f_bar.npy' )
+    f_store = np.load( f'{basedir}/f_bar_{N}_{N_bar}.npy' )
     print(f"Loaded f_store: {f_store.shape}")
 
 u_bar, PI, f_bar = helpers.calc_bar(U_DNS, f_store, N, N_bar, L)
@@ -104,8 +96,8 @@ if dump:
     print(f"Storing f_store {f_store.shape}")
     pickle.dump(f_store, open(f'{basedir}/DNS_Force_{ic}_LES_s{s}_M{M}_N{N}.pickle', 'wb'))
     print(f"Storing u_bar {u_bar.shape}")
-    np.save('{}/u_bar.npy'.format(basedir),u_bar)
+    np.save('{}/u_bar_{N}_{N_bar}.npy'.format(basedir),u_bar)
     print(f"Storing f_bar {f_bar.shape}")
-    np.save('{}/f_bar.npy'.format(basedir),f_bar)
+    np.save('{}/f_bar_{N}_{N_bar}.npy'.format(basedir),f_bar)
     print(f"Storing PI {PI.shape}")
-    np.save('{}/PI.npy'.format(basedir),PI)
+    np.save('{}/PI_{N}_{N_bar}.npy'.format(basedir),PI)

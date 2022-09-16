@@ -17,9 +17,10 @@ import tensorflow.keras.layers
 from tensorflow.python.keras.models import Sequential
 from tensorflow.python.keras.layers import Dense
 
-N_bar=32      # sgs grid size / num Fourier modes
+N = 1024
+N_bar=128      # sgs grid size / num Fourier modes
 
-checkpoint_path = f'{basedir}/best_model_weights.npz'
+checkpoint_path = f'{basedir}/best_model_weights_{N}_{N_bar}.npz'
 
 model = Sequential()
 model.add(Dense(N_bar,input_shape=(N_bar,),activation=swish))
@@ -39,10 +40,10 @@ normalization_std = normalization['std_input']
 print(f'normalization mean : {normalization_mean}')
 print(f'normalization std : {normalization_std}')
 
-full_input = np.load( f'{basedir}/u_bar.npy')
+full_input = np.load( f'{basedir}/u_bar_{N}_{N_bar}.npy')
 full_input = full_input.T
 
-full_output = np.load( f'{basedir}/PI.npy')
+full_output = np.load( f'{basedir}/PI_{N}_{N_bar}.npy')
 full_output = full_output.T
 
 predict_input_normalized = (full_input-normalization_mean)/normalization_std

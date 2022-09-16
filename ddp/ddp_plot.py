@@ -8,7 +8,8 @@ from scipy.stats import gaussian_kde
 scratch = os.getenv("SCRATCH", default=".")
 basedir = f'{scratch}/ddp'
 figNameU = f'ddp_plot_u.png'
-figNamePi = f'ddp_plot_pi.png'
+figNamePiPrior = f'ddp_plot_pi_prior.png'
+figNamePiPost = f'ddp_plot_pi_post.png'
 
 u_bar = np.load( f'{basedir}/u_bar.npy')
 print(f'shape of u_bar {u_bar.shape}')
@@ -33,7 +34,7 @@ axs[1].plot(u_vals2, u_bar_density(u_vals))
 print(f"Save {figNameU}")
 fig.savefig(figNameU)
 
-pi_predict = np.load( f'{basedir}/PI_predict.npy')
+pi_predict = np.load( f'{basedir}/PI_predict_prior.npy')
 print(f'shape of pi_predict {pi_predict.shape}')
 pi_predict = pi_predict[:,:ndata]
 pi_predict_flat = pi_predict.flatten()
@@ -52,9 +53,27 @@ pi_vals2 = np.linspace(pi_mean-fac*pi_sdev, pi_mean+fac*pi_sdev, 500)
 
 axs[1].plot(pi_vals2, pi_density(pi_vals2))
     
-print(f"Save {figNamePi}")
-fig.savefig(figNamePi)
+print(f"Save {figNamePiPrior}")
+fig.savefig(figNamePiPrior)
 
+pi_predict = np.load( f'{basedir}/PI_predict_posterior.npy')
+print(f'shape of pi_predict {pi_predict.shape}')
+pi_predict = pi_predict[:,:ndata]
+pi_predict_flat = pi_predict.flatten()
 
+pi_vals = np.linspace(min(pi_predict_flat), max(pi_predict_flat), 500)
+pi_density = gaussian_kde(pi_predict_flat)
+pi_density_vals = pi_density(pi_vals)
 
+fig, axs = plt.subplots(1, 2)
+axs[0].plot(pi_vals, pi_density_vals)
 
+fac = 3
+pi_mean = np.mean(pi_predict_flat)
+pi_sdev = np.std(pi_predict_flat)
+pi_vals2 = np.linspace(pi_mean-fac*pi_sdev, pi_mean+fac*pi_sdev, 500)
+
+axs[1].plot(pi_vals2, pi_density(pi_vals2))
+    
+print(f"Save {figNamePiPost}")
+fig.savefig(figNamePiPost)
