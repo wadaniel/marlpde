@@ -21,8 +21,8 @@ from Burger import *
 L       = 2*pi
 #L       = 100
 dt      = 0.001
-s       = 20
-tEnd    = 100
+s       = 1
+tEnd    = 1
 nu      = 0.02
 #ic      = 'zero'
 ic      = 'turbulence'
@@ -30,8 +30,8 @@ ic      = 'turbulence'
 #ic      = 'forced'
 noise   = 0.
 seed    = 42
-forcing = True
-#forcing = False
+#forcing = True
+forcing = False
 
 dns = Burger(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case=ic, noise=noise, seed=seed, forcing=forcing, s=s)
 sgs0 = Burger(L=L, N=N2, dt=dt*s, nu=nu, tend=tEnd, case=ic, noise=noise, seed=seed, forcing=forcing, s=s)

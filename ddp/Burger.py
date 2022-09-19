@@ -25,6 +25,7 @@ class Burger:
             forcing=False, 
             noise=0., 
             seed=42, 
+            fseed=42,
             nunoise=False, 
             s=1):
         
@@ -38,8 +39,8 @@ class Burger:
         self.s = s
         
         # seed of turbulent IC and forcing
-        np.random.seed(seed)
         self.tseed = seed
+        np.random.seed(fseed)
 
         # Apply forcing term?
         self.forcing = forcing

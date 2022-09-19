@@ -1,3 +1,6 @@
+import matplotlib as mpl
+mpl.use('Agg')
+
 import os
 import sys
 from tqdm import trange
@@ -17,6 +20,7 @@ if not os.path.exists(basedir):
 
 M=int(1e6)
 
+"""
 N=1024        # grid size / num Fourier modes
 N_bar=128     # sgs grid size / num Fourier modes
 nu=0.02       # viscosity 
@@ -26,9 +30,26 @@ forcing=True  # apply forcing term during step
 s=20          # ratio of LES and DNS time steps
 
 L  = 100       # domainsize
-dt = 0.01      # time step
+dt = 0.001      # time step
 T  = 10000    # terminal time
 ic = "sinus"   # initial condition
+"""
+
+N=1024          # grid size / num Fourier modes
+N_bar=32        # sgs grid size / num Fourier modes
+nu=0.02         # viscosity 
+noise=0         # noise for ic
+seed=42         # random seed ic
+fseed=42        # random seed forcing
+forcing=False   # apply forcing term during step
+s=1             # ratio of LES and DNS time steps
+
+L  = 2*np.pi    # domainsize
+dt = 0.001      # time step
+T  = 0.5        # terminal time
+ic = "turbulence"   # initial condition
+
+run=0
 
 nunoise=False
 
@@ -57,7 +78,8 @@ if (simulate == True):
                 case=ic, 
                 forcing=forcing, 
                 noise=noise, 
-                seed=seed+i, 
+                seed=seed,
+                fseed=fseed+i,
                 s=s,
                 nunoise=nunoise)
 
@@ -66,12 +88,24 @@ if (simulate == True):
         U_DNS[:,i*ns:(i+1)*ns] = np.transpose(dns.uu[:ns,:])
         f_store[:,i*ns:(i+1)*ns] = np.transpose(dns.f[:ns,:])
 else:
-    U_DNS = np.load( f'{basedir}/u_bar_{N}_{N_bar}.npy')
+    U_DNS = np.load( f'{basedir}/u_bar_{ic}_{N}_{N_bar}_{run}.npy')
     print(f"Loaded U_DNS: {U_DNS.shape}")
-    f_store = np.load( f'{basedir}/f_bar_{N}_{N_bar}.npy' )
+    f_store = np.load( f'{basedir}/f_bar_{ic}_{N}_{N_bar}_{run}.npy' )
     print(f"Loaded f_store: {f_store.shape}")
 
 u_bar, PI, f_bar = helpers.calc_bar(U_DNS, f_store, N, N_bar, L)
+
+if dump:
+    print(f"Storing U_DNS {U_DNS.shape}")
+    pickle.dump(U_DNS, open(f'{basedir}/DNS_Burgers_{ic}_s{s}_M{M}_N{N}_{run}.pickle', 'wb'))
+    print(f"Storing f_store {f_store.shape}")
+    pickle.dump(f_store, open(f'{basedir}/DNS_Force_{ic}_LES_s{s}_M{M}_N{N}_{run}.pickle', 'wb'))
+    print(f"Storing u_bar {u_bar.shape}")
+    np.save(f'{basedir}/u_bar_{ic}_{N}_{N_bar}_{run}.npy',u_bar)
+    print(f"Storing f_bar {f_bar.shape}")
+    np.save(f'{basedir}/f_bar_{ic}_{N}_{N_bar}_{run}.npy',f_bar)
+    print(f"Storing PI {PI.shape}")
+    np.save(f'{basedir}/PI_{ic}_{N}_{N_bar}_{run}.npy',PI)
 
 if (plot == True):
     figName = "evolution.pdf"
@@ -88,16 +122,3 @@ if (plot == True):
     print(f"Save {figName}")
     fig.savefig(figName)
     plt.close()
-
-
-if dump:
-    print(f"Storing U_DNS {U_DNS.shape}")
-    pickle.dump(U_DNS, open(f'{basedir}/DNS_Burgers_{ic}_s{s}_M{M}_N{N}.pickle', 'wb'))
-    print(f"Storing f_store {f_store.shape}")
-    pickle.dump(f_store, open(f'{basedir}/DNS_Force_{ic}_LES_s{s}_M{M}_N{N}.pickle', 'wb'))
-    print(f"Storing u_bar {u_bar.shape}")
-    np.save('{}/u_bar_{N}_{N_bar}.npy'.format(basedir),u_bar)
-    print(f"Storing f_bar {f_bar.shape}")
-    np.save('{}/f_bar_{N}_{N_bar}.npy'.format(basedir),f_bar)
-    print(f"Storing PI {PI.shape}")
-    np.save('{}/PI_{N}_{N_bar}.npy'.format(basedir),PI)
