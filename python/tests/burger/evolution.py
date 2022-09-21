@@ -21,8 +21,8 @@ from Burger import *
 L       = 2*pi
 #L       = 100
 dt      = 0.001
-s       = 1
-tEnd    = 1
+s       = 20
+tEnd    = 5
 nu      = 0.02
 #ic      = 'zero'
 ic      = 'turbulence'
@@ -30,21 +30,17 @@ ic      = 'turbulence'
 #ic      = 'forced'
 noise   = 0.
 seed    = 42
-#forcing = True
-forcing = False
+forcing = True
+#forcing = False
 
 dns = Burger(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case=ic, noise=noise, seed=seed, forcing=forcing, s=s)
-sgs0 = Burger(L=L, N=N2, dt=dt*s, nu=nu, tend=tEnd, case=ic, noise=noise, seed=seed, forcing=forcing, s=s)
+sgs0 = Burger(L=L, N=N2, dt=dt, nu=nu, tend=tEnd, case=ic, noise=noise, seed=seed, forcing=forcing, s=s)
 
 v0 = np.concatenate((dns.v0[:((N2+1)//2)], dns.v0[-(N2-1)//2:]))
 sgs0.IC( v0 = v0 * N2 / N )
 
 sgs0.randfac1 = dns.randfac1
 sgs0.randfac2 = dns.randfac2
-
-#sgs.IC( v0 = v0 * N2 / N )
-#sgs.randfac1 = dns.randfac1
-#sgs.randfac2 = dns.randfac2
 
 #------------------------------------------------------------------------------
 print("Simulate DNS ..")

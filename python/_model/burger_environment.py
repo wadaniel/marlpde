@@ -73,7 +73,7 @@ def environment( s ,
     #Initialize LES
     sgs = Burger(L=L, 
             N=gridSize, 
-            dt=dt*stepper, 
+            dt=dt, 
             nu=nu, 
             tend=T, 
             case=ic, 

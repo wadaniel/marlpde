@@ -20,23 +20,23 @@ if not os.path.exists(basedir):
 
 M=int(1e6)
 
-"""
 N=1024        # grid size / num Fourier modes
-N_bar=128     # sgs grid size / num Fourier modes
+N_bar=32     # sgs grid size / num Fourier modes
 nu=0.02       # viscosity 
 noise=0       # noise for ic
 seed=42       # random seed
+fseed=42      # random seed forcing
 forcing=True  # apply forcing term during step
 s=20          # ratio of LES and DNS time steps
 
-L  = 100       # domainsize
+L  = 100        # domainsize
 dt = 0.001      # time step
-T  = 10000    # terminal time
-ic = "sinus"   # initial condition
-"""
+T  = 1000       # terminal time
+ic = "sinus"    # initial condition
 
+"""
 N=1024          # grid size / num Fourier modes
-N_bar=32        # sgs grid size / num Fourier modes
+N_bar=128       # sgs grid size / num Fourier modes
 nu=0.02         # viscosity 
 noise=0         # noise for ic
 seed=42         # random seed ic
@@ -46,10 +46,12 @@ s=1             # ratio of LES and DNS time steps
 
 L  = 2*np.pi    # domainsize
 dt = 0.001      # time step
-T  = 0.5        # terminal time
+T  = 5          # terminal time
 ic = "turbulence"   # initial condition
+"""
 
 run=0
+figName = f"evolution_{ic}_{N}_{run}.pdf"
 
 nunoise=False
 
@@ -78,15 +80,15 @@ if (simulate == True):
                 case=ic, 
                 forcing=forcing, 
                 noise=noise, 
-                seed=seed,
+                seed=seed+i,
                 fseed=fseed+i,
                 s=s,
                 nunoise=nunoise)
 
         dns.simulate()
         
-        U_DNS[:,i*ns:(i+1)*ns] = np.transpose(dns.uu[:ns,:])
-        f_store[:,i*ns:(i+1)*ns] = np.transpose(dns.f[:ns,:])
+        U_DNS[:,i*ns:(i+1)*ns] = np.transpose(dns.uu[:-1,:])
+        f_store[:,i*ns:(i+1)*ns] = np.transpose(dns.f[:-1,:])
 else:
     U_DNS = np.load( f'{basedir}/u_bar_{ic}_{N}_{N_bar}_{run}.npy')
     print(f"Loaded U_DNS: {U_DNS.shape}")
@@ -108,7 +110,6 @@ if dump:
     np.save(f'{basedir}/PI_{ic}_{N}_{N_bar}_{run}.npy',PI)
 
 if (plot == True):
-    figName = "evolution.pdf"
     print("Plotting {} ...".format(figName))
       
     fig, axs = plt.subplots(4,4, sharex=True, sharey=True, figsize=(15,15))

@@ -23,21 +23,21 @@ from tensorflow.python.keras.layers import Dense
 
 M=int(1e6)
 
-N=1024          # grid size / num Fourier modes
-N_bar=32        # sgs grid size / num Fourier modes
-ic = "turbulence" # initial condition
+#N=1024          # grid size / num Fourier modes
+#N_bar=128        # sgs grid size / num Fourier modes
+#ic = "turbulence" # initial condition
 
-#N=1024        # grid size / num Fourier modes
-#N_bar=128     # sgs grid size / num Fourier modes
-#ic = "sinus"   # initial condition
+N=1024         # grid size / num Fourier modes
+N_bar=32       # sgs grid size / num Fourier modes
+ic = "sinus"   # initial condition
 
-run=0
+run=1
 nunoise=False
 
 epochs = 3000 # number of epochs to train
 
-#train_num = 500000
-train_num = 800000
+train_num = 500000 #run 1
+#train_num = 800000 #run 0
 train_region = M
 assert train_num <= train_region
 
