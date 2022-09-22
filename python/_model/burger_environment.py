@@ -27,6 +27,7 @@ def environment( s ,
         spectralReward, 
         forcing, 
         dforce, 
+        ssmforce,
         noise, 
         seed, 
         stepper,
@@ -40,7 +41,7 @@ def environment( s ,
     assert( (ssm and dsm) == False )
  
     testing = True if s["Custom Settings"]["Mode"] == "Testing" else False
-    noise = 0. if testing else noise
+    #noise = 0. if testing else noise
  
     if testing == True:
         nu = s["Custom Settings"]["Viscosity"]
@@ -79,6 +80,7 @@ def environment( s ,
             case=ic, 
             forcing=forcing, 
             dforce=dforce, 
+            ssmforce=ssmforce,
             noise=noise, 
             seed=seed,
             s=stepper,
@@ -116,7 +118,7 @@ def environment( s ,
     error = 0
     step = 0
     kPrevRelErr = 0.
-    nIntermediate = int(T / (dt*stepper) / episodeLength)
+    nIntermediate = int(T / (dt) / episodeLength)
     assert nIntermediate > 0, "dt or episodeLendth too long"
 
     cumreward = np.zeros(numAgents)
@@ -207,7 +209,7 @@ def environment( s ,
         print("[burger_env] Running URS..")
         base = Burger(L=L, 
                 N=gridSize, 
-                dt=dt*stepper, 
+                dt=dt, 
                 nu=nu, 
                 tend=T, 
                 forcing=forcing,
