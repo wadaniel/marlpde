@@ -57,13 +57,14 @@ class Burger:
             self.offset = np.random.normal(loc=0., scale=self.noise) if self.noise > 0. else 0.
 
         self.s = s
+       
+        # seed of turbulent IC 
+        #self.tseed = seed
+        self.tseed = seed+np.random.choice(5) #seed
         
         # seed for forcing
         np.random.seed(seed)
-        
-        # seed of turbulent IC 
-        self.tseed = seed
-
+ 
         # Apply forcing term?
         self.forcing = forcing
 
