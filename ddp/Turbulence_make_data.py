@@ -18,39 +18,41 @@ basedir = f'{scratch}/ddp'
 if not os.path.exists(basedir):
     os.mkdir(basedir)
 
-M=int(1e6)
 
+"""
 N=1024        # grid size / num Fourier modes
-N_bar=32     # sgs grid size / num Fourier modes
+N_bar=32      # sgs grid size / num Fourier modes
 nu=0.02       # viscosity 
 noise=0       # noise for ic
 seed=42       # random seed
 fseed=42      # random seed forcing
 forcing=True  # apply forcing term during step
-s=20          # ratio of LES and DNS time steps
+stepper=20    # ratio of LES and DNS time steps
 
 L  = 100        # domainsize
-dt = 0.001      # time step
-T  = 1000       # terminal time
+dt = 0.01       # time step
 ic = "sinus"    # initial condition
+M = 1000000     # number data points (dont go above 1e6)
 
+T  = int(M*dt)
 """
+
 N=1024          # grid size / num Fourier modes
-N_bar=128       # sgs grid size / num Fourier modes
+N_bar=32        # sgs grid size / num Fourier modes
 nu=0.02         # viscosity 
 noise=0         # noise for ic
 seed=42         # random seed ic
 fseed=42        # random seed forcing
 forcing=False   # apply forcing term during step
-s=1             # ratio of LES and DNS time steps
+stepper=1       # ratio of LES and DNS time steps
 
 L  = 2*np.pi    # domainsize
 dt = 0.001      # time step
 T  = 5          # terminal time
+M  = 1000000     # number data points (dont go above 1e6)
 ic = "turbulence"   # initial condition
-"""
 
-run=0
+run=1
 figName = f"evolution_{ic}_{N}_{run}.pdf"
 
 nunoise=False
@@ -82,7 +84,7 @@ if (simulate == True):
                 noise=noise, 
                 seed=seed+i,
                 fseed=fseed+i,
-                s=s,
+                stepper=stepper,
                 nunoise=nunoise)
 
         dns.simulate()
@@ -99,9 +101,9 @@ u_bar, PI, f_bar = helpers.calc_bar(U_DNS, f_store, N, N_bar, L)
 
 if dump:
     print(f"Storing U_DNS {U_DNS.shape}")
-    pickle.dump(U_DNS, open(f'{basedir}/DNS_Burgers_{ic}_s{s}_M{M}_N{N}_{run}.pickle', 'wb'))
+    pickle.dump(U_DNS, open(f'{basedir}/DNS_Burgers_{ic}_s{stepper}_M{M}_N{N}_{run}.pickle', 'wb'))
     print(f"Storing f_store {f_store.shape}")
-    pickle.dump(f_store, open(f'{basedir}/DNS_Force_{ic}_LES_s{s}_M{M}_N{N}_{run}.pickle', 'wb'))
+    pickle.dump(f_store, open(f'{basedir}/DNS_Force_{ic}_LES_s{stepper}_M{M}_N{N}_{run}.pickle', 'wb'))
     print(f"Storing u_bar {u_bar.shape}")
     np.save(f'{basedir}/u_bar_{ic}_{N}_{N_bar}_{run}.npy',u_bar)
     print(f"Storing f_bar {f_bar.shape}")

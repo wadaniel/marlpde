@@ -1,10 +1,10 @@
 #!/bin/bash
-export OMP_NUM_THREADS=4
+export OMP_NUM_THREADS=8
 
-run=6
-nagents=2
-noise=0.1
-iex=0.001
+run=0
+nagents=1
+noise=0.001
+iex=0.1
 version=0
 mar="Cooperation"
 #mar="Individual"
@@ -14,7 +14,7 @@ IC='turbulence'
 NEX=1000000
 N=32
 NA=32
-width=256
+width=64
 NDNS=1024
 dt=0.001
 nu=0.02

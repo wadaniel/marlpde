@@ -45,6 +45,9 @@ def environment( s ,
     if testing == True:
         nu = s["Custom Settings"]["Viscosity"]
 
+    ndns = len(dns_default)
+    sidx = np.random.choice(ndns)
+
     if nunoise:
         dns = Burger(L=L, 
                 N=N, 
@@ -54,7 +57,7 @@ def environment( s ,
                 case=ic, 
                 forcing=forcing, 
                 noise=0., 
-                seed=seed, 
+                seed=seed+sidx, 
                 s=stepper,
                 version=version, 
                 nunoise=nunoise, 
@@ -65,7 +68,7 @@ def environment( s ,
 
         nu = dns.nu
     else:
-        dns = dns_default
+        dns = dns_default[sidx]
     
     # reward defaults
     rewardFactor = 1. if spectralReward else 1.
@@ -80,7 +83,7 @@ def environment( s ,
             forcing=forcing, 
             dforce=dforce, 
             noise=noise, 
-            seed=seed,
+            seed=seed+sidx,
             s=stepper,
             version=version,
             numAgents = numAgents)

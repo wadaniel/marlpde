@@ -27,7 +27,7 @@ class Burger:
             seed=42, 
             fseed=42,
             nunoise=False, 
-            s=1):
+            stepper=1):
         
         # Randomness
         np.random.seed(None)
@@ -36,7 +36,7 @@ class Burger:
         while np.abs(self.offset) > L:
             self.offset = np.random.normal(loc=0., scale=self.noise) if self.noise > 0. else 0.
 
-        self.s = s
+        self.stepper = stepper
         
         # seed of turbulent IC and forcing
         self.tseed = seed
@@ -237,10 +237,10 @@ class Burger:
          
             A=np.sqrt(2.)/self.L
             for k in range(1,4):
-                ridx = self.ioutnum % self.s
+                ridx = self.ioutnum % self.stepper
                 r1 = self.randfac1[k, ridx]
                 r2 = self.randfac2[k, ridx] 
-                forcing += r1*A/np.sqrt(k*self.s*self.dt)*np.cos(2*np.pi*k*(self.x+self.offset)/self.L+2*np.pi*r2);
+                forcing += r1*A/np.sqrt(k*self.stepper*self.dt)*np.cos(2*np.pi*k*(self.x+self.offset)/self.L+2*np.pi*r2);
         
             self.f[self.ioutnum, :] = forcing
         

@@ -23,21 +23,21 @@ from tensorflow.python.keras.layers import Dense
 
 M=int(1e6)
 
-#N=1024          # grid size / num Fourier modes
-#N_bar=128        # sgs grid size / num Fourier modes
-#ic = "turbulence" # initial condition
+N=1024          # grid size / num Fourier modes
+N_bar=32        # sgs grid size / num Fourier modes
+ic = "turbulence" # initial condition
 
-N=1024         # grid size / num Fourier modes
-N_bar=32       # sgs grid size / num Fourier modes
-ic = "sinus"   # initial condition
+#N=1024         # grid size / num Fourier modes
+#N_bar=128       # sgs grid size / num Fourier modes
+#ic = "sinus"   # initial condition
 
+run_load=1
 run=1
 nunoise=False
 
-epochs = 3000 # number of epochs to train
+epochs = 1000 # number of epochs to train
 
 train_num = 500000 #run 1
-#train_num = 800000 #run 0
 train_region = M
 assert train_num <= train_region
 
@@ -46,10 +46,10 @@ U_DNS=np.zeros((N,M), dtype=np.float16)
 # Storage for forcing terms
 f_store=np.zeros((N,M), dtype=np.float16)
 
-full_input = np.load( f'{basedir}/u_bar_{ic}_{N}_{N_bar}_{run}.npy')
+full_input = np.load( f'{basedir}/u_bar_{ic}_{N}_{N_bar}_{run_load}.npy')
 full_input = full_input.T
 
-full_output = np.load( f'{basedir}/PI_{ic}_{N}_{N_bar}_{run}.npy')
+full_output = np.load( f'{basedir}/PI_{ic}_{N}_{N_bar}_{run_load}.npy')
 full_output = full_output.T
 
 # Randomly shift data left/right
