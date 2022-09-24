@@ -30,8 +30,8 @@ ic      = 'turbulence'
 #ic      = 'forced'
 noise   = 0.
 seed    = 42
-forcing = True
-#forcing = False
+#forcing = True
+forcing = False
 
 dns = Burger(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case=ic, noise=noise, seed=seed, forcing=forcing, s=s)
 sgs0 = Burger(L=L, N=N2, dt=dt, nu=nu, tend=tEnd, case=ic, noise=noise, seed=seed, forcing=forcing, s=s)

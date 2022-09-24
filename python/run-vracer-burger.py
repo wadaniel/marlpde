@@ -14,6 +14,7 @@ parser.add_argument('--noise', help='Standard deviation of IC', required=False, 
 parser.add_argument('--ic', help='Initial condition', required=False, type=str, default='sinus')
 parser.add_argument('--L', help='Length of domain', required=False, type=float, default=2*np.pi)
 parser.add_argument('--dforce', help='Do direct forcing', action='store_true', required=False)
+parser.add_argument('--ssmforce', help='Apply SSM scaling', action='store_true', required=False)
 parser.add_argument('--specreward', help='Use spectral reward', action='store_true', required=False)
 parser.add_argument('--forcing', help='Use forcing term in equation', action='store_true', required=False)
 parser.add_argument('--nunoise', help='Enable noisy nu', action='store_true', required=False)
@@ -28,9 +29,11 @@ parser.add_argument('--ssm', help='Static Smagorinksy Model', action='store_true
 parser.add_argument('--dsm', help='Dynamic Smagorinksy Model', action='store_true', required=False)
 parser.add_argument('--run', help='Run tag', required=False, type=int, default=0)
 parser.add_argument('--version', help='Version tag', required=False, type=int, default=1)
+parser.add_argument('--ndns', help='Number of different dns', required=False, type=int, default=1)
 parser.add_argument('--test', action='store_true', help='Run tag', required=False)
 
 args = parser.parse_args()
+print(args)
 
 ### Import modules
 
@@ -39,7 +42,7 @@ sys.path.append('_model')
 import burger_environment as be
 
 dns_default = None
-dns_default = be.setup_dns_default(args.L, args.NDNS, args.T, args.dt, args.nu, args.ic, args.forcing, args.seed, args.stepper)
+dns_default = [ be.setup_dns_default(args.L, args.NDNS, args.T, args.dt, args.nu, args.ic, args.forcing, args.seed+i, args.stepper) for i in range(args.ndns) ]
 
 ### Defining Korali Problem
 
@@ -71,7 +74,8 @@ e["Problem"]["Environment Function"] = lambda s : be.environment(
         ic = args.ic, 
         spectralReward = args.specreward,
         forcing = args.forcing,
-        dforce = args.dforce, 
+        dforce = args.dforce,
+        ssmforce = args.ssmforce,
         noise = args.noise, 
         seed = args.seed,
         stepper = args.stepper,
@@ -164,7 +168,7 @@ e["File Output"]["Use Multiple Files"] = False
 
 if args.test:
 
-    nus = [0.015, 0.02, 0.25]
+    nus = [0.02]
 
     for nu in nus:
         fileName = './plots/test_burger_{}_{}_{}'.format(args.ic, nu, args.run)

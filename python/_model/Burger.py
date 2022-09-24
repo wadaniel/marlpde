@@ -23,10 +23,11 @@ class Burger:
 
     def __init__(self, 
             L=2.*np.pi, 
-            N=512, 
+            N=1024, 
             dt=0.001, 
-            nu=0.0, 
-            dforce=True, 
+            nu=0.02, 
+            dforce=True,
+            ssmforce=False,
             nsteps=None, 
             tend=5., 
             u0=None, 
@@ -56,11 +57,14 @@ class Burger:
             self.offset = np.random.normal(loc=0., scale=self.noise) if self.noise > 0. else 0.
 
         self.s = s
+       
+        # seed of turbulent IC 
+        #self.tseed = seed
+        self.tseed = seed+np.random.choice(5) #seed
         
-        # seed of turbulent IC and forcing
+        # seed for forcing
         np.random.seed(seed)
-        self.tseed = seed
-
+ 
         # Apply forcing term?
         self.forcing = forcing
 
@@ -103,7 +107,13 @@ class Burger:
 
         # direct forcing or not
         self.dforce = dforce
+        # static smagorinsky forcing
+        self.ssmforce = ssmforce
 
+        if self.ssmforce == True and self.dforce == False:
+            print("[Burger] SSM forcing requires dforce")
+            sys.exit()
+ 
         # time when field space transformed
         self.uut = -1
         # field in real space
@@ -434,6 +444,19 @@ class Burger:
                 um = np.roll(u,-1)
                 d2udx2 = (up - 2.*u + um)/self.dx**2
                 forcing *= d2udx2
+            
+            if self.ssmforce == True:
+                delta  = 2*np.pi/self.N
+                dx2 = self.dx**2
+
+                um = np.roll(self.u, 1)
+                up = np.roll(self.u, -1)
+                
+                dudx = (self.u - um)/self.dx
+                d2udx2 = (up - 2*self.u + um)/dx2
+
+                nuSSM = (forcing*delta)**2*np.abs(dudx)
+                ssm = nuSSM*d2udx2 
             
             self.sgsHistory[self.ioutnum,:] = forcing
             Fforcing += fft( forcing )

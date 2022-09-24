@@ -63,7 +63,7 @@ python3 run-vracer-burger.py --ic $IC --run $run --NE $NEX \
     --iex $iex --noise $noise --seed $seed \
     --episodelength $esteps --NDNS $NDNS \
     --tf $tf --nt $nt --version $version --width $width \
-    --dfroce --specreward 
+    --dforce --specreward \
     --test
 
 python3 -m korali.rlview --dir "_result_${run}" --out "vracer${run}.png"

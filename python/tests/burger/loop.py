@@ -30,7 +30,8 @@ tEnd = args.T
 ic   = args.ic
 seed = args.seed
 forcing = args.forcing
-dforce = False
+dforce = True
+ssmforce = True
 nu   = 0.02
 noise = 0.
 offset = 0.
@@ -62,7 +63,7 @@ print("Done!")
 
 # Initialize LES
 print("Setting up SGS..")
-sgs = Burger(L=L, N=gridSize, dt=stepper*dt, nu=nu, tend=tEnd, case=ic, forcing=forcing, dforce=dforce, noise=0., s=stepper, ssm=args.ssm, dsm=args.dsm)
+sgs = Burger(L=L, N=gridSize, dt=stepper*dt, nu=nu, tend=tEnd, case=ic, forcing=forcing, dforce=dforce, ssmforce=ssmforce, noise=0., s=stepper, ssm=args.ssm, dsm=args.dsm)
 sgs.offset = offset
 sgs.randfac1 = dns.randfac1
 sgs.randfac2 = dns.randfac2
