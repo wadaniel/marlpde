@@ -68,7 +68,7 @@ def environment( s ,
 
         nu = dns.nu
     else:
-        dns = dns_default[i]
+        dns = dns_default[sidx]
     
     # reward defaults
     rewardFactor = 1. if spectralReward else 1.
@@ -84,7 +84,7 @@ def environment( s ,
             dforce=dforce, 
             ssmforce=ssmforce,
             noise=noise, 
-            seed=seed,
+            seed=seed+sidx,
             s=stepper,
             version=version,
             numAgents = numAgents)
