@@ -273,8 +273,6 @@ def environment( s ,
             # calculate reward
             if spectralReward:
                 base.compute_Ek()
-                #print(dns.Ek_ktt[base.ioutnum,:gridSize//2])
-                #print(dns.Ek_ktt[base.ioutnum,:gridSize//2])
                 kRelErr = np.mean((np.abs(dns.Ek_ktt[base.ioutnum,:gridSize//2] - base.Ek_ktt[base.ioutnum,:gridSize//2])/dns.Ek_ktt[base.ioutnum,:gridSize//2])**2)
                 reward = np.full(numAgents, [rewardFactor*(kPrevRelErr-kRelErr)])
                 kPrevRelErr = kRelErr

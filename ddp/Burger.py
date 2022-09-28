@@ -27,7 +27,10 @@ class Burger:
             seed=42, 
             fseed=42,
             nunoise=False, 
-            stepper=1):
+            stepper=1,
+            sgsNN=None,
+            u_scale=None,
+            u_shift=None):
         
         # Randomness
         np.random.seed(None)
@@ -68,8 +71,8 @@ class Burger:
         self.nout   = nsteps
  
         # random factors for forcing
-        self.randfac1 = np.random.normal(loc=0., scale=1., size=(32,nsteps)) # scale
-        self.randfac2 = np.random.normal(loc=0., scale=1., size=(32,nsteps)) # phase
+        self.randfac1 = np.random.normal(loc=0., scale=1., size=(N,nsteps)) # scale
+        self.randfac2 = np.random.normal(loc=0., scale=1., size=(N,nsteps)) # phase
         
         # field in real space
         self.uu = None
@@ -94,7 +97,13 @@ class Burger:
         else:
             print("[Burger] IC ambigous")
             sys.exit()
-       
+
+
+        # SGS model
+        self.sgsNN = sgsNN
+        self.u_scale = u_scale
+        self.u_shift = u_shift
+
     def __setup_timeseries(self, nout=None):
         if (nout != None):
             self.nout = int(nout)
@@ -229,7 +238,7 @@ class Burger:
         # init temporal quantity for ABCN
         self.Fn_old =  self.k1*fft(0.5*self.u**2) 
        
-    def step( self, actions=None ):
+    def step( self ):
 
         if self.forcing:
             # Compute forcing terms
@@ -246,9 +255,11 @@ class Burger:
         
         Fforcing = fft( self.f[self.ioutnum, :])
             
-        if (actions is not None):
-            self.actionHistory[self.ioutnum,:] = actions
-            Fforcing += fft( actions )
+        if ( self.sgsNN is not None ):
+            sgs = self.sgsNN.predict(((self.u-self.u_shift)/self.u_scale).reshape((1,self.N))).reshape(self.N)
+            sgs = sgs*self.u_scale+self.u_shift
+            self.actionHistory[self.ioutnum,:] = sgs
+            Fforcing += fft(sgs)
 
         """
         Adam Bashfort / CN

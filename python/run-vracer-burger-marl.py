@@ -15,6 +15,7 @@ parser.add_argument('--noise', help='Standard deviation of IC', required=False, 
 parser.add_argument('--ic', help='Initial condition', required=False, type=str, default='sinus')
 parser.add_argument('--L', help='Length of domain', required=False, type=float, default=2*np.pi)
 parser.add_argument('--dforce', help='Do direct forcing', action='store_true', required=False)
+parser.add_argument('--ssmforce', help='Use SSM forcing', action='store_true', required=False)
 parser.add_argument('--specreward', help='Use spectral reward', action='store_true', required=False)
 parser.add_argument('--forcing', help='Use forcing term in equation', action='store_true', required=False)
 parser.add_argument('--nunoise', help='Enable noisy nu', action='store_true', required=False)
@@ -66,8 +67,8 @@ if found == True:
 
 ### Defining Problem Configuration
 e["Problem"]["Type"] = "Reinforcement Learning / Continuous"
-e["Problem"]["Testing Frequency"] = 100;
-e["Problem"]["Policy Testing Episodes"] = 10;
+e["Problem"]["Testing Frequency"] = args.tf
+e["Problem"]["Policy Testing Episodes"] = args.nt
 
 ### Defining Problem Configuration
 e["Problem"]["Type"] = "Reinforcement Learning / Continuous"
@@ -86,6 +87,7 @@ e["Problem"]["Environment Function"] = lambda s : be.environment(
         spectralReward = args.specreward,
         forcing = args.forcing,
         dforce = args.dforce, 
+        ssmforce = args.ssmforce,
         noise = args.noise, 
         seed = args.seed, 
         stepper = args.stepper,
@@ -112,7 +114,7 @@ e["Solver"]["Multi Agent Correlation"] = args.mac
 e["Solver"]["Type"] = "Agent / Continuous / VRACER"
 e["Solver"]["Mode"] = "Testing" if args.test else "Training"
 e["Solver"]["Episodes Per Generation"] = 10
-e["Solver"]["Experiences Between Policy Updates"] = 1.
+e["Solver"]["Experiences Between Policy Updates"] = 0.5
 e["Solver"]["Learning Rate"] = 0.0001
 e["Solver"]["Discount Factor"] = 1.
 e["Solver"]["Mini Batch"]["Size"] = 256
@@ -196,7 +198,7 @@ if args.test:
     nus = [0.02]
 
     for nu in nus:
-        fileName = 'test_burger_{}_{}_{}'.format(args.ic, nu, args.run)
+        fileName = './plots/test_burger_marl_{}_{}_{}'.format(args.ic, nu, args.run)
         e["Solver"]["Testing"]["Sample Ids"] = [0]
         e["Problem"]["Custom Settings"]["Filename"] = fileName
         e["Problem"]["Custom Settings"]["Viscosity"] = nu
