@@ -8,7 +8,7 @@ rewardFactor = 1.
 basis = 'hat'
 
 def setup_dns_default(L, N, T, dt, nu , ic, forcing, seed, stepper):
-    print(f"Setting up default dns with args ({L}, {N}, {T}, {dt}, {nu}, {ic} {forcing}, {seed}, {stepper})")
+    print(f"Setting up default dns with args ({L}, {N}, {T}, {dt}, {nu}, {ic}, {forcing}, {seed}, {stepper})")
     dns = Burger(L=L, N=N, dt=dt, nu=nu, tend=T, case=ic, forcing=forcing, noise=0., seed=seed, s=stepper)
     dns.simulate()
     dns.compute_Ek()
@@ -152,7 +152,6 @@ def environment( s ,
             print(str(e))
             error = 1
             break
-        
 
         # get new state
         state = sgs.getState()
@@ -218,6 +217,7 @@ def environment( s ,
                 forcing=forcing,
                 noise=0.,
                 seed=seed,
+                dsm=False,
                 s=stepper)
         
         ## copy random numbers
@@ -276,6 +276,7 @@ def environment( s ,
                 kRelErr = np.mean((np.abs(dns.Ek_ktt[base.ioutnum,:gridSize//2] - base.Ek_ktt[base.ioutnum,:gridSize//2])/dns.Ek_ktt[base.ioutnum,:gridSize//2])**2)
                 reward = np.full(numAgents, [rewardFactor*(kPrevRelErr-kRelErr)])
                 kPrevRelErr = kRelErr
+        
 
             # accumulate reward
             cumreward += reward
@@ -290,4 +291,4 @@ def environment( s ,
         print("[burger_environment] uncontrolled cumreward")
         print(cumreward)
         
-        makePlot(dns, base, sgs, fileName, spectralReward)
+        #makePlot(dns, base, sgs, fileName, spectralReward)

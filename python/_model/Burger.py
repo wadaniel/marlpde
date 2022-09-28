@@ -56,11 +56,11 @@ class Burger:
         while np.abs(self.offset) > L:
             self.offset = np.random.normal(loc=0., scale=self.noise) if self.noise > 0. else 0.
 
-        self.s = s
+        self.stepper = s
        
         # seed of turbulent IC 
-        #self.tseed = seed
-        self.tseed = seed+np.random.choice(5) #seed
+        #self.tseed = seed+np.random.choice(5) #seed
+        self.tseed = seed
         
         # seed for forcing
         np.random.seed(seed)
@@ -409,10 +409,10 @@ class Burger:
          
             A=np.sqrt(2.)/self.L
             for k in range(1,4):
-                ridx = self.ioutnum % self.s
+                ridx = self.ioutnum % self.stepper
                 r1 = self.randfac1[k, ridx]
                 r2 = self.randfac2[k, ridx] 
-                forcing += r1*A/np.sqrt(k*self.s*self.dt)*np.cos(2*np.pi*k*(self.x+self.offset)/self.L+2*np.pi*r2);
+                forcing += r1*A/np.sqrt(k*self.stepper*self.dt)*np.cos(2*np.pi*k*(self.x+self.offset)/self.L+2*np.pi*r2);
 
             Fforcing = fft( forcing )
         
@@ -618,6 +618,9 @@ class Burger:
                 state = np.vstack((u,u**2))
             elif self.version == 3:
                 state = d2udx2
+            elif self.version == 4:
+                state = u
+ 
             else:
                 print("[Burger] Version not recognized", flush=True)
                 sys.exit()
@@ -632,7 +635,7 @@ class Burger:
                 state = np.inf*np.ones((2,self.N))
             elif self.version == 2:
                 state = np.inf*np.ones((2,self.N))
-            elif self.version == 3:
+            elif self.version == 3 or self.version == 4:
                 state = np.inf*np.ones(self.N)
             else:
                 print("[Burger] Version not recognized", flush=True)
@@ -642,7 +645,7 @@ class Burger:
 
         if self.numAgents == 1:
             states = [state.flatten().tolist()]
-            if self.version == 3:
+            if self.version == 3 or self.version == 4:
                 ek = 1./2.*np.real( self.v.conj()*self.v / self.N ) * self.dx
                 states[0] += ek[:self.N//2].tolist()
 
@@ -658,7 +661,7 @@ class Burger:
                     states.append(state[:,index].flatten().tolist())
                 elif self.version == 2:
                     states.append(state[:,index].flatten().tolist())
-                elif self.version == 3:
+                elif self.version == 3 or self.version == 4:
                     ek = 1./2.*np.real( self.v.conj()*self.v / self.N ) * self.dx
                     states.append(state[index].tolist() + ek[:self.N//2].tolist())
                 else:
