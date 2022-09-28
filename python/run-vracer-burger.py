@@ -40,6 +40,7 @@ print(args)
 import sys
 sys.path.append('_model')
 import burger_environment as be
+import burger_testing_environment as bet
 
 dns_default = None
 dns_default = [ be.setup_dns_default(args.L, args.NDNS, args.T, args.dt, args.nu, args.ic, args.forcing, args.seed+i, args.stepper) for i in range(args.ndns) ]
@@ -60,37 +61,65 @@ if found == True:
 
 ### Defining Problem Configuration
 e["Problem"]["Type"] = "Reinforcement Learning / Continuous"
-e["Problem"]["Custom Settings"]["Mode"] = "Testing" if args.test else "Training"
-e["Problem"]["Environment Function"] = lambda s : be.environment( 
-        s, 
-        L = args.L,
-        T = args.T, 
-        N = args.NDNS, 
-        gridSize = args.N, 
-        numActions = args.NA, 
-        dt = args.dt, 
-        nu = args.nu, 
-        episodeLength = args.episodelength, 
-        ic = args.ic, 
-        spectralReward = args.specreward,
-        forcing = args.forcing,
-        dforce = args.dforce,
-        ssmforce = args.ssmforce,
-        noise = args.noise, 
-        seed = args.seed,
-        stepper = args.stepper,
-        nunoise = args.nunoise,
-        version = args.version,
-        ssm = args.ssm,
-        dsm = args.dsm,
-        dns_default = dns_default )
+if args.test:
+    e["Solver"]["Mode"] = "Testing"
+    e["Problem"]["Custom Settings"]["Mode"] = "Testing" 
+    e["Problem"]["Environment Function"] = lambda s : bet.environment( 
+            s, 
+            L = args.L,
+            T = args.T, 
+            N = args.NDNS, 
+            gridSize = args.N, 
+            numActions = args.NA, 
+            dt = args.dt, 
+            nu = args.nu, 
+            episodeLength = args.episodelength, 
+            ic = args.ic, 
+            spectralReward = args.specreward,
+            forcing = args.forcing,
+            dforce = args.dforce,
+            ssmforce = args.ssmforce,
+            noise = args.noise, 
+            seed = args.seed,
+            stepper = args.stepper,
+            nunoise = args.nunoise,
+            version = args.version,
+            ssm = args.ssm,
+            dsm = args.dsm,
+            dns_default = dns_default )
+else:
+    e["Solver"]["Mode"] = "Training"
+    e["Problem"]["Custom Settings"]["Mode"] = "Training" 
+    e["Problem"]["Environment Function"] = lambda s : be.environment( 
+            s, 
+            L = args.L,
+            T = args.T, 
+            N = args.NDNS, 
+            gridSize = args.N, 
+            numActions = args.NA, 
+            dt = args.dt, 
+            nu = args.nu, 
+            episodeLength = args.episodelength, 
+            ic = args.ic, 
+            spectralReward = args.specreward,
+            forcing = args.forcing,
+            dforce = args.dforce,
+            ssmforce = args.ssmforce,
+            noise = args.noise, 
+            seed = args.seed,
+            stepper = args.stepper,
+            nunoise = args.nunoise,
+            version = args.version,
+            ssm = args.ssm,
+            dsm = args.dsm,
+            dns_default = dns_default )
+
 e["Problem"]["Testing Frequency"] = args.tf
 e["Problem"]["Policy Testing Episodes"] = args.nt
 
 ### Defining Agent Configuration 
 
 e["Solver"]["Type"] = "Agent / Continuous / VRACER"
-e["Solver"]["Mode"] = "Testing" if args.test else "Training"
 e["Solver"]["Episodes Per Generation"] = 10
 e["Solver"]["Experiences Between Policy Updates"] = 0.5
 e["Solver"]["Learning Rate"] = 0.0001
