@@ -164,15 +164,14 @@ def environment( s ,
 
          
 #------------------------------------------------------------------------------
-    relErrorFile = f'relError.npy'
+    relErrorFile = f'relError_{ic}_{N}_{gridSize}_{version}.npy'
     with open(relErrorFile, 'wb') as f:
         np.save(f, relError)
 
-    sgsTermsFile = f'sgsTerms.npy'
+    sgsTermsFile = f'sgsTerms_{ic}_{N}_{gridSize}_{version}.npy'
     with open(sgsTermsFile, 'wb') as f:
         np.save(f, sgsTerms)
     
-    dnsSgsTermsFile = f'dnsSgsTerms.npy'
+    dnsSgsTermsFile = f'dnsSgsTerms_{ic}_{N}_{gridSize}_{version}.npy'
     with open(dnsSgsTermsFile, 'wb') as f:
         np.save(f, dnsSgsTermsFile)
-            
