@@ -28,7 +28,7 @@ parser.add_argument('--tf', help='Testing frequenct in episodes', required=False
 parser.add_argument('--ssm', help='Static Smagorinksy Model', action='store_true', required=False)
 parser.add_argument('--dsm', help='Dynamic Smagorinksy Model', action='store_true', required=False)
 parser.add_argument('--run', help='Run tag', required=False, type=int, default=0)
-parser.add_argument('--version', help='Version tag', required=False, type=int, default=1)
+parser.add_argument('--version', help='Version tag', required=False, type=int, default=0)
 parser.add_argument('--ndns', help='Number of different dns', required=False, type=int, default=1)
 parser.add_argument('--test', action='store_true', help='Run tag', required=False)
 
@@ -105,7 +105,7 @@ elif args.version == 1:
     nState  = 2*args.N
 elif args.version == 2:
     nState  = 2*args.N
-elif args.version == 3:
+elif args.version == 3 or args.version == 4:
     nState  = int(1.5*args.N)
 else:
     print("[run-vracer-burger] version not recognized")

@@ -217,6 +217,7 @@ def environment( s ,
                 forcing=forcing,
                 noise=0.,
                 seed=seed,
+                dsm=False,
                 s=stepper)
         
         ## copy random numbers
@@ -272,11 +273,12 @@ def environment( s ,
             # calculate reward
             if spectralReward:
                 base.compute_Ek()
-                #print(dns.Ek_ktt[base.ioutnum,:gridSize//2])
-                #print(dns.Ek_ktt[base.ioutnum,:gridSize//2])
-                kRelErr = np.mean((np.abs(dns.Ek_ktt[base.ioutnum,:gridSize//2] - base.Ek_ktt[base.ioutnum,:gridSize//2])/dns.Ek_ktt[base.ioutnum,:gridSize//2])**2)
+                kRelErr = np.mean((np.abs(dns.Ek_ktt[base.ioutnum,1:gridSize//2] - base.Ek_ktt[base.ioutnum,1:gridSize//2])/dns.Ek_ktt[base.ioutnum,1:gridSize//2])**2)
+                #print(sgs.Ek_ktt[sgs.ioutnum,:gridSize//2])
+                #print(dns.Ek_ktt[sgs.ioutnum,:gridSize//2])
                 reward = np.full(numAgents, [rewardFactor*(kPrevRelErr-kRelErr)])
                 kPrevRelErr = kRelErr
+        
 
             # accumulate reward
             cumreward += reward
@@ -291,4 +293,4 @@ def environment( s ,
         print("[burger_environment] uncontrolled cumreward")
         print(cumreward)
         
-        makePlot(dns, base, sgs, fileName, spectralReward)
+        #makePlot(dns, base, sgs, fileName, spectralReward)
