@@ -56,7 +56,6 @@ print("Simulate SGS..")
 sgs0.simulate()
 # convert to physical space
 sgs0.compute_Ek()
-sgs = sgs0
 
 """
 print("Simulate SGS ..")
@@ -67,4 +66,5 @@ sgs.compute_Ek()
 
 #------------------------------------------------------------------------------
 ## plot
-makePlot(dns, sgs0, sgs, "evolution", False)
+plotField(dns, sgs0)
+#makePlot(dns, sgs0, sgs, "evolution", False)

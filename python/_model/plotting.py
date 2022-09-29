@@ -6,6 +6,31 @@ import numpy as np
 from scipy import interpolate
 from scipy.stats import gaussian_kde
 
+def plotField(dns, base):
+    figName = "evolution.pdf"
+    print(f"[plotting] Plotting {figName} ...")
+    
+    tEnd = dns.tend
+    dt = dns.dt
+    basedt = base.dt
+
+    colors = ['royalblue','coral']
+    fig, axs = plt.subplots(4,4, sharex=True, sharey=True, figsize=(15,15))
+    for i in range(16):
+        t = i * tEnd / 16
+        tidx = int(t/dt)
+        tidx_sgs = int(t/basedt)
+        k = int(i / 4)
+        l = i % 4
+        
+        axs[k,l].plot(dns.x, dns.uu[tidx,:], '-', color=colors[0])
+        axs[k,l].plot(base.x, base.uu[tidx_sgs,:], '-', color=colors[1], alpha=0.8)
+
+    fig.tight_layout()
+    fig.savefig(figName)
+
+
+
 def makePlot(dns, base, sgs, fileName, spectralReward=True):
  
 #------------------------------------------------------------------------------
@@ -35,6 +60,7 @@ def makePlot(dns, base, sgs, fileName, spectralReward=True):
         axs2[k,l].plot(sgs.x, sgs.uu[tidx_sgs,:], '-', color=colors[2])
         axs2[k,l].plot(dns.x, dns.uu[tidx,:], '--', color=colors[0])
 
+    fig2.tight_layout()
     fig2.savefig(figName2)
 
 #------------------------------------------------------------------------------
@@ -253,6 +279,7 @@ def makePlot(dns, base, sgs, fileName, spectralReward=True):
         axs3[idx,1].plot(svals, sgsDensityVals, color=colors[2])
         
         print(f"[plotting] Plotting {figName3} ...")
+        fig3.tight_layout()
         fig3.savefig(figName3)
         
 #------------------------------------------------------------------------------
@@ -269,6 +296,7 @@ def makePlot(dns, base, sgs, fileName, spectralReward=True):
         axs4.plot(svals2, sgsDensity(svals2), color=colors[2])
         axs4.set_yscale('log')
         print(f"[plotting] Plotting {figName4} ...")
+        fig4.tight_layout()
         fig4.savefig(figName4)
         
     except Exception as e:
