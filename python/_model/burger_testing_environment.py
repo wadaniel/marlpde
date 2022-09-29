@@ -41,7 +41,10 @@ def environment( s ,
     dnsSgsTerms = np.zeros((ndns*nT, N))
     sgsTerms = np.zeros((ndns*nT, gridSize))
     relError = np.zeros((ndns*nT, gridSize//2-1))
-    for sidx in range(dns_default):
+    cumreward = np.zeros(numAgents)
+    print(f"[burger_testing_env] running {ndns} envs..")
+    for sidx in range(ndns):
+        print(f"{sidx}/{ndns}")
         if nunoise:
             dns = Burger(L=L, 
                     N=N, 
@@ -64,7 +67,7 @@ def environment( s ,
         else:
             dns = dns_default[sidx]
          
-        print("[burger_env] Calculating SGS terms from DNS..")
+        print("[burger_resting_env] Calculating SGS terms from DNS..")
         dns.compute_Sgs(gridSize)
         dnsSgsTerms[sidx*nT:(sidx+1)*nT,:] = dns.sgsHistory[:nT, :]
    
@@ -118,7 +121,6 @@ def environment( s ,
         nIntermediate = int(T / (dt) / episodeLength)
         assert nIntermediate > 0, "dt or episodeLendth too long"
 
-        cumreward = np.zeros(numAgents)
 
         while step < episodeLength and error == 0:
     
@@ -133,7 +135,6 @@ def environment( s ,
 
             reward = np.zeros(numAgents)
 
-            actions = np.zeros(gridSize)
             for _ in range(nIntermediate):
                 sgs.step(actions)
                 
@@ -157,10 +158,11 @@ def environment( s ,
 
         print(cumreward)
 
-        s["Termination"] = "Terminal"
 
         sgsTerms[nT*sidx:nT*(sidx+1),:] = sgs.actionHistory[:nT,:]
         relError[nT*sidx:nT*(sidx+1),:] = (np.abs(dns.Ek_ktt[:nT,1:gridSize//2] - sgs.Ek_ktt[:nT,1:gridSize//2])/dns.Ek_ktt[:nT,1:gridSize//2])**2 
+    
+    s["Termination"] = "Terminal"
 
          
 #------------------------------------------------------------------------------

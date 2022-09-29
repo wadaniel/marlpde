@@ -191,9 +191,9 @@ e["Solver"]["Termination Criteria"]["Max Experiences"] = args.NE
 e["Solver"]["Experience Replay"]["Serialize"] = True
 e["Console Output"]["Verbosity"] = "Detailed"
 e["File Output"]["Enabled"] = True
-e["File Output"]["Frequency"] = 15
+e["File Output"]["Frequency"] = 25
 e["File Output"]["Path"] = resultFolder
-e["File Output"]["Use Multiple Files"] = False
+e["File Output"]["Use Multiple Files"] = True
 
 if args.test:
 
