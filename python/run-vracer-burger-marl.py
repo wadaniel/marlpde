@@ -30,6 +30,7 @@ parser.add_argument('--ssm', help='Static Smagorinksy Model', action='store_true
 parser.add_argument('--dsm', help='Dynamic Smagorinksy Model', action='store_true', required=False)
 parser.add_argument('--run', help='Run tag', required=False, type=int, default=0)
 parser.add_argument('--version', help='Version tag', required=False, type=int, default=1)
+parser.add_argument('--expperu', help='Experiences per update', required=False, type=float, default=0.5)
 parser.add_argument('--ndns', help='Number of dns', required=False, type=int, default=1)
 parser.add_argument('--test', action='store_true', help='Run tag', required=False)
 
@@ -114,7 +115,7 @@ e["Solver"]["Multi Agent Correlation"] = args.mac
 e["Solver"]["Type"] = "Agent / Continuous / VRACER"
 e["Solver"]["Mode"] = "Testing" if args.test else "Training"
 e["Solver"]["Episodes Per Generation"] = 10
-e["Solver"]["Experiences Between Policy Updates"] = 0.5
+e["Solver"]["Experiences Between Policy Updates"] = args.expperu
 e["Solver"]["Learning Rate"] = 0.0001
 e["Solver"]["Discount Factor"] = 1.
 e["Solver"]["Mini Batch"]["Size"] = 256
