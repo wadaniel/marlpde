@@ -1,8 +1,9 @@
+import os
 from Burger import *
 from plotting import makePlot
 
 # reward defaults
-rewardFactor = 1.
+episodeCount = 0
 
 # basis defaults
 basis = 'hat'
@@ -38,8 +39,11 @@ def environment( s ,
         dns_default = None,
         numAgents = 1):
 
+    global episodeCount
     assert( (ssm and dsm) == False )
  
+    #saveEpisode = True if episodeCount >= 1950 else False
+    #saveEpisode = True if s["Custom Settings"]["Save Episode"] == "True" else False
     testing = True if s["Custom Settings"]["Mode"] == "Testing" else False
     #noise = 0. if testing else noise
  
@@ -47,7 +51,7 @@ def environment( s ,
         nu = s["Custom Settings"]["Viscosity"]
 
     ndns = len(dns_default)
-    sidx = np.random.choice(ndns)
+    sidx = episodeCount % ndns
     
     if nunoise:
         dns = Burger(L=L, 
@@ -146,15 +150,16 @@ def environment( s ,
                 # calculate MSE reward
                 if spectralReward == False:
                     reward += rewardFactor*sgs.getMseReward(sgs.offset) / nIntermediate
-        
+            
+            # get new state
+            state = sgs.getState()
+
         except Exception as e:
             print("[burger_environment] Exception occured during stepping:")
             print(str(e))
             error = 1
             break
 
-        # get new state
-        state = sgs.getState()
         if(np.isfinite(state).all() == False):
             print("[burger_environment] Nan state detected")
             error = 1
@@ -166,8 +171,6 @@ def environment( s ,
         if spectralReward:
             sgs.compute_Ek()
             kRelErr = np.mean((np.abs(dns.Ek_ktt[sgs.ioutnum,1:gridSize//2] - sgs.Ek_ktt[sgs.ioutnum,1:gridSize//2])/dns.Ek_ktt[sgs.ioutnum,1:gridSize//2])**2)
-            #print(sgs.Ek_ktt[sgs.ioutnum,:gridSize//2])
-            #print(dns.Ek_ktt[sgs.ioutnum,:gridSize//2])
             reward = np.full(numAgents, [rewardFactor*(kPrevRelErr-kRelErr)])
             kPrevRelErr = kRelErr
         
@@ -187,7 +190,10 @@ def environment( s ,
  
         step += 1
 
-    print(cumreward)
+    episodeCount += 1
+    print(f"Episode {episodeCount}: {cumreward}")
+    saveEpisode = True if cumreward >= -0.2 else False
+    
     if error == 1:
         s["State"] = state[0] if numAgents == 1 else state
         s["Reward"] = -np.inf if numAgents == 1 else [-np.inf]*numAgents
@@ -196,14 +202,42 @@ def environment( s ,
     else:
         s["Termination"] = "Terminal"
 
-    if testing:
-        
-        fileName = s["Custom Settings"]["Filename"]
 
-        #print("[burger_env] Storing sgs to file {}".format(fileName))
-        #np.savez(fileName, x = sgs.x, t = sgs.tt, uu = sgs.uu, vv = sgs.vv, L=L, N=gridSize, dt=dt, nu=nu, tEnd=T, ssm = ssm, dsm = dsm, actions=sgs.actionHistory)
-         
+    if saveEpisode:
+        print("[burger_environment] saving episode..")
+        fname = s["Custom Settings"]["Filename"]
+        if os.path.isfile(fname):
+            print(f"Loading file {fname}")
+            npzfile = np.load(fname)
+            dns_Ektt = np.vstack((npzfile['dns_Ektt'], dns.Ek_ktt))
+            sgs_Ektt = np.vstack((npzfile['sgs_Ektt'], sgs.Ek_ktt))
+            sgs_actions = np.vstack((npzfile['sgs_actions'], sgs.actionHistory))
+            sgs_u = np.vstack((npzfile['sgs_u'], sgs.uu))
+            dns_u = np.vstack((npzfile['dns_u'], dns.uu))
+            indeces = np.concatenate((npzfile['indeces'], np.array([sidx])))
+        else:
+            dns_Ektt = dns.Ek_ktt
+            sgs_Ektt = sgs.Ek_ktt
+            sgs_actions = sgs.actionHistory
+            sgs_u = sgs.uu
+            dns_u = dns.uu
+            indeces = np.array([sidx])
+
+        print(dns_Ektt.shape)
+        print(sgs_Ektt.shape)
+        print(sgs_actions.shape)
+        print(sgs_u.shape)
+        print(dns_u.shape)
+        print(indeces)
+
+        np.savez(fname, dns_Ektt=dns_Ektt, sgs_Ektt=sgs_Ektt, sgs_actions=sgs_actions, sgs_u=sgs_u, dns_u=dns_u, indeces=indeces)
+        print("[burger_environment] saved!")
+        if len(indeces) > 20:
+            print("[burger_environment] terminated!")
+            sys.exit()
+
 #------------------------------------------------------------------------------
+    if testing:
         
         print("[burger_env] Calculating SGS terms from DNS..")
         dns.compute_Sgs(gridSize)

@@ -64,6 +64,7 @@ e["Problem"]["Type"] = "Reinforcement Learning / Continuous"
 if args.test:
     e["Solver"]["Mode"] = "Testing"
     e["Problem"]["Custom Settings"]["Mode"] = "Testing" 
+    e["Problem"]["Custom Settings"]["Save Episode"] = "False" 
     e["Problem"]["Environment Function"] = lambda s : bet.environment( 
             s, 
             L = args.L,
@@ -90,6 +91,7 @@ if args.test:
 else:
     e["Solver"]["Mode"] = "Training"
     e["Problem"]["Custom Settings"]["Mode"] = "Training" 
+    e["Problem"]["Custom Settings"]["Save"] = "True" 
     e["Problem"]["Environment Function"] = lambda s : be.environment( 
             s, 
             L = args.L,
@@ -114,6 +116,8 @@ else:
             dsm = args.dsm,
             dns_default = dns_default )
 
+fileName = f'/scratch/wadaniel/episodes_{args.run}.npz'
+e["Problem"]["Custom Settings"]["Filename"] = fileName
 e["Problem"]["Testing Frequency"] = args.tf
 e["Problem"]["Policy Testing Episodes"] = args.nt
 
@@ -200,9 +204,7 @@ if args.test:
     nus = [0.02]
 
     for nu in nus:
-        fileName = './plots/test_burger_{}_{}_{}'.format(args.ic, nu, args.run)
         e["Solver"]["Testing"]["Sample Ids"] = [0]
-        e["Problem"]["Custom Settings"]["Filename"] = fileName
         e["Problem"]["Custom Settings"]["Viscosity"] = nu
         k.run(e)
 

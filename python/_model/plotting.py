@@ -6,28 +6,79 @@ import numpy as np
 from scipy import interpolate
 from scipy.stats import gaussian_kde
 
-def plotField(dns, base):
+def plotField(models):
     figName = "evolution.pdf"
     print(f"[plotting] Plotting {figName} ...")
     
-    tEnd = dns.tend
-    dt = dns.dt
-    basedt = base.dt
-
     colors = ['royalblue','coral']
-    fig, axs = plt.subplots(4,4, sharex=True, sharey=True, figsize=(15,15))
-    for i in range(16):
-        t = i * tEnd / 16
-        tidx = int(t/dt)
-        tidx_sgs = int(t/basedt)
-        k = int(i / 4)
-        l = i % 4
-        
-        axs[k,l].plot(dns.x, dns.uu[tidx,:], '-', color=colors[0])
-        axs[k,l].plot(base.x, base.uu[tidx_sgs,:], '-', color=colors[1], alpha=0.8)
+    alphas = [1., 0.8] 
+    for idx, m in enumerate(models):
+        tEnd = m.tend
+        dt = m.dt
+
+        fig, axs = plt.subplots(4,4, sharex=True, sharey=True, figsize=(15,15))
+        for i in range(16):
+            t = i * tEnd / 16
+            tidx = int(t/dt)
+            k = int(i / 4)
+            l = i % 4
+            
+            axs[k,l].plot(m.x, m.uu[tidx,:], '-', color=colors[idx], alpha=alphas[idx])
 
     fig.tight_layout()
     fig.savefig(figName)
+    plt.close()
+
+
+def plotAvgSpectrum(models):
+    figName = "spectrum.pdf"
+    print(f"[plotting] Plotting {figName} ...")
+    
+    fig, ax = plt.subplots(1,1, sharex=True, sharey=True, figsize=(10,10))
+    lines = ['-','--']
+    width = [1,4]
+    for idx, model in enumerate(models):
+        N = model.N
+        tEnd = model.tend
+        dt = model.dt
+        kx = model.k[:N//2]
+
+        colors = plt.cm.plasma(np.linspace(0.1,1,15))
+        for i in range(9):
+            t = i * tEnd / 9
+            tidx = int(t/dt)
+            ax.plot(kx, abs(model.Ek_ktt[tidx,:N//2]), '-', alpha=0.75, color=colors[i], linestyle=lines[idx], linewidth=width[idx])
+
+    plt.xscale('log')
+    plt.yscale('log')
+    plt.ylim([1e-3, 1e-1])
+    plt.xlim([None, 32])
+    plt.tight_layout()
+    plt.savefig(figName)
+    plt.close()
+
+def plotError(dns, sgs):
+    figName = "relerror.pdf"
+    print(f"[plotting] Plotting {figName} ...")
+    
+    fig, ax = plt.subplots(1,1, sharex=True, sharey=True, figsize=(10,10))
+    N = sgs.N
+    tEnd = sgs.tend
+    dt = sgs.dt
+    kx = sgs.k[:N//2]
+
+    colors = plt.cm.plasma(np.linspace(0.1,1,20))
+    for i in range(9):
+        t = i * tEnd / 9
+        tidx = int(t/dt)
+        ax.plot(kx, abs( (dns.Ek_ktt[tidx,:N//2]-sgs.Ek_ktt[tidx, :N//2])/dns.Ek_ktt[tidx,:N//2] ), '-', alpha=0.75, color=colors[i])
+
+    plt.xscale('log')
+    plt.yscale('log')
+    #plt.ylim([1e-14,None])
+    plt.tight_layout()
+    plt.savefig(figName)
+    plt.close()
 
 
 

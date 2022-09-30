@@ -5,7 +5,7 @@ export OMP_NUM_THREADS=4
 
 #IC='sinus'
 IC='turbulence'
-run=104
+run=0
 NEX=1000000
 N=32
 NA=32
@@ -18,9 +18,10 @@ seed=42
 tf=50
 nt=100
 esteps=500
-version=3
+version=4
 width=64
 stepper=20
+ndns=20
 
 # check branch
 pushd .
@@ -56,14 +57,14 @@ python3 run-vracer-burger.py --ic $IC --run $run --NE $NEX \
     --iex $iex --noise $noise --seed $seed \
     --episodelength $esteps --NDNS $NDNS \
     --tf $tf --nt $nt --version $version --width $width  \
-    --dforce --specreward 
+    --dforce --specreward --ndns $ndns
 
 python3 run-vracer-burger.py --ic $IC --run $run --NE $NEX \
     --N $N --NA $NA --dt $dt --nu $nu --stepper $stepper \
     --iex $iex --noise $noise --seed $seed \
     --episodelength $esteps --NDNS $NDNS \
     --tf $tf --nt $nt --version $version --width $width \
-    --dforce --specreward \
+    --dforce --specreward --ndns $ndns \
     --test
 
 python3 -m korali.rlview --dir "_result_${run}" --out "vracer${run}.png"
