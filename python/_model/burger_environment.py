@@ -150,15 +150,16 @@ def environment( s ,
                 # calculate MSE reward
                 if spectralReward == False:
                     reward += rewardFactor*sgs.getMseReward(sgs.offset) / nIntermediate
-        
+            
+            # get new state
+            state = sgs.getState()
+
         except Exception as e:
             print("[burger_environment] Exception occured during stepping:")
             print(str(e))
             error = 1
             break
 
-        # get new state
-        state = sgs.getState()
         if(np.isfinite(state).all() == False):
             print("[burger_environment] Nan state detected")
             error = 1
@@ -213,7 +214,7 @@ def environment( s ,
             sgs_actions = np.vstack((npzfile['sgs_actions'], sgs.actionHistory))
             sgs_u = np.vstack((npzfile['sgs_u'], sgs.uu))
             dns_u = np.vstack((npzfile['dns_u'], dns.uu))
-            indeces = np.concatenate((npzfile['indeces'], sidx))
+            indeces = np.concatenate((npzfile['indeces'], np.array([sidx])))
         else:
             dns_Ektt = dns.Ek_ktt
             sgs_Ektt = sgs.Ek_ktt
