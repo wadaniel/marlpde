@@ -347,6 +347,7 @@ class Burger:
 
             nuSSM = (self.cs*delta)**2*np.abs(dudx)
             sgs = nuSSM*d2udx2 
+            self.sgsHistory[self.ioutnum, :] = sgs
             
             Fforcing += fft( sgs )
 
@@ -399,6 +400,7 @@ class Burger:
             
             nuDSM = (csd*delta)**2*np.abs(dudx)
             sgs = nuDSM*d2udx2
+            self.sgsHistory[self.ioutnum, :] = sgs
             
             #Fforcing += fft( sgs )
             Fforcing += fft( sgsalt )

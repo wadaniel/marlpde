@@ -19,52 +19,56 @@ from Burger import *
 #------------------------------------------------------------------------------
 ## set parameters and initialize simulation
 L       = 2*pi
-#L       = 100
 dt      = 0.001
 s       = 20
 tEnd    = 5
+ic      = 'turbulence'
+forcing = False
+
+#L       = 100
+#dt      = 0.01
+#s       = 20
+#tEnd    = 5000
+#ic      = 'sinus'
+#forcing = True
+
 nu      = 0.02
 #ic      = 'zero'
-ic      = 'turbulence'
-#ic      = 'sinus'
+#ic      = 'turbulence'
 #ic      = 'forced'
 noise   = 0.
 seed    = 42
-#forcing = True
-forcing = False
+#forcing = False
 
 dns = Burger(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case=ic, noise=noise, seed=seed, forcing=forcing, s=s)
-sgs0 = Burger(L=L, N=N2, dt=dt, nu=nu, tend=tEnd, case=ic, noise=noise, seed=seed, forcing=forcing, s=s)
+dns.simulate()
+dns.compute_Ek()
+#plotField([dns])
+plotAvgSpectrum([dns])
+
+sgs = Burger(L=L, N=N2, dt=dt, nu=nu, tend=tEnd, case=ic, noise=noise, seed=seed, forcing=forcing, s=s)
 
 v0 = np.concatenate((dns.v0[:((N2+1)//2)], dns.v0[-(N2-1)//2:]))
-sgs0.IC( v0 = v0 * N2 / N )
+sgs.IC( v0 = v0 * N2 / N )
 
-sgs0.randfac1 = dns.randfac1
-sgs0.randfac2 = dns.randfac2
+sgs.randfac1 = dns.randfac1
+sgs.randfac2 = dns.randfac2
 
 #------------------------------------------------------------------------------
 print("Simulate DNS ..")
 ## simulate
-dns.simulate()
-dns.compute_Ek()
-
 #print("Compute SGS ..")
 #dns.compute_Sgs(N2)
 
 print("Simulate SGS..")
 ## simulate
-sgs0.simulate()
-# convert to physical space
-sgs0.compute_Ek()
-
-"""
-print("Simulate SGS ..")
 sgs.simulate()
-sgs.fou2real()
+# convert to physical space
 sgs.compute_Ek()
-"""
 
 #------------------------------------------------------------------------------
 ## plot
-plotField(dns, sgs0)
+plotField([dns, sgs])
+plotAvgSpectrum([dns, sgs])
+plotError(dns, sgs)
 #makePlot(dns, sgs0, sgs, "evolution", False)
