@@ -318,7 +318,7 @@ class Burger2:
 
         # spectral derivative
         dudx = np.real(ifft(self.k1*fft(u)))
-        ## real space derivative
+        # # real space derivative
         # um = np.roll(u, 1)
         # dudx = (u - um)/self.dx
 
@@ -330,7 +330,6 @@ class Burger2:
             Fforcing += sgs
 
         if self.dsm == True:
-
 
             gamma = 2 # test filter width for dynamic Smagorinsky
             hidx = np.abs(self.k)>self.N//(2*gamma)
@@ -583,10 +582,20 @@ class Burger2:
 
         return rewards
 
+    def getStateSSM(self):
+
+        self.fou2real()
+
+        u = self.uu[self.ioutnum,:]
+        up = np.roll(u,1)
+        um = np.roll(u,-1)
+        d2udx2 = (up - 2.*u + um)/self.dx**2
+        return d2udx2
 
     def getState(self, nAgents = None):
         # Convert from spectral to physical space
         self.fou2real()
+
         try:
             # Extract state
             u = self.uu[self.ioutnum,:]

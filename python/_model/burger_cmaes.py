@@ -7,8 +7,9 @@ dt   = 0.001
 tEnd = 5
 nu   = 0.02
 nt   = int(tEnd/dt)
-ic   = 'turbulence'
+ic   = 'sinus'
 seed = 42
+basis = 'hat'
 
 def setup_dns_default(N, dt, nu , ic, seed):
     print("Setting up default dns with args ({}, {}, {}, {}, {})".format(N, dt, nu, ic, seed))
@@ -74,7 +75,7 @@ def fBurger( s , N, gridSize, dt, nu, episodeLength, ic, spectralReward, noise, 
             break
 
         # get new state
-        newstate = sgs.getState().flatten().tolist()
+        newstate = sgs.getStateSSM()
         if(np.isfinite(newstate).all() == False):
             print("Nan state detected")
             error = 1
