@@ -54,7 +54,7 @@ dns.fou2real()
 dns.compute_Ek()
 # filter solution u
 dns.filter_u()
-# calculate residul field
+# calculate residual field
 dns.diff_u()
 # compute ground truth sgs
 dns.compute_Sgs()
