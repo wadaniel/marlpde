@@ -10,7 +10,7 @@ parser.add_argument('--width', help='Size of hidden layer', required=False, type
 parser.add_argument('--iex', help='Initial exploration', required=False, type=float, default=0.1)
 parser.add_argument('--episodelength', help='Actual length of episode / number of actions', required=False, type=int, default=500)
 parser.add_argument('--noise', help='Standard deviation of IC', required=False, type=float, default=0.)
-parser.add_argument('--ic', help='Initial condition', required=False, type=str, default='sinus')
+parser.add_argument('--ic', help='Initial condition', required=False, type=str, default='turbulence')
 parser.add_argument('--dforce', help='Do direct forcing', action='store_true', required=False)
 parser.add_argument('--specreward', help='Use spectral reward', action='store_true', required=False)
 parser.add_argument('--forcing', help='Use forcing term in equation', action='store_true', required=False)
@@ -55,20 +55,20 @@ if found == True:
 ### Defining Problem Configuration
 e["Problem"]["Type"] = "Reinforcement Learning / Continuous"
 e["Problem"]["Custom Settings"]["Mode"] = "Testing" if args.test else "Training"
-e["Problem"]["Environment Function"] = lambda s : be.environment( 
-        s, 
-        N = args.NDNS, 
-        gridSize = args.N, 
-        numActions = args.NA, 
-        dt = args.dt, 
-        nu = args.nu, 
-        episodeLength = args.episodelength, 
-        ic = args.ic, 
+e["Problem"]["Environment Function"] = lambda s : be.environment(
+        s,
+        N = args.NDNS,
+        gridSize = args.N,
+        numActions = args.NA,
+        dt = args.dt,
+        nu = args.nu,
+        episodeLength = args.episodelength,
+        ic = args.ic,
         spectralReward = args.specreward,
         forcing = args.forcing,
-        dforce = args.dforce, 
-        noise = args.noise, 
-        seed = args.seed, 
+        dforce = args.dforce,
+        noise = args.noise,
+        seed = args.seed,
         nunoise = args.nunoise,
         version = args.version,
         ssm = args.ssm,
@@ -77,7 +77,7 @@ e["Problem"]["Environment Function"] = lambda s : be.environment(
 e["Problem"]["Testing Frequency"] = args.tf
 e["Problem"]["Policy Testing Episodes"] = args.nt
 
-### Defining Agent Configuration 
+### Defining Agent Configuration
 
 e["Solver"]["Type"] = "Agent / Continuous / VRACER"
 e["Solver"]["Mode"] = "Testing" if args.test else "Training"
@@ -121,7 +121,7 @@ e["Solver"]["Experience Replay"]["Maximum Size"] = 100000 * args.episodelength /
 e["Solver"]["Policy"]["Distribution"] = "Clipped Normal"
 e["Solver"]["State Rescaling"]["Enabled"] = True
 e["Solver"]["Reward"]["Rescaling"]["Enabled"] = True
-  
+
 ### Configuring the neural network and its hidden layers
 
 e["Solver"]["Neural Network"]["Engine"] = "OneDNN"

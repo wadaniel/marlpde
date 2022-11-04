@@ -112,6 +112,7 @@ class Burger:
         self.vv = np.zeros([self.nout+1, self.N], dtype=np.complex64)
         self.tt = np.zeros(self.nout+1)
         self.sgsHistory = np.zeros([self.nout+1, self.N])
+        self.sgs = np.zeros([self.nout+1, self.N])
         self.actionHistory = np.zeros([self.nout+1, self.N])
 
         self.tt[0]   = 0.
@@ -309,6 +310,8 @@ class Burger:
             nuSSM = (self.cs*delta)**2*np.abs(dudx)
             sgs = nuSSM*d2udx2
 
+            self.sgs[self.ioutnum,:] = np.real(ifft(sgs))
+
             Fforcing += fft( sgs )
 
         if self.dsm == True:
@@ -360,6 +363,8 @@ class Burger:
 
             nuDSM = (csd*delta)**2*np.abs(dudx)
             sgs = nuDSM*d2udx2
+
+            self.sgs[self.ioutnum,:] = np.real(ifft(sgs))
 
             #Fforcing += fft( sgs )
             Fforcing += fft( sgsalt )
@@ -618,6 +623,7 @@ class Burger:
                 states.append(state[:,a:b].flatten().tolist())
 
         return states
+
 
     def compute_Sgs(self, nURG):
         hidx = np.abs(self.k)>nURG//2
