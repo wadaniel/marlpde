@@ -35,6 +35,30 @@ def plotError(kx, rel_errors):
     plt.savefig(figName)
     plt.close()
 
+def plotField(x,t, models):
+    figName = "evolution2.pdf"
+    print(f"[plotting] Plotting {figName} ...")
+    print(len(models))
+    
+    fig, axs = plt.subplots(4,4, sharex=True, sharey=True, figsize=(15,15))
+    colors = ['royalblue','coral']
+    alphas = [1., 0.8] 
+    for idx, model in enumerate(models):
+        print(model)
+        tEnd = 5
+        dt = 0.001
+
+        for i in range(16):
+            t = i * tEnd / 16
+            tidx = int(t/dt)
+            k = int(i / 4)
+            l = i % 4
+            
+            axs[k,l].plot(x[idx], model[tidx,:], '-', color=colors[idx], alpha=alphas[idx])
+
+    fig.tight_layout()
+    fig.savefig(figName)
+    plt.close()
 
 def plotSgsHistory(x, sgsHistory):
 
@@ -70,14 +94,19 @@ def plotSgsHistory(x, sgsHistory):
 
 def plotSgsField(x,t,sgsField):
 
-    figName = "sgsField.png"
+    figName = "sgsField.pdf"
     print(f"[plotting] Plotting {figName} ...")
-    
-    #fig, ax = plt.subplots(1,1, figsize=(6,6))
     print(sgsField.shape)
+    print(np.max(sgsField))
+    print(np.min(sgsField))
+    
+    fig, ax = plt.subplots(1,1, figsize=(6,6))
     X, Y = np.meshgrid(x, t[:-1])
-    #ax.contourf(X, Y, sgsField)
-    plt.imshow(sgsField, cmap='viridis')
+    print(x)
+    print(t)
+    ax.contourf(x, t, sgsField)
+    plt.axis('equal')
+    #ax.set_aspect('equal')
     #plt.tight_layout()
     plt.savefig(figName)
     plt.close('all')
@@ -114,10 +143,13 @@ load = True
 if load == True:
 
     #np.savez(fname, dns_Ektt=dns_Ektt, sgs_Ektt=sgs_Ektt, sgs_actions=sgs_actions, sgs_u=sgs_u, dns_u=dns_u, indeces=indeces)
+    dns = Burger(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case=ic, noise=noise, seed=seed, forcing=forcing, s=s)
     sgs = Burger(L=L, N=N2, dt=dt, nu=nu, tend=tEnd, case=ic, noise=noise, seed=seed, forcing=forcing, s=s, ssm=ssm, dsm=dsm)
     data = np.load('/scratch/wadaniel/episodes_marl_303.npz')
     dns_Ektt = data['dns_Ektt']
     sgs_Ektt = data['sgs_Ektt']
+    sgs_u = data['sgs_u']
+    dns_u = data['dns_u']
     sgsHistory = data['sgs_actions']
     indeces = data['indeces']
     sgsIdx = np.where(indeces == plotid)[0]
@@ -135,7 +167,8 @@ if load == True:
 
     #print(rel_errors)
     sgsField = sgsHistory[(sgsIdx*5001):(sgsIdx+1)*5001-1, :]
-    print(sgsField)
+    uField = sgs_u[(sgsIdx*5001):(sgsIdx+1)*5001-1, :]
+    dnsField = dns_u[(sgsIdx*5001):(sgsIdx+1)*5001-1, :]
 
 else:
 
@@ -171,7 +204,12 @@ else:
 
         if (i == plotid):
             sgsField = sgs.sgsHistory[:-1,:]
+            uField = sgs.uu
+            dnsField = dns.uu
 
 #plotError(sgs.k[1:N2//2], rel_errors)
 #plotSgsHistory(sgs.x, sgsHistory)
-plotSgsField(sgs.x, sgs.tt, sgsField)
+dns = Burger(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case=ic, noise=noise, seed=seed+plotid, forcing=forcing, s=s)
+dns.simulate()
+plotField([dns.x, sgs.x], np.arange(5000)/1000, [dnsField, uField]) #uField])
+plotSgsField(sgs.x, np.arange(5000)/1000, sgsField)
