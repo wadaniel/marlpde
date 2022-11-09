@@ -44,6 +44,7 @@ def environment( s ,
  
     #saveEpisode = True if episodeCount >= 1950 else False
     #saveEpisode = True if s["Custom Settings"]["Save Episode"] == "True" else False
+    saveEpisode = False
     testing = True if s["Custom Settings"]["Mode"] == "Testing" else False
     #noise = 0. if testing else noise
  
@@ -192,7 +193,7 @@ def environment( s ,
 
     episodeCount += 1
     print(f"Episode {episodeCount}: {cumreward}")
-    saveEpisode = True if cumreward[0] >= -0.25 else False
+    #saveEpisode = True if cumreward[0] >= -0.25 else False
     
     if error == 1:
         s["State"] = state[0] if numAgents == 1 else state
