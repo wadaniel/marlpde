@@ -30,6 +30,7 @@ parser.add_argument('--ssm', help='Static Smagorinksy Model', action='store_true
 parser.add_argument('--dsm', help='Dynamic Smagorinksy Model', action='store_true', required=False)
 parser.add_argument('--run', help='Run tag', required=False, type=int, default=0)
 parser.add_argument('--version', help='Version tag', required=False, type=int, default=1)
+parser.add_argument('--expperu', help='Experiences per update', required=False, type=float, default=0.5)
 parser.add_argument('--ndns', help='Number of dns', required=False, type=int, default=1)
 parser.add_argument('--test', action='store_true', help='Run tag', required=False)
 
@@ -67,6 +68,8 @@ if found == True:
 
 ### Defining Problem Configuration
 e["Problem"]["Type"] = "Reinforcement Learning / Continuous"
+fileName = f'/scratch/wadaniel/episodes_marl_{args.run}.npz'
+e["Problem"]["Custom Settings"]["Filename"] = fileName
 e["Problem"]["Testing Frequency"] = args.tf
 e["Problem"]["Policy Testing Episodes"] = args.nt
 
@@ -98,6 +101,7 @@ e["Problem"]["Environment Function"] = lambda s : be.environment(
         dns_default = dns_default,
         numAgents = args.nagents )
 
+e["Problem"]["Custom Settings"]["Save Episode"] = "False"
 e["Problem"]["Testing Frequency"] = args.tf
 e["Problem"]["Policy Testing Episodes"] = args.nt
 
@@ -114,10 +118,10 @@ e["Solver"]["Multi Agent Correlation"] = args.mac
 e["Solver"]["Type"] = "Agent / Continuous / VRACER"
 e["Solver"]["Mode"] = "Testing" if args.test else "Training"
 e["Solver"]["Episodes Per Generation"] = 10
-e["Solver"]["Experiences Between Policy Updates"] = 0.5
+e["Solver"]["Experiences Between Policy Updates"] = args.expperu
 e["Solver"]["Learning Rate"] = 0.0001
 e["Solver"]["Discount Factor"] = 1.
-e["Solver"]["Mini Batch"]["Size"] = 256
+e["Solver"]["Mini Batch"]["Size"] = 256 // args.nagents
 
 ### Defining Variables
 
@@ -198,9 +202,7 @@ if args.test:
     nus = [0.02]
 
     for nu in nus:
-        fileName = './plots/test_burger_marl_{}_{}_{}'.format(args.ic, nu, args.run)
         e["Solver"]["Testing"]["Sample Ids"] = [0]
-        e["Problem"]["Custom Settings"]["Filename"] = fileName
         e["Problem"]["Custom Settings"]["Viscosity"] = nu
         k.run(e)
 

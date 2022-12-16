@@ -100,7 +100,6 @@ def plotSgsField(x,t,sgsField):
     print(np.max(sgsField))
     print(np.min(sgsField))
     
-
     fig, ax = plt.subplots(1,1, figsize=(6,6))
     X, Y = np.meshgrid(x, t[:-1])
     print(x)
@@ -147,6 +146,7 @@ if load == True:
     dns = Burger(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case=ic, noise=noise, seed=seed, forcing=forcing, s=s)
     sgs = Burger(L=L, N=N2, dt=dt, nu=nu, tend=tEnd, case=ic, noise=noise, seed=seed, forcing=forcing, s=s, ssm=ssm, dsm=dsm)
     data = np.load('/scratch/wadaniel/episodes_303.npz')
+    #data = np.load('/scratch/wadaniel/episodes_marl_303.npz')
     dns_Ektt = data['dns_Ektt']
     sgs_Ektt = data['sgs_Ektt']
     sgs_u = data['sgs_u']

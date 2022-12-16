@@ -116,7 +116,7 @@ else:
             dsm = args.dsm,
             dns_default = dns_default )
 
-fileName = f'/scratch/wadaniel/episodes_{args.run}.npz'
+fileName = f'~/episodes_{args.run}.npz'
 e["Problem"]["Custom Settings"]["Filename"] = fileName
 e["Problem"]["Testing Frequency"] = args.tf
 e["Problem"]["Policy Testing Episodes"] = args.nt
