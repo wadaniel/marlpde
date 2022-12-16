@@ -3,6 +3,8 @@ import numpy as np
 from scipy.fftpack import fft, ifft, fftfreq
 from scipy import interpolate
 
+import matplotlib.pyplot as plt
+
 def simulate_burger_rk3(N, L, dt, tEnd, nu):
     
     tic = time.perf_counter()
@@ -111,7 +113,7 @@ if __name__ == "__main__":
     tEnd = 5
     nu   = 0.02
 
-    NDNS   = 1024
+    NDNS   = 2048
     dtNDNS = 0.0001
    
     xdns, tdns, dns_rk3, _ = simulate_burger_rk3(NDNS,L,dtNDNS,tEnd,nu)
@@ -120,20 +122,59 @@ if __name__ == "__main__":
     fdns_rk3 = interpolate.interp2d(xdns, tdns, dns_rk3, kind='cubic')
     fdns_abcn = interpolate.interp2d(xdns, tdns, dns_abcn, kind='cubic')
 
-    N    = 32
+    #N    = 32
     dt   = 0.001
+   
+    Nl = []
+    mserk3 = []
+    mseabcn = []
 
-    x, t, sol_rk3, trk3 = simulate_burger_rk3(N,L,dt,tEnd,nu)
-    mse = np.mean((sol_rk3 - 0.5*fdns_rk3(x, t) - 0.5*fdns_abcn(x, t))**2)
-    print(sol_rk3)
-    print(mse)
-    print(trk3)
+    trk3l = []
+    tabcnl = []
+
+    for i in range(5,10):
+
+        N = 2**i
+        print(N)
+        Nl.append(N)
+
+        x, t, sol_rk3, trk3 = simulate_burger_rk3(N,L,dt,tEnd,nu)
+        mse = np.mean((sol_rk3 - 0.5*fdns_rk3(x, t) - 0.5*fdns_abcn(x, t))**2)
+
+        mserk3.append(mse)
+        trk3l.append(trk3)
+        print(sol_rk3)
+        print(mse)
+        print(trk3)
     
-    x, t, sol_abcn, tabcn = simulate_burger_abcn(N,L,dt,tEnd,nu)
-    mse = np.mean((sol_abcn - 0.5*fdns_rk3(x, t) - 0.5*fdns_abcn(x, t))**2)
-    print(t)
-    print(sol_abcn)
-    print(mse)
-    print(tabcn)
+        x, t, sol_abcn, tabcn = simulate_burger_abcn(N,L,dt,tEnd,nu)
+        mse = np.mean((sol_abcn - 0.5*fdns_rk3(x, t) - 0.5*fdns_abcn(x, t))**2)
+        print(t)
+        print(sol_abcn)
+        print(mse)
+        print(tabcn)
+
+        mseabcn.append(mse)
+        tabcnl.append(tabcn)
+
+    print("plot..")
+    plt.loglog(Nl, mserk3)
+    plt.loglog(Nl, mseabcn)
+    plt.ylabel('MSE')
+    plt.xlabel('N')
+    plt.grid()
+    plt.tight_layout()
+    plt.savefig('convergencerate.eps')
+    plt.close()
+    
+    plt.loglog(Nl, trk3l)
+    plt.loglog(Nl, tabcnl)
+    plt.ylabel('Time')
+    plt.xlabel('N')
+    plt.grid()
+    plt.tight_layout()
+    plt.savefig('timing.eps')
+    plt.close()
+
 
     #plot_evolution(x, [sol_rk3, sol_abcn], tEnd)

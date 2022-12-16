@@ -3,10 +3,11 @@
 # CONFIGS
 export OMP_NUM_THREADS=4
 
-#IC='sinus'
+#IC='sinus' (sth not working imo DW, probably params need to be changed 9.11)
 IC='turbulence'
 run=0
-NEX=1000000
+#NEX=1000000
+NEX=200000
 N=32
 NA=32
 NDNS=1024

@@ -146,7 +146,7 @@ if load == True:
     #np.savez(fname, dns_Ektt=dns_Ektt, sgs_Ektt=sgs_Ektt, sgs_actions=sgs_actions, sgs_u=sgs_u, dns_u=dns_u, indeces=indeces)
     dns = Burger(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case=ic, noise=noise, seed=seed, forcing=forcing, s=s)
     sgs = Burger(L=L, N=N2, dt=dt, nu=nu, tend=tEnd, case=ic, noise=noise, seed=seed, forcing=forcing, s=s, ssm=ssm, dsm=dsm)
-    data = np.load('/scratch/wadaniel/episodes_301.npz')
+    data = np.load('/scratch/wadaniel/episodes_303.npz')
     dns_Ektt = data['dns_Ektt']
     sgs_Ektt = data['sgs_Ektt']
     sgs_u = data['sgs_u']

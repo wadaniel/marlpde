@@ -43,7 +43,7 @@ seed    = 42
 dns = Burger(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case=ic, noise=noise, seed=seed, forcing=forcing, s=s)
 dns.simulate()
 dns.compute_Ek()
-#plotField([dns])
+plotField([dns])
 plotAvgSpectrum([dns])
 
 sgs = Burger(L=L, N=N2, dt=dt, nu=nu, tend=tEnd, case=ic, noise=noise, seed=seed, forcing=forcing, s=s)
