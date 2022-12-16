@@ -96,9 +96,9 @@ def makePlot(dns, base, sgs, fileName, spectralReward=True):
     sgs_dt = sgs.dt
 
     # step factor
-    s = dns.s
-    assert base.s == s
-    assert sgs.s == s
+    s = dns.stepper
+    assert base.stepper == s
+    assert sgs.stepper == s
 
     colors = ['black','royalblue','seagreen']
     fig2, axs2 = plt.subplots(4,4, sharex=True, sharey=True, figsize=(15,15))

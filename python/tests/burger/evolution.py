@@ -25,6 +25,9 @@ tEnd    = 5
 ic      = 'turbulence'
 forcing = False
 
+ssm = True
+dsm = False
+
 #L       = 100
 #dt      = 0.01
 #s       = 20
@@ -46,7 +49,7 @@ dns.compute_Ek()
 plotField([dns])
 plotAvgSpectrum([dns])
 
-sgs = Burger(L=L, N=N2, dt=dt, nu=nu, tend=tEnd, case=ic, noise=noise, seed=seed, forcing=forcing, s=s)
+sgs = Burger(L=L, N=N2, dt=dt, nu=nu, tend=tEnd, case=ic, noise=noise, seed=seed, forcing=forcing, s=s, ssm=ssm, dsm=dsm)
 
 v0 = np.concatenate((dns.v0[:((N2+1)//2)], dns.v0[-(N2-1)//2:]))
 sgs.IC( v0 = v0 * N2 / N )
@@ -71,4 +74,4 @@ sgs.compute_Ek()
 plotField([dns, sgs])
 plotAvgSpectrum([dns, sgs])
 plotError(dns, sgs)
-#makePlot(dns, sgs0, sgs, "evolution", False)
+#makePlot(dns, sgs, sgs, "evolution", False)

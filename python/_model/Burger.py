@@ -335,7 +335,7 @@ class Burger:
         Fforcing = np.zeros(self.N, dtype=np.complex64)
 
         if self.ssm == True:
-                
+
             delta  = 2*np.pi/self.N
             dx2 = self.dx**2
 
@@ -400,7 +400,9 @@ class Burger:
             
             nuDSM = (csd*delta)**2*np.abs(dudx)
             sgs = nuDSM*d2udx2
-            self.sgsHistory[self.ioutnum, :] = sgs
+            
+            #self.sgsHistory[self.ioutnum, :] = sgs
+            self.sgsHistory[self.ioutnum, :] = sgsalt
             
             #Fforcing += fft( sgs )
             Fforcing += fft( sgsalt )
