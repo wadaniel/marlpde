@@ -3,19 +3,16 @@ import argparse
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--N', help='Discretization / number of grid points', required=False, type=int, default=32)
-#parser.add_argument('--NDNS', help='Discretization / number of grid points', required=False, type=int, default=512)
+parser.add_argument('--NDNS', help='Discretization / number of grid points', required=False, type=int, default=512)
+parser.add_argument('--NA', help='Number of agents', required=False, type=int, default=1)
 parser.add_argument('--dt', help='Time discretization', required=False, type=float, default=0.001)
 parser.add_argument('--tend', help='Length of simulation', required=False, type=float, default=5)
-parser.add_argument('--NA', help='Number of actions', required=False, type=int, default=32)
 parser.add_argument('--NE', help='Number of experiences', required=False, type=int, default=5e5)
 parser.add_argument('--width', help='Size of hidden layer', required=False, type=int, default=256)
-parser.add_argument('--iex', help='Initial exploration', required=False, type=float, default=0.0001)
+parser.add_argument('--iex', help='Initial exploration', required=False, type=float, default=0.1)
 parser.add_argument('--episodelength', help='Actual length of episode / number of actions', required=False, type=int, default=500)
 parser.add_argument('--noise', help='Standard deviation of IC', required=False, type=float, default=0.)
 parser.add_argument('--ic', help='Initial condition', required=False, type=str, default='sinus')
-parser.add_argument('--dforce', help='Do direct forcing', action='store_true', required=False)
-parser.add_argument('--nunoise', help='Enable noisy nu', action='store_true', required=False)
-parser.add_argument('--tnoise', help='Enable noisy timestep', action='store_true', required=False)
 parser.add_argument('--seed', help='Random seed', required=False, type=int, default=42)
 parser.add_argument('--nu', help='Viscosity', required=False, type=float, default=0.1)
 parser.add_argument('--nt', help='Number of testing runs', required=False, type=int, default=1)
@@ -40,15 +37,14 @@ import korali
 k = korali.Engine()
 e = korali.Experiment()
 
-#dns_default = de.setup_dns_default(args.NDNS, args.dt, args.nu, args.tend, args.seed)
-dns_default = None
+dns_default = de.setup_dns_default(args.NDNS, args.dt, args.nu, args.tend, args.seed)
 
 ### Defining results folder and loading previous results, if any
 
-resultFolder = '_result_diffusion_{}/'.format(args.run)
-found = e.loadState(resultFolder + '/latest')
-if found == True:
-	print("[Korali] Continuing execution from previous run...\n")
+#resultFolder = '_result_diffusion_{}/'.format(args.run)
+#found = e.loadState(resultFolder + '/latest')
+#if found == True:
+#	print("[Korali] Continuing execution from previous run...\n")
 
 ### Defining Problem Configuration
 e["Problem"]["Type"] = "Reinforcement Learning / Continuous"
@@ -57,18 +53,15 @@ e["Problem"]["Environment Function"] = lambda s : de.environment(
         s,
         N = args.N,
         tEnd = args.tend,
-        dt_sgs = args.dt, 
-        numActions = args.NA, 
+        dtSgs = args.dt, 
         nu = args.nu,
         episodeLength = args.episodelength, 
         ic = args.ic, 
-        dforce = args.dforce, 
         noise = args.noise, 
         seed = args.seed, 
-        nunoise = args.nunoise,
-        tnoise = args.tnoise,
-        version = args.version,
-        dns_default = dns_default
+        dnsDefault = dns_default,
+        nunoise = False,
+        version = args.version
         )
 
 e["Problem"]["Testing Frequency"] = 100
@@ -86,13 +79,13 @@ e["Solver"]["Mini Batch"]["Size"] = 256
 
 ### Defining Variables
 
-nState = args.N if args.version == 0 else args.N*2
+nState = args.N 
 # States (flow at sensor locations)
 for i in range(nState):
 	e["Variables"][i]["Name"] = "Field Information " + str(i)
 	e["Variables"][i]["Type"] = "State"
 
-for i in range(args.NA):
+for i in range(3):
     e["Variables"][nState+i]["Name"] = "Forcing " + str(i)
     e["Variables"][nState+i]["Type"] = "Action"
     e["Variables"][nState+i]["Lower Bound"] = -1.
@@ -145,17 +138,7 @@ if args.test:
     fileName = 'test_diffusion_{}_{}_{}_{}_{}'.format(args.ic, args.N, args.NA, args.seed, args.run)
     e["Solver"]["Testing"]["Sample Ids"] = [0]
     e["Problem"]["Custom Settings"]["Filename"] = fileName
-
-if args.test:
-
-    dts = [0.005, 0.01, 0.02, 0.03, 0.04]
-
-    for dt in dts:
-        fileName = 'test_diffusion_{}_{}_{}'.format(args.ic, dt, args.run)
-        e["Solver"]["Testing"]["Sample Ids"] = [0]
-        e["Problem"]["Custom Settings"]["Filename"] = fileName
-        e["Problem"]["Custom Settings"]["Timestep"] = dt
-        k.run(e)
+    k.run(e)
 
 
 ### Running Experiment

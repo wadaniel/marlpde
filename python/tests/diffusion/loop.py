@@ -30,7 +30,6 @@ rewardFactor = 1e6
 
 # action defaults
 basis = 'hat'
-numActions = 1
 
 # les & rl defaults
 episodeLength = args.episodelength
@@ -38,17 +37,12 @@ episodeLength = args.episodelength
 # DNS baseline
 print("Setting up DNS..")
 dns = Diffusion(L=L, N=N, dt=dt, nu=nu, tend=tEnd, case=ic, noise=noise, seed=seed)
-#dns.simulate()
-
-## create interpolated IC
-#f_restart = interpolate.interp1d(dns.x, dns.u0, kind='cubic')
+dns.simulate()
 
 # Initialize LES
 dt_sgs = args.dt
 les = Diffusion(L=L, N=N, dt=dt_sgs, nu=nu, tend=tEnd, case=ic, noise=0., seed=seed)
-#les.IC(u0 = f_restart(les.x))
-les.setup_basis(numActions, basis)
-#les.setGroundTruth(dns.tt, dns.x, dns.uu)
+les.setGroundTruth(dns.tt, dns.x, dns.uu)
 
 ## run controlled simulation
 error = 0
@@ -56,12 +50,19 @@ step = 0
 nIntermediate = int(tEnd / dt_sgs / episodeLength)
 assert nIntermediate > 0
 cumreward = 0.
+
 while step < episodeLength and error == 0:
     
     # apply action and advance environment
-    actions = [0.]
+    actions = [1, -2., 1.]
+
+    # reweighting
+    actions = np.array(actions)
+    actions = actions - sum(actions)
+ 
     try:
         for _ in range(nIntermediate):
+
             les.step(actions)
     except Exception as e:
         print("Exception occured:")
@@ -70,27 +71,17 @@ while step < episodeLength and error == 0:
         break
     
     idx = les.ioutnum
-    #uTruthToCoarse = les.mapGroundTruth()
-    #uDiffMse = ((uTruthToCoarse[idx,:] - les.uu[idx,:])**2).mean()
-  
-    sol = les.getAnalyticalSolution(les.t)
-    uDiffMse = ((sol - les.uu[les.ioutnum,:])**2).mean()
-    reward = -rewardFactor*uDiffMse
-    print(step)
+    res = les.mapGroundTruth()
+    reward = np.mean((res[-1,:] - les.uu[les.ioutnum,:])**2)
     print(reward)
-    
-    # calculate reward from energy
-    # reward = -rewardFactor*(np.abs(les.Ek_tt[step*nIntermediate]-dns.Ek_tt[step*nIntermediate]))
-    #reward = -rewardFactor*uDiffMse
-    cumreward += reward
 
+    
     if (np.isnan(reward)):
         print("Nan reward detected")
         error = 1
         break
     
-    #print(step)
-    #print(reward)
     step += 1
+    cumreward += reward
 
 print(cumreward)

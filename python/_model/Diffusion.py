@@ -3,18 +3,7 @@ import time
 from numpy import pi
 from scipy import interpolate
 from scipy.sparse import diags
-from scipy.fftpack import rfft, irfft, rfftfreq
-from scipy import special
 import numpy as np
-
-np.seterr(over='raise', invalid='raise')
-def gaussian( x, mean, sigma ):
-    return 1/np.sqrt(2*np.pi*sigma**2)*np.exp(-1/2*( (x-mean)/sigma )**2)
-
-def hat( x, mean, dx ):
-    left  = np.clip((x + dx - mean)/dx, a_min = 0., a_max = 1.)
-    right = np.clip((dx - x + mean)/dx, a_min = 0., a_max = 1.)
-    return left + right - 1.
 
 class Diffusion:  
     #
@@ -23,11 +12,10 @@ class Diffusion:
     # u_t = nu*u_xx
     # with periodic BCs on x \in [0, L]: u(0,t) = u(L,t).
 
-    def __init__(self, L=2.*np.pi, N=512, dt=0.001, nu=0.0, dforce=True, nsteps=None, tend=5., u0=None, v0=None, case=None, ssm=False, dsm=False, noise=0., seed=42, version=0, nunoise=False, implicit=False):
+    def __init__(self, L=2.*np.pi, N=512, dt=0.001, nu=0.01, nsteps=None, tend=5., case='box', version=0, noise=0., nunoise=False, seed=1337, implicit=False):
         
         # Randomness
         np.random.seed(None)
-        self.noise = noise*L
         self.seed = seed
 
         # EXplicit or Implicit euler schme
@@ -45,24 +33,26 @@ class Diffusion:
             # override tend
             tend = dt*nsteps
         
+        print(f"[Diffusion] Simulating {nsteps} steps up to T {tend}", flush=True)
+        
         # save to self
         self.N  = N
         self.dx = L/N
         self.x  = np.linspace(0, self.L, N, endpoint=False)
         self.nu = nu
+
         if nunoise:
             self.nu = 0.01+0.02*np.random.uniform()
+
+        self.noise = 0.
+        
         self.nsteps = nsteps
         self.nout   = nsteps
  
-        if (2.*self.nu*self.dt >= self.dx**2):
+        if (implicit == False and 2.*self.nu*self.dt >= self.dx**2):
             print("[Diffusion] Warning: CFL condition violated", flush=True)
 
         # Basis
-        self.M = 0
-        self.basis = None
-        self.actions = None
-        self.dforce = dforce
         self.version = version
         if (self.version > 1):
             print("[Diffusion] Version not recognized", flush=True)
@@ -72,8 +62,6 @@ class Diffusion:
         self.uut = -1
         # field in real space
         self.uu = None
-        # placeholder for analytical solution
-        self.analytical = None
         # ground truth in real space
         self.uu_truth = None
         # interpolation of truth
@@ -88,8 +76,6 @@ class Diffusion:
 
         if (case is not None):
             self.IC(case=case)
-        elif (u0 is not None):
-            self.IC(u0 = u0)
         else:
             print("[Diffusion] IC ambigous")
             sys.exit()
@@ -100,92 +86,39 @@ class Diffusion:
         
         # nout+1 because we store the IC as well
         self.uu = np.zeros([self.nout+1, self.N])
-        self.analytical = np.zeros([self.nout+1, self.N])
         self.tt = np.zeros(self.nout+1)
-        self.sgsHistory = np.zeros([self.nout+1, self.N])
         self.actionHistory = np.zeros([self.nout+1, self.N])
         
-        self.tt[0]   = 0.
-
-    def setup_basis(self, M, kind = 'uniform'):
-        self.M = M
-        
-        # Action record
-        if M > 1:
-            if kind == 'uniform':
-                self.basis = np.zeros((self.M, self.N))
-                for i in range(self.M):
-                    assert self.N % self.M == 0, "[Diffusion] Something went wrong in basis setup"
-                    idx1 = i * self.N//self.M
-                    idx2 = (i+1) * self.N//self.M
-                    self.basis[i,idx1:idx2] = 1.
-
-            elif kind == 'hat':
-                self.basis = np.ones((self.M, self.N))
-                dx = self.L/(self.M-1)
-                for i in range(self.M):
-                    mean = i*dx
-                    self.basis[i,:] = hat( self.x, mean, dx )
-
-            else:
-                print("[Diffusion] Basis function not known, exit..")
-                sys.exit()
-        else:
-            self.basis = np.ones((self.M, self.N))
-        
-        np.testing.assert_allclose(np.sum(self.basis, axis=0), 1)
-
-    def IC(self, u0=None, case='box'):
+    def IC(self, case='box'):
         
         # Set initial condition
-        if (u0 is None):
-            if self.noise > 0.:
-                self.offset = np.random.normal(loc=0., scale=self.noise) 
+        if self.noise > 0.:
+            self.offset = np.random.normal(loc=0., scale=self.noise) 
+            abort()
             
-            # Gaussian initialization
-            if case == 'gaussian':
-                # Gaussian noise (according to https://arxiv.org/pdf/1906.07672.pdf)
-                #u0 = np.random.normal(0., 1, self.N)
-                sigma = self.L/8
-                u0 = gaussian(self.x, mean=0.5*self.L+self.offset, sigma=sigma)
-                
-            # Box initialization
-            elif case == 'box':
-                u0 = np.abs(self.x-self.L/2-self.offset)<self.L/8
-            
-            # Sinus
-            elif case == 'sinus':
-                u0 = np.sin(np.pi/self.L*self.x+self.offset)
-
-            elif case == 'zero':
-                u0 = np.zeros(self.N)
-            
-            else:
-                print("[Diffusion] Error: IC case unknown")
-                sys.exit()
+        # Box initialization
+        if case == 'box':
+            u0 = np.zeros(self.N)
+            u0[np.abs(self.x-self.L/2-self.offset)<self.L/8] = 1.
+        
+        # Sinus
+        elif case == 'sinus':
+            u0 = np.sin(np.pi/self.L*self.x+self.offset)
 
         else:
-            # check the input size
-            if (np.size(u0,0) != self.N):
-                print("[Diffusion] Error: wrong IC array size (is {}, expected {}".format(np.size(u0,0),self.N))
-                sys.exit()
+            print("[Diffusion] Error: IC case unknown")
+            sys.exit()
 
-            else:
-                # if ok cast to np.array
-                u0 = np.array(u0)
-        
         # and save to self
         self.u0  = u0
-        self.v0  = rfft(u0)
         self.u   = u0
         self.t   = 0.
         self.stepnum = 0
-        self.ioutnum = 0 # [0] is the initial condition
+        self.ioutnum = 0
   
         # store the IC in [0]
         self.uu[0,:] = u0
         self.tt[0]   = 0.
-        self.analytical[0,:] = u0
        
     def setGroundTruth(self, t, x, uu):
         self.uu_truth = uu
@@ -195,67 +128,49 @@ class Diffusion:
         t = np.arange(0,self.uu.shape[0])*self.dt
         return self.f_truth(self.x,t)
 
-    def getAnalyticalSolution(self, t):
-        
-        if t > 0.:
-        
-            if self.case == 'box':
-                C = 2.*np.sqrt(self.nu*t)
-                sol = 0.5*(special.erf((self.x-0.375*self.L)/C)+special.erf((0.625*self.L-self.x)/C))
-
-            elif self.case == 'sinus':
-                C = -self.nu * (np.pi / self.L)**2
-                sol = np.sin(np.pi/self.L*self.x) * np.exp(C*t)
-
-            else:
-                print("[Diffusion] TODO: Analytical solution")
-                sys.exit()
-
-        else:
-            sol = self.u0
-
-        return sol
- 
-    def step( self, actions=None ):
-        
-        forcing = np.zeros(self.N)
-        sol = self.getAnalyticalSolution(self.t)
- 
-        up = np.roll(self.u, -1)
-        up[-1] = 0
-        um = np.roll(self.u, +1)
-        um[0] = 0
-        d2udx2 = (up - 2.*self.u + um)/self.dx**2
-
-        if (actions is not None):
-            assert self.basis is not None, "[Diffusion] Basis not set up (is None)."
-            assert len(actions) == self.M, "[Diffusion] Wrong number of actions (provided {}/{}".format(len(actions), self.M)
-
-            forcing = np.matmul(actions, self.basis)
-            self.actionHistory[self.ioutnum,:] = forcing
-            
-            if self.dforce == False:
-                u = self.uu[self.ioutnum,:]
-                forcing *= d2udx2
-            
-            self.sgsHistory[self.ioutnum,:] = forcing
-
+    def FDstep(self):
         if self.implicit == True:
             """
             Impl. Euler Central Differences
             """
             c = self.dt*self.nu/(self.dx**2)
             M = diags([-c, 1+2*c, -c], [-1, 0, 1], shape=(self.N, self.N)).toarray()
-            self.u = np.linalg.solve(M, self.u)
+            
+            # periodic BC
+            M[0,-1] = -c
+            M[-1,0] = -c
+
+            u = np.linalg.solve(M, self.u)
  
 
         else:
-            """
-            Expl. Euler Central Differences
-            """
-            self.u = self.u + self.dt * self.nu * (d2udx2 + forcing)
-         
-        self.u[0] = 0
+           """
+           Expl. Euler Central Differences
+           """
+           um = np.roll(self.u, 1)
+           up = np.roll(self.u, -1)
+           d2udx2 = (-2.*self.u + um + up)/(self.dx**2)
+
+           u = self.u + self.dt * self.nu * d2udx2
+
+        return u
+ 
+    def step( self, actions=None ):
+        
+        if (actions is None):
+            self.u = self.FDstep()
+
+        else:
+            assert len(actions) == 3, f"[Diffusion] action len not 3, it is {len(actions)}"
+            actions = np.array(actions)
+            M = diags(actions, [-1, 0, 1], shape=(self.N, self.N)).toarray()
+            M[0,-1] = actions[0]
+            M[-1,0] = actions[0]
+            d2udx2 = M @ self.u
+
+            self.actionHistory[self.ioutnum,:] = d2udx2
+            self.u = self.u + self.dt * self.nu * d2udx2 / self.dx**2
+        
         self.stepnum += 1
         self.t       += self.dt
  
@@ -263,32 +178,15 @@ class Diffusion:
         self.uu[self.ioutnum,:] = self.u
         self.tt[self.ioutnum]   = self.t
 
-        # Store analytical solution
-        self.analytical[self.ioutnum, :] = sol
-
-    def simulate(self, nsteps=None, restart=False):
-        #
-        # If not provided explicitly, get internal values
-        if (nsteps is None):
-            nsteps = self.nsteps
-        else:
-            nsteps = int(nsteps)
-            self.nsteps = nsteps
+    def simulate( self, nsteps=None ):
         
-        if restart:
-            # update nout in case nsteps or iout were changed
-            nout      = nsteps
-            self.nout = nout
-            self.uut  = -1
-            self.stepnum = 0
-            self.ioutnum = 0
-            # reset simulation arrays with possibly updated size
-            self.__setup_timeseries(nout=self.nout)
-            self.uu[0,:] = self.u0
- 
+
+        if nsteps is None:
+            nsteps = self.nsteps
+
         # advance in time for nsteps steps
         try:
-            for n in range(1,self.nsteps+1):
+            for n in range(self.stepnum,self.nsteps):
                 self.step()
                 
         except FloatingPointError:
@@ -310,23 +208,21 @@ class Diffusion:
 
         return -uDiffMse
      
-    def getState(self, nAgents = None):
+    def getState(self):
+
         try:
-            # Extract state
             u = self.uu[self.ioutnum,:]
             umt = self.uu[self.ioutnum-1,:] if self.ioutnum > 0 else self.uu[self.ioutnum, :]
-
             dudt = (u - umt)/self.dt
-                 
             up = np.roll(u,1)
-            up[-1] = 0.
             um = np.roll(u,-1)
-            um[0] = 0.
             d2udx2 = (up - 2.*u + um)/self.dx**2
          
             if self.version == 0:
-                state = d2udx2
+                state = u
             elif self.version == 1:
+                state = d2udx2
+            elif self.version == 2:
                 state = np.concatenate((dudt,d2udx2))
 
         except FloatingPointError:
@@ -337,4 +233,4 @@ class Diffusion:
             elif self.version == 1:
                 return np.inf*np.ones(2*self.N)
        
-        return state
+        return state.tolist()
