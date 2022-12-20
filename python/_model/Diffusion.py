@@ -33,7 +33,7 @@ class Diffusion:
             # override tend
             tend = dt*nsteps
         
-        print(f"[Diffusion] Simulating {nsteps} steps up to T {tend}", flush=True)
+        #print(f"[Diffusion] Simulating {nsteps} steps up to T {tend}", flush=True)
         
         # save to self
         self.N  = N

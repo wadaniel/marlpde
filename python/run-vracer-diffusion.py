@@ -41,7 +41,7 @@ dns_default = de.setup_dns_default(args.NDNS, args.dt, args.nu, args.tend, args.
 
 ### Defining results folder and loading previous results, if any
 
-#resultFolder = '_result_diffusion_{}/'.format(args.run)
+resultFolder = '_result_diffusion_{}/'.format(args.run)
 #found = e.loadState(resultFolder + '/latest')
 #if found == True:
 #	print("[Korali] Continuing execution from previous run...\n")

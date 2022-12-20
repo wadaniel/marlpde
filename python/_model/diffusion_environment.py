@@ -71,7 +71,9 @@ def environment( s , N, tEnd, dtSgs, nu, episodeLength, ic, noise, seed, dnsDefa
             break
         
         step += 1
+        cumreward += reward
 
 
    
+    print(cumreward)
     s["Termination"] = "Terminal" if error == 0 else "Truncated"
