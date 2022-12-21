@@ -6,11 +6,10 @@ parser.add_argument('--N', help='Discretization / number of grid points', requir
 parser.add_argument('--NDNS', help='Discretization / number of grid points', required=False, type=int, default=512)
 parser.add_argument('--NA', help='Number of agents', required=False, type=int, default=1)
 parser.add_argument('--dt', help='Time discretization', required=False, type=float, default=0.001)
-parser.add_argument('--tend', help='Length of simulation', required=False, type=float, default=5)
 parser.add_argument('--NE', help='Number of experiences', required=False, type=int, default=5e5)
 parser.add_argument('--width', help='Size of hidden layer', required=False, type=int, default=256)
 parser.add_argument('--iex', help='Initial exploration', required=False, type=float, default=0.1)
-parser.add_argument('--episodelength', help='Actual length of episode / number of actions', required=False, type=int, default=500)
+parser.add_argument('--episodelength', help='Actual length of episode / number of actions', required=False, type=int, default=100)
 parser.add_argument('--noise', help='Standard deviation of IC', required=False, type=float, default=0.)
 parser.add_argument('--ic', help='Initial condition', required=False, type=str, default='sinus')
 parser.add_argument('--seed', help='Random seed', required=False, type=int, default=42)
@@ -23,6 +22,7 @@ parser.add_argument('--test', action='store_true', help='Run tag', required=Fals
 
 
 args = parser.parse_args()
+T = args.dt*args.episodelength
 
 ### Import modules
 
@@ -37,11 +37,11 @@ import korali
 k = korali.Engine()
 e = korali.Experiment()
 
-dns_default = de.setup_dns_default(args.NDNS, args.dt, args.nu, args.tend, args.seed)
+dns_default = de.setup_dns_default(args.NDNS, args.dt, args.nu, T, args.seed)
 
 ### Defining results folder and loading previous results, if any
 
-resultFolder = '_result_diffusion_{}/'.format(args.run)
+resultFolder = '_result_diffusion_simple_{}/'.format(args.run)
 #found = e.loadState(resultFolder + '/latest')
 #if found == True:
 #	print("[Korali] Continuing execution from previous run...\n")
@@ -52,7 +52,7 @@ e["Problem"]["Custom Settings"]["Mode"] = "Testing" if args.test else "Training"
 e["Problem"]["Environment Function"] = lambda s : de.environment( 
         s,
         N = args.N,
-        tEnd = args.tend,
+        tEnd = T,
         dtSgs = args.dt, 
         nu = args.nu,
         episodeLength = args.episodelength, 

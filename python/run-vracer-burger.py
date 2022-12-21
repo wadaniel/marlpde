@@ -7,7 +7,7 @@ parser.add_argument('--NDNS', help='Discretization / number of grid points of DN
 parser.add_argument('--N', help='Discretization / number of grid points of UGS', required=False, type=int, default=32)
 parser.add_argument('--NE', help='Number of experiences', required=False, type=int, default=5e5)
 parser.add_argument('--width', help='Size of hidden layer', required=False, type=int, default=256)
-parser.add_argument('--iex', help='Initial exploration', required=False, type=float, default=0.1)
+parser.add_argument('--iex', help='Initial exploration', required=False, type=float, default=3.)
 parser.add_argument('--episodelength', help='Actual length of episode / number of actions', required=False, type=int, default=500)
 parser.add_argument('--noise', help='Standard deviation of IC', required=False, type=float, default=0.)
 parser.add_argument('--ic', help='Initial condition', required=False, type=str, default='sinus')

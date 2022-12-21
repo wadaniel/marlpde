@@ -54,7 +54,7 @@ cumreward = 0.
 while step < episodeLength and error == 0:
     
     # apply action and advance environment
-    actions = [1, -2., 1.]
+    actions = [0, -2., 1.]
 
     # reweighting
     actions = np.array(actions)
@@ -62,8 +62,8 @@ while step < episodeLength and error == 0:
  
     try:
         for _ in range(nIntermediate):
-
             les.step(actions)
+
     except Exception as e:
         print("Exception occured:")
         print(str(e))

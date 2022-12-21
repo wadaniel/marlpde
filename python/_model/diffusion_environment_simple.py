@@ -29,7 +29,7 @@ def environment( s , N, tEnd, dtSgs, nu, episodeLength, ic, noise, seed, dnsDefa
     step = 0
     error = 0
     nIntermediate = int(tEnd / dtSgs / episodeLength)
-    assert nIntermediate > 0
+    assert nIntermediate == 1
     cumreward = 0.
 
 
@@ -42,20 +42,12 @@ def environment( s , N, tEnd, dtSgs, nu, episodeLength, ic, noise, seed, dnsDefa
         s.update()
        
         # apply action and advance environment
-        actions = s["Action"]
-        actions = np.array(actions)
+        actions = np.zeros(3)
+        actions[0] = s["Action"][0]
+        actions[1] = s["Action"][1]
+        actions[3] = -sum(actions)
 
-        # reweighting
-        actions = actions - sum(actions)
-        
-        try:
-            for _ in range(nIntermediate):
-                les.step(actions)
-        except Exception as e:
-            print("Exception occured:")
-            print(str(e))
-            error = 1
-            break
+        les.step(actions)
         
         res = les.mapGroundTruth()
         mse = np.mean((res[-1,:] - les.uu[les.ioutnum,:])**2)

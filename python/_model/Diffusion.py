@@ -125,8 +125,7 @@ class Diffusion:
         self.f_truth = interpolate.interp2d(x, t, self.uu_truth, kind='cubic')
  
     def mapGroundTruth(self):
-        t = np.arange(0,self.uu.shape[0])*self.dt
-        return self.f_truth(self.x,t)
+        return self.f_truth(self.x,self.tt)
 
     def FDstep(self):
         if self.implicit == True:
