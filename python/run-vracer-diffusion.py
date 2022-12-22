@@ -7,16 +7,16 @@ parser.add_argument('--NDNS', help='Discretization / number of grid points', req
 parser.add_argument('--NA', help='Number of agents', required=False, type=int, default=1)
 parser.add_argument('--dt', help='Time discretization', required=False, type=float, default=0.001)
 parser.add_argument('--tend', help='Length of simulation', required=False, type=float, default=5)
-parser.add_argument('--NE', help='Number of experiences', required=False, type=int, default=5e5)
-parser.add_argument('--width', help='Size of hidden layer', required=False, type=int, default=256)
-parser.add_argument('--iex', help='Initial exploration', required=False, type=float, default=0.1)
-parser.add_argument('--episodelength', help='Actual length of episode / number of actions', required=False, type=int, default=500)
+parser.add_argument('--NE', help='Number of experiences', required=False, type=int, default=1e6)
+parser.add_argument('--width', help='Size of hidden layer', required=False, type=int, default=128)
+parser.add_argument('--iex', help='Initial exploration', required=False, type=float, default=3)
+parser.add_argument('--episodelength', help='Actual length of episode / number of actions', required=False, type=int, default=100)
 parser.add_argument('--noise', help='Standard deviation of IC', required=False, type=float, default=0.)
 parser.add_argument('--ic', help='Initial condition', required=False, type=str, default='sinus')
 parser.add_argument('--seed', help='Random seed', required=False, type=int, default=42)
 parser.add_argument('--nu', help='Viscosity', required=False, type=float, default=0.1)
-parser.add_argument('--nt', help='Number of testing runs', required=False, type=int, default=1)
-parser.add_argument('--tf', help='Testing frequenct in episodes', required=False, type=int, default=100)
+parser.add_argument('--nt', help='Number of testing runs', required=False, type=int, default=20)
+parser.add_argument('--tf', help='Testing frequenct in episodes', required=False, type=int, default=25)
 parser.add_argument('--run', help='Run tag', required=False, type=int, default=0)
 parser.add_argument('--version', help='Version tag', required=False, type=int, default=0)
 parser.add_argument('--test', action='store_true', help='Run tag', required=False)
@@ -88,8 +88,8 @@ for i in range(nState):
 for i in range(3):
     e["Variables"][nState+i]["Name"] = "Forcing " + str(i)
     e["Variables"][nState+i]["Type"] = "Action"
-    e["Variables"][nState+i]["Lower Bound"] = -1.
-    e["Variables"][nState+i]["Upper Bound"] = +1.
+    e["Variables"][nState+i]["Lower Bound"] = -5.
+    e["Variables"][nState+i]["Upper Bound"] = +5.
     e["Variables"][nState+i]["Initial Exploration Noise"] = args.iex
 
 ### Setting Experience Replay and REFER settings

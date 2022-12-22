@@ -1,39 +1,28 @@
 #!/bin/bash
 
-version=1
 IC='sinus'
-run=2
-NEX=5000000
-N=32
-NA=32
-dt=0.01
-tend=10.0
-noise=0.0
-nu=0.5
-iex=0.01
-seed=42
-esteps=500
+version=0
+noise=0
+run=1
+
+dir=/scratch/wadaniel/diffusion/run${run}/
 
 launchname="${0##*/}"
-cp $launchname "./diffusion_launcher_${run}.sh"
-
-git diff > "./diffusion_gitdiff_${run}.txt"
+cp $launchname "${dir}/diffusion_launcher_${run}.sh"
+git diff > "${run}/diffusion_gitdiff_${run}.txt"
 
 pushd .
 cd ..
 
-python3 run-vracer-diffusion.py --ic $IC --run $run --NE $NEX \
-    --N $N --NA $NA --dt $dt --tend $tend --nu $nu --dforce \
-    --iex $iex --seed $seed \
-    --episodelength $esteps --version $version --tnoise
+mkdir ${dir}
 
-python3 run-vracer-diffusion.py --ic $IC --run $run --NE $NEX \
-    --N $N --NA $NA --dt $dt --tend $tend --nu $nu --dforce \
-    --iex $iex --seed $seed \
-    --episodelength $esteps --version $version --tnoise \
-    --test
+cp run-vracer-diffsion.py ${dir}
+cp -r _model/ ${dir}
 
-python3 -m korali.rlview --dir "_result_diffusion_${run}" --out "vracer_diffusion_${run}.png"
+cd ${dir}
 
+python3 run-vracer-diffusion.py --IC ${IC} --version ${version} --noise ${noise} --run ${run}
 
 popd
+
+python3 -m korali.rlview --dir "${dir}/_result_diffusion_${run}" --out "vracer_diffusion_${run}.png"

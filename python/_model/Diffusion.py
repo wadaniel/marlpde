@@ -94,7 +94,6 @@ class Diffusion:
         # Set initial condition
         if self.noise > 0.:
             self.offset = np.random.normal(loc=0., scale=self.noise) 
-            abort()
             
         # Box initialization
         if case == 'box':
@@ -104,6 +103,9 @@ class Diffusion:
         # Sinus
         elif case == 'sinus':
             u0 = np.sin(np.pi/self.L*self.x+self.offset)
+        
+        elif case == 'gaussian':
+            u0 = np.exp(-0.5*(self.offset-self.x)**2)
 
         else:
             print("[Diffusion] Error: IC case unknown")

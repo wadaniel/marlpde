@@ -48,9 +48,6 @@ __pycache__
 ._*a
 .*
 
-# Figures
-*.png
-
 # Results
 _result*
 _cmaes*
@@ -60,7 +57,9 @@ _vracer*
 # Figues
 *.png
 *.pdf
+*.eps
 
 # Runinfos
 runs
 gitdiff*
+*.npy
