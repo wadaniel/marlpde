@@ -13,9 +13,9 @@ rewardFactor = 1.
 # basis defaults
 basis = 'hat'
 
-def setup_dns_default(NDNS, dt, nu, tend, seed):
+def setup_dns_default(ic, NDNS, dt, nu, tend, seed):
     print("[diffusion_environment] Setting up default dns with args ({}, {}, {}, {} )".format(NDNS, dt, nu, seed))
-    dns = Diffusion(L=L, N=NDNS, dt=dt, nu=nu, tend=tend, case='sinus', noise=0., implicit = True)
+    dns = Diffusion(L=L, N=NDNS, dt=dt, nu=nu, tend=tend, case=ic, noise=0., implicit = True)
     dns.simulate()
     return dns
 
@@ -23,15 +23,12 @@ def environment( s , N, tEnd, dtSgs, nu, episodeLength, ic, noise, seed, dnsDefa
     
     testing = True if s["Custom Settings"]["Mode"] == "Testing" else False
 
-    les = Diffusion(L=L, N=N, dt=dtSgs, nu=nu, tend=tEnd, case=ic, noise=0., seed=seed)
+    les = Diffusion(L=L, N=N, dt=dtSgs, nu=nu, tend=tEnd, case=ic, noise=noise, seed=seed)
     les.setGroundTruth(dnsDefault.tt, dnsDefault.x, dnsDefault.uu)
 
     step = 0
     error = 0
-    nIntermediate = int(tEnd / dtSgs / episodeLength)
-    assert nIntermediate == 1
     cumreward = 0.
-
 
     state = les.getState()
     s["State"] = state
@@ -45,9 +42,10 @@ def environment( s , N, tEnd, dtSgs, nu, episodeLength, ic, noise, seed, dnsDefa
         actions = np.zeros(3)
         actions[0] = s["Action"][0]
         actions[1] = s["Action"][1]
-        actions[3] = -sum(actions)
+        actions[2] = -sum(actions)
 
         les.step(actions)
+        #les.step(None)
         
         res = les.mapGroundTruth()
         mse = np.mean((res[-1,:] - les.uu[les.ioutnum,:])**2)

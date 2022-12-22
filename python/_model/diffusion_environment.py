@@ -10,12 +10,9 @@ L = 2*np.pi
 # reward defaults
 rewardFactor = 1.
 
-# basis defaults
-basis = 'hat'
-
-def setup_dns_default(NDNS, dt, nu, tend, seed):
+def setup_dns_default(ic, NDNS, dt, nu, tend, seed):
     print("[diffusion_environment] Setting up default dns with args ({}, {}, {}, {} )".format(NDNS, dt, nu, seed))
-    dns = Diffusion(L=L, N=NDNS, dt=dt, nu=nu, tend=tend, case='sinus', noise=0., implicit = True)
+    dns = Diffusion(L=L, N=NDNS, dt=dt, nu=nu, tend=tend, case=ic, noise=0., implicit = True)
     dns.simulate()
     return dns
 
@@ -42,8 +39,10 @@ def environment( s , N, tEnd, dtSgs, nu, episodeLength, ic, noise, seed, dnsDefa
         s.update()
        
         # apply action and advance environment
-        actions = s["Action"]
-        actions = np.array(actions)
+        actions = np.zeros(3)
+        actions[0] = s["Action"][0]
+        actions[1] = s["Action"][1]
+        actions[2] = -sum(actions)
 
         # reweighting
         actions = actions - sum(actions)
@@ -73,7 +72,6 @@ def environment( s , N, tEnd, dtSgs, nu, episodeLength, ic, noise, seed, dnsDefa
         
         step += 1
         cumreward += reward
-
 
    
     print(cumreward)

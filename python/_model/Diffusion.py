@@ -102,7 +102,7 @@ class Diffusion:
         
         # Sinus
         elif case == 'sinus':
-            u0 = np.sin(np.pi/self.L*self.x+self.offset)
+            u0 = 1+np.sin(np.pi/self.L*self.x+self.offset)
         
         elif case == 'gaussian':
             u0 = np.exp(-0.5*(self.offset-self.x)**2)
@@ -124,7 +124,7 @@ class Diffusion:
        
     def setGroundTruth(self, t, x, uu):
         self.uu_truth = uu
-        self.f_truth = interpolate.interp2d(x, t, self.uu_truth, kind='cubic')
+        self.f_truth = interpolate.interp2d(x, t, self.uu_truth, kind='linear')
  
     def mapGroundTruth(self):
         return self.f_truth(self.x,self.tt)
