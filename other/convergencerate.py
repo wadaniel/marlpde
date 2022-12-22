@@ -111,7 +111,11 @@ if __name__ == "__main__":
 
     for i in range(0,I):
         x, t, sol_rk3, trk3 = simulate_burger_rk3(N_i,L,dt,tEnd,nu)
+        print("break1")
+        print(sol_rk3)
         x, t, sol_abcn, tabcn = simulate_burger_abcn(N_i,L,dt,tEnd,nu)
+        print("break2")
+        print(sol_abcn)
         mserk3[i] = np.mean(np.absolute(sol_rk3 - fdns_rk3(x, t)))
         mseaabcn[i] = np.mean(np.absolute(sol_abcn - fdns_abcn(x, t)))
         Narr[i] = N_i
@@ -121,18 +125,19 @@ if __name__ == "__main__":
     print(mserk3)
     print(mseaabcn)
 
-    figName = "spatialerr"
-    print("Plotting {} ...".format(figName))
+    figName = "err"
 
-    p = 2
+    p = 3
 
     fig, axs = plt.subplots(1,2, figsize=(15,15))
-    axs[0].plot(harr, mserk3, '-')
-    axs[0].plot(harr, mseaabcn, '--')
-    axs[0].plot(harr, mseaabcn, '--')
+    axs[0].plot(harr, mserk3, '-', label='RK3')
+    axs[0].plot(harr, mseaabcn, '--', label='ABCN')
     axs[0].plot(harr, np.power(harr, p))
     axs[0].set_xscale('log')
+    axs[0].set_xlabel('dx')
     axs[0].set_yscale('log')
+    axs[0].set_ylabel('Err')
+    axs[0].legend()
 
     ############## find temporal error ##############################
 
@@ -154,17 +159,15 @@ if __name__ == "__main__":
     print(mserk3)
     print(mseaabcn)
 
-    figName = "spatialerr"
-    print("Plotting {} ...".format(figName))
-
     p = 2
 
-    axs[1].plot(deltat, mserk3, '-')
-    axs[1].plot(deltat, mseaabcn, '--')
-    axs[1].plot(deltat, mseaabcn, '--')
+    axs[1].plot(deltat, mserk3, '-', label='RK3')
+    axs[1].plot(deltat, mseaabcn, '--', label='ABCN')
     axs[1].plot(deltat, np.power(deltat, p))
     axs[1].set_xscale('log')
+    axs[1].set_xlabel('dt')
     axs[1].set_yscale('log')
+    axs[1].set_ylabel('Err')
 
     print(f"Save {figName}")
     fig.savefig(figName)
