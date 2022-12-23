@@ -7,9 +7,6 @@ import matplotlib.pyplot as plt
 NDNS=512
 L = 2*np.pi
 
-# reward defaults
-rewardFactor = 1.
-
 # basis defaults
 basis = 'hat'
 
@@ -19,7 +16,7 @@ def setup_dns_default(ic, NDNS, dt, nu, tend, seed):
     dns.simulate()
     return dns
 
-def environment( s , N, tEnd, dtSgs, nu, episodeLength, ic, noise, seed, dnsDefault, nunoise=False, version=0):
+def environment( s , N, tEnd, dtSgs, nu, episodeLength, ic, noise, seed, dnsDefault, nunoise=False, numAgents=1, version=0):
     
     testing = True if s["Custom Settings"]["Mode"] == "Testing" else False
 
@@ -30,7 +27,7 @@ def environment( s , N, tEnd, dtSgs, nu, episodeLength, ic, noise, seed, dnsDefa
     error = 0
     cumreward = 0.
 
-    state = les.getState()
+    state = les.getState(numAgents)
     s["State"] = state
 
     while step < episodeLength and error == 0:
@@ -39,30 +36,19 @@ def environment( s , N, tEnd, dtSgs, nu, episodeLength, ic, noise, seed, dnsDefa
         s.update()
        
         # apply action and advance environment
-        actions = np.zeros(3)
-        actions[0] = s["Action"][0]
-        actions[1] = s["Action"][1]
-        actions[2] = -sum(actions)
+        actions = s["Action"]
 
-        les.step(actions)
+        les.step(actions,numAgents)
         #les.step(None)
         
-        res = les.mapGroundTruth()
-        mse = np.mean((res[-1,:] - les.uu[les.ioutnum,:])**2)
-
-        reward = -mse
-        state = les.getState()
+        reward = les.getMseReward(numAgents)
+        state = les.getState(numAgents)
 
         s["State"] = state
-        s["Reward"] = reward*rewardFactor
-        
-        if (np.isnan(reward)):
-            print("[diffusion_environment] Nan reward detected")
-            error = 1
-            break
+        s["Reward"] = reward
         
         step += 1
-        cumreward += reward
+        cumreward += sum(reward)/numAgents
 
 
    

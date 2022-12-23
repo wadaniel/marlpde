@@ -33,8 +33,6 @@ class Diffusion:
             # override tend
             tend = dt*nsteps
         
-        #print(f"[Diffusion] Simulating {nsteps} steps up to T {tend}", flush=True)
-        
         # save to self
         self.N  = N
         self.dx = L/N
@@ -156,17 +154,39 @@ class Diffusion:
 
         return u
  
-    def step( self, actions=None ):
+    def step( self, actions=None, numAgents=1):
         
         if (actions is None):
             self.u = self.FDstep()
 
         else:
-            assert len(actions) == 3, f"[Diffusion] action len not 3, it is {len(actions)}"
-            actions = np.array(actions)
-            M = diags(actions, [-1, 0, 1], shape=(self.N, self.N)).toarray()
-            M[0,-1] = actions[0]
-            M[-1,0] = actions[0]
+            if numAgents == 1:
+                assert len(actions) == 1, f"[Diffusion] action len not 1, it is {len(actions)}"
+                ac = np.zeros(3)
+                ac[0] = -actions[0]/2
+                ac[1] = actions[0]
+                ac[2] = -actions[0]/2
+                M = diags(ac, [-1, 0, 1], shape=(self.N, self.N)).toarray()
+                M[0,-1] = ac[0]
+                M[-1,0] = ac[0]
+
+            else:
+                assert len(actions) == numAgents, f"[Diffusion] actions not of len numAgents"
+                M = np.zeros((self.N, self.N))
+                for i in range(numAgents):
+                    assert len(actions[i]) == 1, f"[Diffusion] action len not 1, it is {len(actions)}"
+                    M[i,i] = actions[i][0]
+                    
+                    if i == 0:
+                        M[self.N-1,i] = -actions[i][0]/2
+                        M[i+1,i] = -actions[i][0]/2
+                    elif i == self.N-1:
+                        M[i-1,i] = -actions[i][0]/2
+                        M[-1,i] = -actions[i][0]/2
+                    else:
+                        M[i-1,i] = -actions[i][0]/2
+                        M[i+1,i] = -actions[i][0]/2
+
             d2udx2 = M @ self.u
 
             self.actionHistory[self.ioutnum,:] = d2udx2
@@ -180,7 +200,6 @@ class Diffusion:
         self.tt[self.ioutnum]   = self.t
 
     def simulate( self, nsteps=None ):
-        
 
         if nsteps is None:
             nsteps = self.nsteps
@@ -199,39 +218,31 @@ class Diffusion:
             self.uu.resize((self.N, self.nout+1)) # nout+1 because the IC is in [0]
             return -1
 
-    def getMseReward(self):
-        try:
-            uTruthToCoarse = self.mapGroundTruth()
+    def getMseReward(self, numAgents=1):
+        assert(self.N % numAgents == 0)
+        
+        uTruthToCoarse = self.mapGroundTruth()
+        if numAgents == 1:
             uDiffMse = ((uTruthToCoarse[self.ioutnum,:] - self.uu[self.ioutnum,:])**2).mean()
-        except FloatingPointError:
-            print("[Burger] Floating point exception occured in mse", flush=True)
-            return -np.inf
+            return -uDiffMse
 
-        return -uDiffMse
+        else:
+            section = int(self.N / numAgents)
+            locDiffMse = [ -((uTruthToCoarse[(i*section) : (i+1)*section] - self.uu[self.ioutnum,(i*section) : (i+1)*section])**2).mean() for i in range(numAgents) ]
+            return locDiffMse
      
-    def getState(self):
+    def getState(self, numAgents=1):
+        assert(self.N % numAgents == 0)
 
-        try:
-            u = self.uu[self.ioutnum,:]
-            umt = self.uu[self.ioutnum-1,:] if self.ioutnum > 0 else self.uu[self.ioutnum, :]
-            dudt = (u - umt)/self.dt
-            up = np.roll(u,1)
-            um = np.roll(u,-1)
-            d2udx2 = (up - 2.*u + um)/self.dx**2
-         
-            if self.version == 0:
-                state = u
-            elif self.version == 1:
-                state = d2udx2
-            elif self.version == 2:
-                state = np.concatenate((dudt,d2udx2))
+        if numAgents == 1:
+            state = self.uu[self.ioutnum,:].tolist()
+        else:
+            section = int(self.N / numAgents)
+            uextended = np.zeros(self.N+2)
+            uextended[1:self.N+1] = self.uu[self.ioutnum, :]
+            uextended[0] = self.uu[self.ioutnum, -1]
+            uextended[-1] = self.uu[self.ioutnum, 0]
 
-        except FloatingPointError:
+            state = [ uextended[(i*section) : 2+(i+1)*section].tolist() for i in range(numAgents)]
 
-            print("[Diffusion] Floating point exception occured in getState", flush=True)
-            if self.version == 0:
-                return np.inf*np.ones(self.N)
-            elif self.version == 1:
-                return np.inf*np.ones(2*self.N)
-       
-        return state.tolist()
+        return state

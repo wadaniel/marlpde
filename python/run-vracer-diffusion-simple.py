@@ -44,6 +44,8 @@ resultFolder = '_result_diffusion_simple_{}/'.format(args.run)
 
 ### Defining Problem Configuration
 e["Problem"]["Type"] = "Reinforcement Learning / Continuous"
+e["Problem"]["Agents Per Environment"] = args.NA
+e["Problem"]["Policies Per Environment"] = 1
 e["Problem"]["Custom Settings"]["Mode"] = "Testing" if args.test else "Training"
 e["Problem"]["Environment Function"] = lambda s : de.environment( 
         s,
@@ -57,6 +59,7 @@ e["Problem"]["Environment Function"] = lambda s : de.environment(
         seed = args.seed, 
         dnsDefault = dns_default,
         nunoise = False,
+        numAgents = args.NA,
         version = args.version
         )
 
@@ -75,13 +78,13 @@ e["Solver"]["Mini Batch"]["Size"] = 256
 
 ### Defining Variables
 
-nState = args.N 
+nState = args.N if args.NA == 1 else int(args.N/args.NA)+2
 # States (flow at sensor locations)
 for i in range(nState):
 	e["Variables"][i]["Name"] = "Field Information " + str(i)
 	e["Variables"][i]["Type"] = "State"
 
-for i in range(3):
+for i in range(1):
     e["Variables"][nState+i]["Name"] = "Forcing " + str(i)
     e["Variables"][nState+i]["Type"] = "Action"
     e["Variables"][nState+i]["Lower Bound"] = -5.

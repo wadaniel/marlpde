@@ -16,7 +16,7 @@ def setup_dns_default(ic, NDNS, dt, nu, tend, seed):
     dns.simulate()
     return dns
 
-def environment( s , N, tEnd, dtSgs, nu, episodeLength, ic, noise, seed, dnsDefault, nunoise=False, version=0):
+def environment( s , N, tEnd, dtSgs, nu, episodeLength, ic, noise, seed, dnsDefault, nunoise=False, numAgents=1, version=0):
     
     testing = True if s["Custom Settings"]["Mode"] == "Testing" else False
 
@@ -30,7 +30,7 @@ def environment( s , N, tEnd, dtSgs, nu, episodeLength, ic, noise, seed, dnsDefa
     cumreward = 0.
 
 
-    state = les.getState()
+    state = les.getState(numAgents)
     s["State"] = state
 
     while step < episodeLength and error == 0:
@@ -40,6 +40,7 @@ def environment( s , N, tEnd, dtSgs, nu, episodeLength, ic, noise, seed, dnsDefa
        
         # apply action and advance environment
         actions = np.zeros(3)
+        print(s["Action"])
         actions[0] = s["Action"][0]
         actions[1] = s["Action"][1]
         actions[2] = -sum(actions)
@@ -56,11 +57,8 @@ def environment( s , N, tEnd, dtSgs, nu, episodeLength, ic, noise, seed, dnsDefa
             error = 1
             break
         
-        res = les.mapGroundTruth()
-        mse = np.mean((res[-1,:] - les.uu[les.ioutnum,:])**2)
-
-        reward = -mse
-        state = les.getState()
+        reward = les.getMseReward()
+        state = les.getState(numAgents)
 
         s["State"] = state
         s["Reward"] = reward*rewardFactor
