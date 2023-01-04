@@ -167,8 +167,8 @@ class Diffusion:
                 ac[1] = actions[0]
                 ac[2] = -actions[0]/2
                 M = diags(ac, [-1, 0, 1], shape=(self.N, self.N)).toarray()
-                M[0,-1] = ac[0]
-                M[-1,0] = ac[0]
+                M[0,-1] = -ac[0]
+                M[-1,0] = -ac[2]
 
             else:
                 assert len(actions) == numAgents, f"[Diffusion] actions not of len numAgents"
@@ -178,14 +178,14 @@ class Diffusion:
                     M[i,i] = actions[i][0]
                     
                     if i == 0:
-                        M[self.N-1,i] = -actions[i][0]/2
-                        M[i+1,i] = -actions[i][0]/2
+                        M[i,-1] = -actions[i][0]/2
+                        M[i,i+1] = -actions[i][0]/2
                     elif i == self.N-1:
-                        M[i-1,i] = -actions[i][0]/2
-                        M[-1,i] = -actions[i][0]/2
+                        M[i,i-1] = -actions[i][0]/2
+                        M[i,0] = -actions[i][0]/2
                     else:
-                        M[i-1,i] = -actions[i][0]/2
-                        M[i+1,i] = -actions[i][0]/2
+                        M[i,i+1] = -actions[i][0]/2
+                        M[i,i-1] = -actions[i][0]/2
 
             d2udx2 = M @ self.u
 
@@ -218,12 +218,21 @@ class Diffusion:
             self.uu.resize((self.N, self.nout+1)) # nout+1 because the IC is in [0]
             return -1
 
-    def getMseReward(self, numAgents=1):
+    def getMseReward(self, numAgents=1, offset=0.):
         assert(self.N % numAgents == 0)
-        
-        uTruthToCoarse = self.mapGroundTruth()
+            
+        newx = self.x + offset
+        newx[newx>self.L] = newx[newx>self.L] - self.L
+        newx[newx<0] = newx[newx<0] + self.L
+        midx = np.argmax(newx)
+
+        if midx == len(newx)-1:
+            uTruthToCoarse = self.f_truth(newx, self.t)
+        else:
+            uTruthToCoarse = np.concatenate(((self.f_truth(newx[:midx+1], self.t)), self.f_truth(newx[midx+1:], self.t)))
+
         if numAgents == 1:
-            uDiffMse = ((uTruthToCoarse[self.ioutnum,:] - self.uu[self.ioutnum,:])**2).mean()
+            uDiffMse = ((uTruthToCoarse - self.uu[self.ioutnum,:])**2).mean()
             return -uDiffMse
 
         else:

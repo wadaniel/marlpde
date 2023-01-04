@@ -48,7 +48,7 @@ def environment( s , N, tEnd, dtSgs, nu, episodeLength, ic, noise, seed, dnsDefa
         s["Reward"] = reward
         
         step += 1
-        cumreward += sum(reward)/numAgents
+        cumreward += reward if numAgents == 1 else sum(reward)/numAgents
 
 
    

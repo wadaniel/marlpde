@@ -4,7 +4,7 @@ import argparse
 parser = argparse.ArgumentParser()
 parser.add_argument('--N', help='Discretization / number of grid points', required=False, type=int, default=32)
 parser.add_argument('--NDNS', help='Discretization / number of grid points', required=False, type=int, default=512)
-parser.add_argument('--NA', help='Number of agents', required=False, type=int, default=1)
+parser.add_argument('--numAgents', help='Number of agents', required=False, type=int, default=1)
 parser.add_argument('--dt', help='Time discretization', required=False, type=float, default=0.01)
 parser.add_argument('--exp', help='Number of experiences', required=False, type=int, default=1e6)
 parser.add_argument('--width', help='Size of hidden layer', required=False, type=int, default=128)
@@ -14,8 +14,8 @@ parser.add_argument('--noise', help='Standard deviation of IC', required=False, 
 parser.add_argument('--ic', help='Initial condition', required=False, type=str, default='gaussian')
 parser.add_argument('--seed', help='Random seed', required=False, type=int, default=42)
 parser.add_argument('--nu', help='Viscosity', required=False, type=float, default=0.1)
-parser.add_argument('--tf', help='Testing frequency in episodes', required=False, type=int, default=100)
-parser.add_argument('--nt', help='Number of testing runs', required=False, type=int, default=1)
+parser.add_argument('--tf', help='Testing frequency in episodes', required=False, type=int, default=1000)
+parser.add_argument('--nt', help='Number of testing runs', required=False, type=int, default=20)
 parser.add_argument('--run', help='Run tag', required=False, type=int, default=0)
 parser.add_argument('--version', help='Version tag', required=False, type=int, default=0)
 parser.add_argument('--test', action='store_true', help='Run tag', required=False)
@@ -44,7 +44,7 @@ resultFolder = '_result_diffusion_simple_{}/'.format(args.run)
 
 ### Defining Problem Configuration
 e["Problem"]["Type"] = "Reinforcement Learning / Continuous"
-e["Problem"]["Agents Per Environment"] = args.NA
+e["Problem"]["Agents Per Environment"] = args.numAgents
 e["Problem"]["Policies Per Environment"] = 1
 e["Problem"]["Custom Settings"]["Mode"] = "Testing" if args.test else "Training"
 e["Problem"]["Environment Function"] = lambda s : de.environment( 
@@ -59,7 +59,7 @@ e["Problem"]["Environment Function"] = lambda s : de.environment(
         seed = args.seed, 
         dnsDefault = dns_default,
         nunoise = False,
-        numAgents = args.NA,
+        numAgents = args.numAgents,
         version = args.version
         )
 
@@ -78,7 +78,7 @@ e["Solver"]["Mini Batch"]["Size"] = 256
 
 ### Defining Variables
 
-nState = args.N if args.NA == 1 else int(args.N/args.NA)+2
+nState = args.N if args.numAgents == 1 else int(args.N/args.numAgents)+2
 # States (flow at sensor locations)
 for i in range(nState):
 	e["Variables"][i]["Name"] = "Field Information " + str(i)
@@ -133,7 +133,7 @@ e["File Output"]["Frequency"] = 500
 e["File Output"]["Path"] = resultFolder
 
 if args.test:
-    fileName = 'test_diffusion_simple_{}_{}_{}_{}_{}'.format(args.ic, args.N, args.NA, args.seed, args.run)
+    fileName = 'test_diffusion_simple_{}_{}_{}_{}_{}'.format(args.ic, args.N, args.numAgents, args.seed, args.run)
     e["Solver"]["Testing"]["Sample Ids"] = [0]
     e["Problem"]["Custom Settings"]["Filename"] = fileName
 
