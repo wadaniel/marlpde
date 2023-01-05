@@ -42,7 +42,10 @@ class Diffusion:
         if nunoise:
             self.nu = 0.01+0.02*np.random.uniform()
 
-        self.noise = 0.
+        self.noise = noise
+        
+        # Set initial condition
+        self.offset = np.random.normal(loc=0., scale=self.noise) if self.noise > 0. else 0.
         
         self.nsteps = nsteps
         self.nout   = nsteps
@@ -69,7 +72,6 @@ class Diffusion:
         self.__setup_timeseries()
  
         # set initial condition
-        self.offset = 0.
         self.case = case
 
         if (case is not None):
@@ -89,10 +91,7 @@ class Diffusion:
         
     def IC(self, case='box'):
         
-        # Set initial condition
-        if self.noise > 0.:
-            self.offset = np.random.normal(loc=0., scale=self.noise) 
-            
+           
         # Box initialization
         if case == 'box':
             u0 = np.zeros(self.N)
@@ -100,10 +99,11 @@ class Diffusion:
         
         # Sinus
         elif case == 'sinus':
-            u0 = 1+np.sin(np.pi/self.L*self.x+self.offset)
+            u0 = np.sin((self.x - self.offset)*2*np.pi/self.L)
         
+        # Gaussian
         elif case == 'gaussian':
-            u0 = np.exp(-0.5*(self.offset-self.x)**2)
+            u0 = np.exp(-0.5*(0.5*self.L + self.offset - self.x)**2)
 
         else:
             print("[Diffusion] Error: IC case unknown")
@@ -167,11 +167,12 @@ class Diffusion:
                 ac[1] = actions[0]
                 ac[2] = -actions[0]/2
                 M = diags(ac, [-1, 0, 1], shape=(self.N, self.N)).toarray()
-                M[0,-1] = -ac[0]
-                M[-1,0] = -ac[2]
+                M[0,-1] = ac[0]
+                M[-1,0] = ac[2]
 
             else:
                 assert len(actions) == numAgents, f"[Diffusion] actions not of len numAgents"
+                assert numAgents == 32, f"[Diffusion] only works with 32 agents"
                 M = np.zeros((self.N, self.N))
                 for i in range(numAgents):
                     assert len(actions[i]) == 1, f"[Diffusion] action len not 1, it is {len(actions)}"
@@ -220,26 +221,41 @@ class Diffusion:
 
     def getMseReward(self, numAgents=1, offset=0.):
         assert(self.N % numAgents == 0)
-            
-        newx = self.x + offset
-        newx[newx>self.L] = newx[newx>self.L] - self.L
-        newx[newx<0] = newx[newx<0] + self.L
-        midx = np.argmax(newx)
+         
+        if self.case == "sinus":
+            # analytical
+            sol = self.getAnalyticalSolution(self.t)
 
-        if midx == len(newx)-1:
-            uTruthToCoarse = self.f_truth(newx, self.t)
+            if (numAgents == 1):
+                uDiffMse = ((sol - self.uu[self.ioutnum,:])**2).mean()
+                return -uDiffMse
+
+            else:
+                section = int(self.N / numAgents)
+                locDiffMse = [ -((sol[(i*section) : (i+1)*section] - self.uu[self.ioutnum,(i*section) : (i+1)*section])**2).mean() for i in range(numAgents) ]
+                return locDiffMse
+  
         else:
-            uTruthToCoarse = np.concatenate(((self.f_truth(newx[:midx+1], self.t)), self.f_truth(newx[midx+1:], self.t)))
+            # interpolation
+            newx = self.x - offset
+            newx[newx>self.L] = newx[newx>self.L] - self.L
+            newx[newx<0] = newx[newx<0] + self.L
+            midx = np.argmax(newx)
 
-        if numAgents == 1:
-            uDiffMse = ((uTruthToCoarse - self.uu[self.ioutnum,:])**2).mean()
-            return -uDiffMse
+            if midx == len(newx)-1:
+                uTruthToCoarse = self.f_truth(newx, self.t)
+            else:
+                uTruthToCoarse = np.concatenate(((self.f_truth(newx[:midx+1], self.t)), self.f_truth(newx[midx+1:], self.t)))
 
-        else:
-            section = int(self.N / numAgents)
-            locDiffMse = [ -((uTruthToCoarse[(i*section) : (i+1)*section] - self.uu[self.ioutnum,(i*section) : (i+1)*section])**2).mean() for i in range(numAgents) ]
-            return locDiffMse
-     
+            if numAgents == 1:
+                uDiffMse = ((uTruthToCoarse - self.uu[self.ioutnum,:])**2).mean()
+                return -uDiffMse
+
+            else:
+                section = int(self.N / numAgents)
+                locDiffMse = [ -((uTruthToCoarse[(i*section) : (i+1)*section] - self.uu[self.ioutnum,(i*section) : (i+1)*section])**2).mean() for i in range(numAgents) ]
+                return locDiffMse
+         
     def getState(self, numAgents=1):
         assert(self.N % numAgents == 0)
 
@@ -255,3 +271,12 @@ class Diffusion:
             state = [ uextended[(i*section) : 2+(i+1)*section].tolist() for i in range(numAgents)]
 
         return state
+
+
+    def getAnalyticalSolution(self, t):
+        if self.case == "sinus":
+            return self.u0*np.exp(-(2.*np.pi/self.L)**2*self.nu*t)
+
+        else:
+            print(f"[Diffusion] case {self.case} not available")
+

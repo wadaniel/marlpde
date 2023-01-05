@@ -10,6 +10,7 @@ parser.add_argument('--N', help='Gridpoints', required=False, type=int, default=
 parser.add_argument('--dt', help='Timediscretization of URG', required=False, type=float, default=0.01)
 parser.add_argument('--tend', help='Length of simulation', required=False, type=float, default=1)
 parser.add_argument('--ic', help='Initial condition', required=False, type=str, default='gaussian')
+parser.add_argument('--noise', help='Noise ic', required=False, type=float, default=0.)
 parser.add_argument('--seed', help='Random seed', required=False, type=int, default=42)
 parser.add_argument('--episodelength', help='Actual length of episode / number of actions', required=False, type=int, default=100)
 
@@ -20,10 +21,10 @@ N    = 512
 L    = 2*np.pi
 #dt   = 0.01
 tEnd = args.tend
-nu   = 0.1
+nu   = 0.5
 ic   = args.ic
 seed = args.seed
-noise = 0.1
+noise = args.noise
 
 # les & rl defaults
 episodeLength = args.episodelength
@@ -35,8 +36,9 @@ dns.simulate()
 
 # Initialize LES
 dt_sgs = args.dt
-les = Diffusion(L=L, N=N, dt=dt_sgs, nu=nu, tend=tEnd, case=ic, noise=noise, seed=seed)
+les = Diffusion(L=L, N=args.N, dt=dt_sgs, nu=nu, tend=tEnd, case=ic, noise=noise, seed=seed)
 les.setGroundTruth(dns.tt, dns.x, dns.uu)
+print(f"Offset {les.offset}")
 
 ## run controlled simulation
 step = 0
@@ -50,10 +52,6 @@ while step < episodeLength and error == 0:
     # apply action and advance environment
     actions = [-2.]
 
-    # reweighting
-    actions = np.array(actions)
-    actions = actions - sum(actions)
- 
     try:
         for _ in range(nIntermediate):
             les.step(actions)
@@ -64,9 +62,9 @@ while step < episodeLength and error == 0:
         error = 1
         break
     
-    idx = les.ioutnum
-    res = les.mapGroundTruth()
-    reward = np.mean((res[-1,:] - les.uu[les.ioutnum,:])**2)
+    reward = les.getMseReward(numAgents=1, offset=les.offset)
+    #res = les.mapGroundTruth()
+    #reward = np.mean((res[-1,:] - les.uu[les.ioutnum,:])**2)
     print(reward)
 
     

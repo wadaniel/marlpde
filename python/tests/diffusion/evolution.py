@@ -6,7 +6,7 @@ initial condition is set to be approx k^-5/3.
 """
 
 # Discretization grid
-N1 = 32
+N1 = 512
 N2 = 32
 
 import matplotlib
@@ -23,22 +23,38 @@ from diffusion_environment import setup_dns_default
 
 #------------------------------------------------------------------------------
 ## set parameters and initialize simulation
+numAgents = 32
 L    = 2*np.pi
-dt   = 0.03
-tEnd = 10.
+dt   = 0.01
+tEnd = 1
 nu   = 0.5
 implicit = False
 seed = 1234
+ic   = "sinus"
+noise = 0.
 
-dns  = setup_dns_default(N1, dt, nu, tEnd, seed=seed)
+
+dns  = setup_dns_default(ic, N1, dt, nu, tEnd, seed=seed)
 #sgs  = setup_dns_default(N2, dt, nu, tEnd, seed=seed)
-sgs  = Diffusion(L=L, N=N2, dt=dt, nu=nu, tend=tEnd, case='sinus', implicit=implicit)
+sgs = Diffusion(L=L, N=N2, dt=dt, nu=nu, tend=tEnd, case=ic, noise=noise, seed=seed) 
+sgs.setGroundTruth(dns.tt, dns.x, dns.uu)
 
 #------------------------------------------------------------------------------
 print("Simulate..")
 ## simulate
-sgs.simulate()
+#sgs.simulate()
+step = 0
+while step < 100:
+    # apply action and advance environment
+    if numAgents == 1:
+        actions = [-2.]
+    else:
+        actions = [[-2.]] * numAgents
+    sgs.step(actions, numAgents=numAgents)
+    #sgs.step(None)
 
+    step += 1
+ 
 #------------------------------------------------------------------------------
 ## plot
 
@@ -60,18 +76,17 @@ for i in range(16):
 
     l = i % 4
     k = int(i / 4)
-    sol = dns.getAnalyticalSolution(t)
+ 
+    axs[k,l].plot(sgs.x, sgs.uu[tidx,:], 'b')
+    axs[k,l].plot(dns.x, dns.uu[tidx,:], 'r')
 
-    print("dns err")
-    err = ((dns.uu[tidx,:] - sol)**2).mean()
-    print(1e6*err)
-    
-    print("sgs err")
-    err = ((sgs.uu[tidx,:] - sgs.getAnalyticalSolution(t))**2).mean()
-    print(1e6*err)
-    axs[k,l].plot(sgs.x, sgs.uu[tidx,:])
-    axs[k,l].plot(dns.x, dns.uu[tidx,:])
-    axs[k,l].plot(dns.x, sol, 'k--')
+    if ic == "sinus":
+        sol = sgs.getAnalyticalSolution(t)
+        axs[k,l].plot(sgs.x, sol, '--k')
 
+
+res = sgs.mapGroundTruth()
+mse = np.sum(np.mean((res - sgs.uu)**2, axis=1))/N2
+print(f"mse {mse}")
 fig.savefig('diffusion_evolution.png'.format())
 plt.close()

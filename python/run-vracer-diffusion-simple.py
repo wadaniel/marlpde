@@ -13,7 +13,7 @@ parser.add_argument('--episodelength', help='Actual length of episode / number o
 parser.add_argument('--noise', help='Standard deviation of IC', required=False, type=float, default=0.)
 parser.add_argument('--ic', help='Initial condition', required=False, type=str, default='gaussian')
 parser.add_argument('--seed', help='Random seed', required=False, type=int, default=42)
-parser.add_argument('--nu', help='Viscosity', required=False, type=float, default=0.1)
+parser.add_argument('--nu', help='Viscosity', required=False, type=float, default=1.)
 parser.add_argument('--tf', help='Testing frequency in episodes', required=False, type=int, default=1000)
 parser.add_argument('--nt', help='Number of testing runs', required=False, type=int, default=20)
 parser.add_argument('--run', help='Run tag', required=False, type=int, default=0)
@@ -64,7 +64,7 @@ e["Problem"]["Environment Function"] = lambda s : de.environment(
         )
 
 e["Problem"]["Testing Frequency"] = args.tf
-e["Problem"]["Policy Testing Episodes"] = args.nt
+e["Problem"]["Policy Testing Episodes"] = args.nt if args.noise > 0. else 1
 
 ### Defining Agent Configuration 
 
