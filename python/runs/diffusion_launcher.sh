@@ -1,5 +1,5 @@
 #!/bin/bash
-export OMP_THREAD_NUM=4
+export OMP_NUM_THREADS=4
 
 ic="gaussian"
 version=0

@@ -11,7 +11,7 @@ parser.add_argument('--width', help='Size of hidden layer', required=False, type
 parser.add_argument('--iex', help='Initial exploration', required=False, type=float, default=3)
 parser.add_argument('--episodelength', help='Actual length of episode / number of actions', required=False, type=int, default=100)
 parser.add_argument('--noise', help='Standard deviation of IC', required=False, type=float, default=0.)
-parser.add_argument('--ic', help='Initial condition', required=False, type=str, default='gaussian')
+parser.add_argument('--ic', help='Initial condition', required=False, type=str, default='sinus')
 parser.add_argument('--seed', help='Random seed', required=False, type=int, default=42)
 parser.add_argument('--nu', help='Viscosity', required=False, type=float, default=1.)
 parser.add_argument('--tf', help='Testing frequency in episodes', required=False, type=int, default=1000)
@@ -38,9 +38,10 @@ dns_default = de.setup_dns_default(args.ic, args.NDNS, args.dt, args.nu, T, args
 ### Defining results folder and loading previous results, if any
 
 resultFolder = '_result_diffusion_simple_{}/'.format(args.run)
-#found = e.loadState(resultFolder + '/latest')
-#if found == True:
-#	print("[Korali] Continuing execution from previous run...\n")
+if args.test:
+    found = e.loadState(resultFolder + '/latest')
+    if found == True:
+	    print("[Korali] Continuing execution from previous run...\n")
 
 ### Defining Problem Configuration
 e["Problem"]["Type"] = "Reinforcement Learning / Continuous"
@@ -65,6 +66,7 @@ e["Problem"]["Environment Function"] = lambda s : de.environment(
 
 e["Problem"]["Testing Frequency"] = args.tf
 e["Problem"]["Policy Testing Episodes"] = args.nt if args.noise > 0. else 1
+#e["Problem"]["Policy Testing Episodes"] = 0.
 
 ### Defining Agent Configuration 
 
@@ -73,7 +75,7 @@ e["Solver"]["Mode"] = "Testing" if args.test else "Training"
 e["Solver"]["Episodes Per Generation"] = 10
 e["Solver"]["Experiences Between Policy Updates"] = 1
 e["Solver"]["Learning Rate"] = 0.0001
-e["Solver"]["Discount Factor"] = 1.
+e["Solver"]["Discount Factor"] = 0.95
 e["Solver"]["Mini Batch"]["Size"] = 256
 
 ### Defining Variables
@@ -126,16 +128,16 @@ e["Solver"]["Neural Network"]["Hidden Layers"][3]["Function"] = "Elementwise/Tan
 ### Setting file output configuration
 
 e["Solver"]["Termination Criteria"]["Max Experiences"] = args.exp
-e["Solver"]["Experience Replay"]["Serialize"] = True
+e["Solver"]["Experience Replay"]["Serialize"] = False
 e["Console Output"]["Verbosity"] = "Detailed"
+e["File Output"]["Use Multiple Files"] = False
 e["File Output"]["Enabled"] = True
 e["File Output"]["Frequency"] = 500
 e["File Output"]["Path"] = resultFolder
 
 if args.test:
-    fileName = 'test_diffusion_simple_{}_{}_{}_{}_{}'.format(args.ic, args.N, args.numAgents, args.seed, args.run)
     e["Solver"]["Testing"]["Sample Ids"] = [0]
-    e["Problem"]["Custom Settings"]["Filename"] = fileName
 
 ### Running Experiment
 k.run(e)
+print(args)

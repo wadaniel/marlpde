@@ -1,5 +1,5 @@
 from Diffusion import *
-from plotting import makeDiffusionPlot
+import plotting_diffusion as dplt
 
 import matplotlib.pyplot as plt 
 
@@ -24,13 +24,20 @@ def environment( s , N, tEnd, dtSgs, nu, episodeLength, ic, noise, seed, dnsDefa
     les.setGroundTruth(dnsDefault.tt, dnsDefault.x, dnsDefault.uu)
 
     step = 0
-    error = 0
+    stop = False
     cumreward = 0.
+
+    # allowing 10-20 steps
+    bonus = { 128: 5e-4,
+              64: 5e-5,
+              32: 5e-5, 
+              16: 5e-5,
+              8: 5e-5} 
 
     state = les.getState(numAgents)
     s["State"] = state
 
-    while step < episodeLength and error == 0:
+    while step < episodeLength and stop == False:
     
         # Getting new action
         s.update()
@@ -49,8 +56,24 @@ def environment( s , N, tEnd, dtSgs, nu, episodeLength, ic, noise, seed, dnsDefa
         
         step += 1
         cumreward += reward if numAgents == 1 else sum(reward)/numAgents
+        cumreward += bonus[numAgents]
+        reward if numAgents == 1 else sum(reward)/numAgents
+        if cumreward < 0.:
+            stop = True
 
 
    
-    print(cumreward)
-    s["Termination"] = "Terminal" if error == 0 else "Truncated"
+    print(f"steps: {step}, cumreward {cumreward}")
+    s["Termination"] = "Terminal" 
+    
+    if testing:
+
+        dplt.plotEvolution(les)
+        dplt.plotError(les)
+        dplt.plotActionField(les)
+        dplt.plotActionDistribution(les)
+        dplt.plotDiffusionField(les)
+
+
+
+ 

@@ -31,7 +31,7 @@ class Diffusion:
         else:
             nsteps = int(nsteps)
             # override tend
-            tend = dt*nsteps
+            self.tend = dt*nsteps
         
         # save to self
         self.N  = N
@@ -87,7 +87,9 @@ class Diffusion:
         # nout+1 because we store the IC as well
         self.uu = np.zeros([self.nout+1, self.N])
         self.tt = np.zeros(self.nout+1)
+        self.gradientHistory = np.zeros([self.nout+1, self.N])
         self.actionHistory = np.zeros([self.nout+1, self.N])
+        self.solution = np.zeros([self.nout+1, self.N])
         
     def IC(self, case='box'):
         
@@ -119,6 +121,7 @@ class Diffusion:
         # store the IC in [0]
         self.uu[0,:] = u0
         self.tt[0]   = 0.
+        self.solution[0,:] = u0
        
     def setGroundTruth(self, t, x, uu):
         self.uu_truth = uu
@@ -172,7 +175,7 @@ class Diffusion:
 
             else:
                 assert len(actions) == numAgents, f"[Diffusion] actions not of len numAgents"
-                assert numAgents == 32, f"[Diffusion] only works with 32 agents"
+                assert numAgents == self.N, f"[Diffusion] only works with {self.N} agents"
                 M = np.zeros((self.N, self.N))
                 for i in range(numAgents):
                     assert len(actions[i]) == 1, f"[Diffusion] action len not 1, it is {len(actions)}"
@@ -190,7 +193,8 @@ class Diffusion:
 
             d2udx2 = M @ self.u
 
-            self.actionHistory[self.ioutnum,:] = d2udx2
+            self.actionHistory[self.ioutnum,:] = np.diag(M)
+            self.gradientHistory[self.ioutnum,:] = d2udx2
             self.u = self.u + self.dt * self.nu * d2udx2 / self.dx**2
         
         self.stepnum += 1
@@ -199,6 +203,10 @@ class Diffusion:
         self.ioutnum += 1
         self.uu[self.ioutnum,:] = self.u
         self.tt[self.ioutnum]   = self.t
+        
+        if self.case == "sinus":
+            self.solution[self.ioutnum, :] = self.u0*np.exp(-(2.*np.pi/self.L)**2*self.nu*self.t)
+
 
     def simulate( self, nsteps=None ):
 
