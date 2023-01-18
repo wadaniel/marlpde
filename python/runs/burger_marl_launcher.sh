@@ -9,8 +9,8 @@ version=0
 mar="Cooperation"
 #mar="Individual"
 
-IC='turbulence'
-#IC='sinus'
+#IC='turbulence'
+IC='sinus'
 NEX=1000000
 N=32
 NA=32
@@ -48,7 +48,7 @@ python3 run-vracer-burger-marl.py --ic $IC --run $run --NE $NEX \
     --iex $iex --noise $noise --seed $seed \
     --episodelength $esteps --NDNS $NDNS \
     --tf $tf --nt $nt --version $version --width $width --dforce \
-    --specreward \
+     # --specreward \
     --nagents $nagents --mar $mar
 
 python3 run-vracer-burger-marl.py --ic $IC --run $run --NE $NEX \
@@ -56,7 +56,7 @@ python3 run-vracer-burger-marl.py --ic $IC --run $run --NE $NEX \
     --iex $iex --noise $noise --seed $seed \
     --episodelength $esteps --NDNS $NDNS \
     --tf $tf --nt $nt --version $version --width $width --dforce \
-    --specreward \
+    # --specreward \
     --nagents $nagents --mar $mar \
     --test
 
