@@ -59,7 +59,7 @@ python3 run-vracer-burger.py --ic $IC --run $run --NE $NEX \
     --iex $iex --noise $noise --seed $seed \
     --episodelength $esteps --NDNS $NDNS \
     --tf $tf --nt $nt --version $version --width $width  \
-    --dforce # --specreward
+    --dforce \ # --specreward
      --ndns $ndns
 
 python3 run-vracer-burger.py --ic $IC --run $run --NE $NEX \
@@ -67,7 +67,7 @@ python3 run-vracer-burger.py --ic $IC --run $run --NE $NEX \
     --iex $iex --noise $noise --seed $seed \
     --episodelength $esteps --NDNS $NDNS \
     --tf $tf --nt $nt --version $version --width $width \
-    --dforce # --specreward
+    --dforce \ # --specreward
      --ndns $ndns \
     --test
 
