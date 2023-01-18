@@ -155,8 +155,9 @@ def makePlot(dns, base, sgs, fileName, spectralReward=True):
     try:
 
         print(dns.Ek_ktt.shape)
-        tidx = np.arange(start=0,stop=nt+1,step=dns.s)
-
+       # tidx = np.arange(start=0,stop=nt+1,step=dns.s)
+        tidx = np.arange(start=0,stop=nt+1,step=dns.stepper)
+        
         f_dns = interpolate.interp2d(dns.x, dns.tt, dns.uu, kind='cubic')
         udns_int = f_dns(base.x, base.tt)
         errBaseU = np.abs(base.uu-udns_int)

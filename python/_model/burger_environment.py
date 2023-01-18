@@ -1,6 +1,6 @@
 import os
 from Burger import *
-from plotting import makePlot
+from nuplot import makePlot
 
 # reward defaults
 episodeCount = 0
@@ -325,5 +325,5 @@ def environment( s ,
 
         print("[burger_environment] uncontrolled cumreward")
         print(cumreward)
-        
-        #makePlot(dns, base, sgs, fileName, spectralReward)
+        fileName='testing'        
+        makePlot(dns, base, sgs, fileName, spectralReward)
