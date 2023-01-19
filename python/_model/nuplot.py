@@ -332,7 +332,7 @@ def makePlot(dns, base, sgs, fileName, spectralReward=True):
         print(sgs.sgsHistory.shape)
         print(np.max(sgs.sgsHistory))
         print(np.min(sgs.sgsHistory))
-    
+
         fig5, axs5 = plt.subplots(1,1, figsize=(6,6))
         #X, Y = np.meshgrid(sgs.x, sgs.t[:-1])
         #print(sgs.x)
