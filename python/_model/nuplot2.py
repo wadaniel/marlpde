@@ -204,7 +204,7 @@ def makePlot(dns, base, sgs, fileName, spectralReward=True):
         slevels = np.linspace(smin, smax, 50)
         svals = np.linspace(smin, smax, 500)
 
-        fig3, axs3 = plt.subplots(1, 3, sharex='col', sharey='col', subplot_kw=dict(box_aspect=1), figsize=(10,10))
+        fig3, axs3 = plt.subplots(1, 3, sharex='col', sharey='col', figsize=(10,10))
 
         axs3[0].contourf(sgs.x, sgs.tt, sgsHistory)
 
@@ -234,4 +234,3 @@ def makePlot(dns, base, sgs, fileName, spectralReward=True):
         print(e)
 
     plt.close('all')
-
