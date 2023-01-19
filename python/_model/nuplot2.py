@@ -206,19 +206,19 @@ def makePlot(dns, base, sgs, fileName, spectralReward=True):
 
         fig3, axs3 = plt.subplots(1, 3, sharex='col', sharey='col', figsize=(10,10))
 
-        axs3[0].contourf(sgs.x, sgs.tt, sgsHistory)
+        axs3[0].contourf(sgs.x, sgs.tt, sgs.sgsHistory)
 
-        urs_sDensity = gaussian_kde(sgsHistory.flatten())
+        urs_sDensity = gaussian_kde(sgsHistory
         urs_sDensityVals = urs_sDensity(svals)
         axs3[1].plot(svals, urs_sDensityVals)
         axs3[1].set_ylim([1e-5, 100])
         axs3[1].set_yscale('log')
 
         sfac = 3
-        urs_sMean = np.mean(sgsHistory)
+        urs_sMean = np.mean(sgs.sgsHistory)
         print("static mean")
         print(urs_sMean)
-        urs_sSdev = np.std(sgsHistory)
+        urs_sSdev = np.std(sgs.sgsHistory)
         print("static deviation")
         print(urs_sSdev)
         svals2  = np.linspace(urs_sMean-sfac*urs_sSdev,urs_sMean+sfac*urs_sSdev,500)
