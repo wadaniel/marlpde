@@ -17,7 +17,7 @@ args = parser.parse_args()
 
 import sys
 sys.path.append('_model')
-import advection_environment as ae
+import advection_environment_simple as ae
 
 
 ### Defining Korali Problem
@@ -46,7 +46,7 @@ e["Solver"]["Type"] = "Agent / Continuous / VRACER"
 e["Solver"]["Mode"] = "Testing" if args.test else "Training"
 e["Solver"]["Episodes Per Generation"] = 10
 e["Solver"]["Experiences Between Policy Updates"] = 1
-e["Solver"]["Learning Rate"] = 0.0001
+e["Solver"]["Learning Rate"] = 0.001
 e["Solver"]["Discount Factor"] = 1.
 e["Solver"]["Mini Batch"]["Size"] = 256
 

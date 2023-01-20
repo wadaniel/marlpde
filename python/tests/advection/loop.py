@@ -3,70 +3,77 @@ import sys
 sys.path.append('./../../_model/')
 
 import argparse
-from Advection import *
+from Diffusion import *
  
 parser = argparse.ArgumentParser()
-parser.add_argument('--N', help='Discretization / number of grid points', required=False, type=int, default=32)
-parser.add_argument('--ic', help='Initial condition', required=False, type=str, default='box')
-parser.add_argument('--episodelength', help='Actual length of episode / number of actions', required=False, type=int, default=500)
+parser.add_argument('--N', help='Gridpoints', required=False, type=int, default=32)
+parser.add_argument('--dt', help='Timediscretization of URG', required=False, type=float, default=0.01)
+parser.add_argument('--tend', help='Length of simulation', required=False, type=float, default=1)
+parser.add_argument('--ic', help='Initial condition', required=False, type=str, default='gaussian')
+parser.add_argument('--noise', help='Noise ic', required=False, type=float, default=0.)
+parser.add_argument('--seed', help='Random seed', required=False, type=int, default=42)
+parser.add_argument('--episodelength', help='Actual length of episode / number of actions', required=False, type=int, default=100)
 
 args = parser.parse_args()
  
 # dns defaults
+N    = 512
 L    = 2*np.pi
-dt   = 0.001
-tEnd = 10
-nu   = 1.
+#dt   = 0.01
+tEnd = args.tend
+nu   = 0.5
 ic   = args.ic
-
-# action defaults
-basis = 'hat'
-numActions = 1
+seed = args.seed
+noise = args.noise
 
 # les & rl defaults
-gridSize = args.N
 episodeLength = args.episodelength
 
-# reward defaults
-rewardFactor = 10.
+# DNS baseline
+print("Setting up DNS..")
+dns = Diffusion(L=L, N=N, dt=args.dt, nu=nu, tend=tEnd, case=ic, noise=0., seed=seed, implicit=True)
+dns.simulate()
 
 # Initialize LES
-les = Advection(L=L, N=gridSize, dt=dt, nu=nu, tend=tEnd, case=ic, noisy=True)
-les.setup_basis(numActions, basis)
+dt_sgs = args.dt
+les = Diffusion(L=L, N=args.N, dt=dt_sgs, nu=nu, tend=tEnd, case=ic, noise=noise, seed=seed)
+les.setGroundTruth(dns.tt, dns.x, dns.uu)
+print(f"Offset {les.offset}")
 
 ## run controlled simulation
-error = 0
 step = 0
-nIntermediate = int(tEnd / dt / episodeLength)
+error = 0
+nIntermediate = int(tEnd / dt_sgs / episodeLength)
+assert nIntermediate > 0
 cumreward = 0.
 
 while step < episodeLength and error == 0:
     
     # apply action and advance environment
-    actions = [0.]
+    actions = [-2.]
+
     try:
         for _ in range(nIntermediate):
             les.step(actions)
-        les.compute_Ek()
+
     except Exception as e:
         print("Exception occured:")
         print(str(e))
         error = 1
         break
     
-    idx = les.ioutnum
-    solution = les.getAnalyticalSolution(les.t)
-    uDiffMse = ((solution - les.uu[idx,:])**2).mean()
-    
-    # calculate reward from energy
-    reward = -rewardFactor*uDiffMse
-    cumreward += reward
+    reward = les.getMseReward(numAgents=1, offset=les.offset)
+    #res = les.mapGroundTruth()
+    #reward = np.mean((res[-1,:] - les.uu[les.ioutnum,:])**2)
+    print(reward)
 
+    
     if (np.isnan(reward)):
         print("Nan reward detected")
         error = 1
         break
     
     step += 1
+    cumreward += reward
 
 print(cumreward)

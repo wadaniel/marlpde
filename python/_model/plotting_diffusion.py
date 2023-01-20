@@ -1,6 +1,7 @@
 import matplotlib as mpl
 mpl.use('Agg')
 import matplotlib.pyplot as plt 
+import seaborn as sns
 
 import numpy as np
 from scipy import interpolate
@@ -34,7 +35,7 @@ def plotError(model):
     figName = "abserror.pdf"
     print(f"[plotting] Plotting {figName} ...")
     
-    abserror = model.uu - model.solution
+    abserror = np.abs(model.uu - model.solution)
 
     fig, ax = plt.subplots(1,1, sharex=True, sharey=True, figsize=(6,6))
     contour = ax.contourf(model.x, model.tt, abserror) #, ulevels)
@@ -43,6 +44,21 @@ def plotError(model):
     plt.tight_layout()
     plt.savefig(figName)
     plt.close()
+
+    ####
+    figName = "relerror.pdf"
+    print(f"[plotting] Plotting {figName} ...")
+    
+    relerror = np.abs(model.uu - model.solution)/np.max(np.abs(model.solution), axis=1)[:,np.newaxis]
+
+    fig, ax = plt.subplots(1,1, sharex=True, sharey=True, figsize=(6,6))
+    contour = ax.contourf(model.x, model.tt, relerror) #, ulevels)
+    plt.colorbar(contour)
+    
+    plt.tight_layout()
+    plt.savefig(figName)
+    plt.close()
+
 
 def plotActionField(model):
     figName = "actionfield.pdf"
@@ -61,7 +77,6 @@ def plotActionField(model):
 def plotDiffusionField(model):
     figName = "diffusionfield.pdf"
     print(f"[plotting] Plotting {figName} ...")
-    print(f"TODO")
     
     actions = model.actionHistory
 
@@ -75,5 +90,10 @@ def plotDiffusionField(model):
 def plotActionDistribution(models):
     figName = "actiondist.pdf"
     print(f"[plotting] Plotting {figName} ...")
-    print(f"TODO")
+    actions = models.actionHistory.flatten()
+    #plt.violinplot(dataset=[actions])
+    sns.violinplot(data=[actions])
+    plt.tight_layout()
+    plt.savefig(figName)
+    plt.close()
     return

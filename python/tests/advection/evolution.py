@@ -1,12 +1,12 @@
 #!/bin/python3
 
 """
-This scripts simulates the Diffusion equation on a grid (N) until t=tEnd. The 
-initial condition is set to be approx k^-5/3.
+This scripts simulates the Advection equation on a grid (N) until t=tEnd. 
 """
 
 # Discretization grid
-N = 1024
+N1 = 128
+N2 = 32
 
 import matplotlib
 matplotlib.use('Agg')
@@ -18,22 +18,49 @@ sys.path.append('./../../_model/')
 
 import numpy as np
 from Advection import *
+from advection_environment_simple import setup_dns_default
 
 #------------------------------------------------------------------------------
 ## set parameters and initialize simulation
+numAgents = 1
+nu   = 0.5
 L    = 2*np.pi
-dt   = 0.0001
-tEnd = 10
-nu   = 1.0
-dns = Advection(L=L, N=N, dt=dt, nu=nu, case='box', tend=tEnd)
+tEnd = int(2*pi/nu)
+episodelen = 200
+implicit = False
+seed = 1234
+ic   = "sinus"
+noise = 0.
+dt   = tEnd/episodelen
+dx = L / N2
+
+
+dns  = setup_dns_default(ic, N1, dt, nu, tEnd, seed=seed)
+#sgs  = setup_dns_default(N2, dt, nu, tEnd, seed=seed)
+sgs = Advection(L=L, N=N2, dt=dt, nu=nu, tend=tEnd, case=ic, noise=noise, seed=seed) 
+sgs.setGroundTruth(dns.tt, dns.x, dns.uu)
 
 #------------------------------------------------------------------------------
 print("Simulate..")
 ## simulate
-dns.simulate()
-# convert to physical space
-dns.fou2real()
+#sgs.simulate()
+print(nu)
+print(dt)
+print(dx)
 
+step = 0
+a = 0.5 * nu * dt / dx
+while step < episodelen:
+    # apply action and advance environment
+    if numAgents == 1:
+        actions = [a]
+    else:
+        actions = [[a]] * numAgents
+    sgs.step(actions, numAgents=numAgents)
+    #sgs.step()
+
+    step += 1
+ 
 #------------------------------------------------------------------------------
 ## plot
 
@@ -48,14 +75,24 @@ fig.savefig('evolution.png')
 plt.close()
 
 print("Plotting advection_evolution.png ...")
-fig, axs = plt.subplots(4,4, sharex=True, sharey=False, figsize=(15,15))
+fig, axs = plt.subplots(4,4, sharex=True, sharey=True, figsize=(15,15))
 for i in range(16):
     t = i * tEnd / 16
-    tidx = int(t/dt)
-    k = int(i / 4)
-    l = i % 4
-    axs[k,l].plot(dns.x, dns.uu[tidx,:])
-    axs[k,l].plot(dns.x, dns.getAnalyticalSolution(t), '--k')
+    tidx = int(t / dt)
 
+    l = i % 4
+    k = int(i / 4)
+ 
+    #axs[k,l].plot(sgs.x, sgs.uu[tidx,:], 'b')
+    axs[k,l].plot(dns.x, dns.uu[tidx,:], 'r')
+
+    if ic == "sinus":
+        sol = sgs.getAnalyticalSolution(t)
+        axs[k,l].plot(sgs.x, sol, '--k')
+
+
+#res = sgs.mapGroundTruth()
+#mse = np.sum(np.mean((res - sgs.uu)**2, axis=1))/N2
+#print(f"mse {mse}")
 fig.savefig('advection_evolution.png'.format())
 plt.close()

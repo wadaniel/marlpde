@@ -1,4 +1,4 @@
-from Diffusion import *
+from Advection import *
 import plotting_diffusion as dplt
 
 import matplotlib.pyplot as plt 
@@ -12,7 +12,7 @@ basis = 'hat'
 
 def setup_dns_default(ic, NDNS, dt, nu, tend, seed):
     print("[diffusion_environment] Setting up default dns with args ({}, {}, {}, {} )".format(NDNS, dt, nu, seed))
-    dns = Diffusion(L=L, N=NDNS, dt=dt, nu=nu, tend=tend, case=ic, noise=0., implicit = True)
+    dns = Advection(L=L, N=NDNS, dt=dt, nu=nu, tend=tend, case=ic, noise=0., implicit = True)
     dns.simulate()
     return dns
 
@@ -20,7 +20,7 @@ def environment( s , N, tEnd, dtSgs, nu, episodeLength, ic, noise, seed, dnsDefa
     
     testing = True if s["Custom Settings"]["Mode"] == "Testing" else False
 
-    les = Diffusion(L=L, N=N, dt=dtSgs, nu=nu, tend=tEnd, case=ic, noise=noise, seed=seed)
+    les = Advection(L=L, N=N, dt=dtSgs, nu=nu, tend=tEnd, case=ic, noise=noise, seed=seed)
     les.setGroundTruth(dnsDefault.tt, dnsDefault.x, dnsDefault.uu)
 
     step = 0

@@ -1,54 +1,63 @@
 import sys
+import time
 from numpy import pi
 from scipy import interpolate
-from scipy.fftpack import fft, ifft, fftfreq
+from scipy.sparse import diags
 import numpy as np
 
-np.seterr(over='raise', invalid='raise')
-def gaussian( x, mean, sigma ):
-    return 1/np.sqrt(2*np.pi*sigma**2)*np.exp(-1/2*( (x-mean)/sigma )**2)
-
-def hat( x, mean, dx ):
-    left  = np.clip((x + dx - mean)/dx, a_min = 0., a_max = 1.)
-    right = np.clip((dx - x + mean)/dx, a_min = 0., a_max = 1.)
-    return left + right - 1.
-
-class Advection:
+class Advection:  
     #
-    # Solution of the Advection equation
+    # Solution to the Diffusion equation
     #
     # u_t + nu*u_x = 0
     # with periodic BCs on x \in [0, L]: u(0,t) = u(L,t).
 
-    def __init__(self, L=1./(2.*np.pi), N=128, dt=0.25, nu=0.0, nsteps=None, tend=150, u0=None, v0=None, case=None, noisy = False):
+    def __init__(self, L=2.*np.pi, N=512, dt=0.001, nu=0.01, nsteps=None, tend=5., case='sinus', version=0, noise=0., nunoise=False, seed=1337, implicit=False):
         
+        # Randomness
+        np.random.seed(None)
+        self.seed = seed
+
+        # EXplicit or Implicit euler schme
+        self.implicit = implicit
+
         # Initialize
-        L  = float(L); 
-        dt = float(dt); 
-        tend = float(tend)
+        self.L  = float(L); 
+        self.dt = float(dt); 
+        self.tend = float(tend)
         
         if (nsteps is None):
             nsteps = int(tend/dt)
         else:
             nsteps = int(nsteps)
             # override tend
-            tend = dt*nsteps
+            self.tend = dt*nsteps
         
-        self.noisy = noisy
-
         # save to self
-        self.L      = L
-        self.N      = N
-        self.dx     = L/N
-        self.x      = np.linspace(0, self.L, N, endpoint=False)
-        self.dt     = dt
-        self.nu     = nu
+        self.N  = N
+        self.dx = L/N
+        self.x  = np.linspace(0, self.L, N, endpoint=False)
+        self.nu = nu
+
+        if nunoise:
+            self.nu = 0.01+0.02*np.random.uniform()
+
+        self.noise = noise
+        
+        # Set initial condition
+        self.offset = np.random.normal(loc=0., scale=self.noise) if self.noise > 0. else 0.
+        
         self.nsteps = nsteps
         self.nout   = nsteps
  
+        if (self.nu > self.dx/self.dt):
+            print("[Diffusion] Warning: CFL condition violated", flush=True)
+
         # Basis
-        self.M = 0
-        self.basis = None
+        self.version = version
+        if (self.version > 1):
+            print("[Diffusion] Version not recognized", flush=True)
+            sys.exit()
 
         # time when field space transformed
         self.uut = -1
@@ -63,308 +72,216 @@ class Advection:
         self.__setup_timeseries()
  
         # set initial condition
+        self.case = case
+
         if (case is not None):
             self.IC(case=case)
-        elif (u0 is None) and (v0 is None):
-            self.IC()
-        elif (u0 is not None):
-            self.IC(u0 = u0)
-        elif (v0 is not None):
-            self.IC(v0 = v0)
         else:
-            print("[Advection] IC ambigous")
+            print("[Diffusion] IC ambigous")
             sys.exit()
         
-        # precompute Fourier-related quantities
-        self.__setup_fourier()
-        
-        # precompute ETDRK4 scalar quantities:
-        self.__setup_etdrk4()
-
     def __setup_timeseries(self, nout=None):
         if (nout != None):
             self.nout = int(nout)
         
         # nout+1 because we store the IC as well
         self.uu = np.zeros([self.nout+1, self.N])
-        self.vv = np.zeros([self.nout+1, self.N], dtype=np.complex64)
         self.tt = np.zeros(self.nout+1)
+        self.gradientHistory = np.zeros([self.nout+1, self.N])
+        self.actionHistory = np.zeros([self.nout+1, self.N])
+        self.solution = np.zeros([self.nout+1, self.N])
         
-    def __setup_fourier(self):
-        self.k = fftfreq(self.N, self.L / (2*np.pi*self.N))
+    def IC(self, case='box'):
         
-    def __setup_etdrk4(self):
-        return
+           
+        # Box initialization
+        if case == 'box':
+            u0 = np.zeros(self.N)
+            u0[np.abs(self.x-self.L/2-self.offset)<self.L/8] = 1.
+        
+        # Sinus
+        elif case == 'sinus':
+            u0 = np.sin((self.x - self.offset)*2*np.pi/self.L)
+        
+        # Gaussian
+        elif case == 'gaussian':
+            u0 = np.exp(-0.5*(0.5*self.L + self.offset - self.x)**2)
 
-    def setup_basis(self, M, kind = 'uniform'):
-        self.M = M
-        if M > 1:
-            if kind == 'uniform':
-                self.basis = np.zeros((self.M, self.N))
-                for i in range(self.M):
-                    assert self.N % self.M == 0, print("[Advection] Something went wrong in basis setup")
-                    idx1 = i * self.N//self.M
-                    idx2 = (i+1) * self.N//self.M
-                    self.basis[i,idx1:idx2] = 1.
-            elif kind == 'hat':
-                self.basis = np.ones((self.M, self.N))
-                dx = self.L/(self.M-1)
-                for i in range(self.M):
-                    mean = i*dx
-                    self.basis[i,:] = hat( self.x, mean, dx )
-
-            else:
-                print("[Advection] Basis function not known, exit..")
-                sys.exit()
         else:
-            self.basis = np.ones((self.M, self.N))
-        
-        np.testing.assert_allclose(np.sum(self.basis, axis=0), 1)
+            print("[Diffusion] Error: IC case unknown")
+            sys.exit()
 
-    def IC(self, u0=None, v0=None, case='box', seed=42):
-        
-        # Set initial condition
-        if (v0 is None):
-            if (u0 is None):
-                    
-                    #np.random.seed( seed )
-                    offset = np.random.normal(loc=0., scale=self.dx) if self.noisy else 0.
-                    
-                    # Gaussian initialization
-                    if case == 'gaussian':
-                        # Gaussian noise (according to https://arxiv.org/pdf/1906.07672.pdf)
-                        #u0 = np.random.normal(0., 1, self.N)
-                        sigma = self.L/8
-                        u0 = gaussian(self.x, mean=0.5*self.L+offset, sigma=sigma)
-                        
-                    # Box initialization
-                    elif case == 'box':
-                        u0 = np.array((np.abs(self.x-self.L/2-offset)<self.L/8),dtype=float)
-                    
-                    # Sinus
-                    elif case == 'sinus':
-                        u0 = np.sin(self.x+offset)
-
-                    else:
-                        print("[Advection] Error: IC case unknown")
-                        sys.exit()
-
-            else:
-                # check the input size
-                if (np.size(u0,0) != self.N):
-                    print("[Advection] Error: wrong IC array size")
-                    sys.exit()
-                else:
-                    # if ok cast to np.array
-                    u0 = np.array(u0)
-            # in any case, set v0:
-            v0 = fft(u0)
-        else:
-            # the initial condition is provided in v0
-            # check the input size
-            if (np.size(v0,0) != self.N):
-                print("[Advection] Error: wrong IC array size")
-                sys.exit()
-            
-            else:
-                # if ok cast to np.array
-                v0 = np.array(v0)
-                # and transform to physical space
-                u0 = np.real(ifft(v0))
-        
         # and save to self
         self.u0  = u0
         self.u   = u0
-        self.v0  = v0
-        self.v   = v0
         self.t   = 0.
         self.stepnum = 0
-        self.ioutnum = 0 # [0] is the initial condition
-         
+        self.ioutnum = 0
+  
         # store the IC in [0]
-        self.uu[0,:] = self.u0
-        self.vv[0,:] = self.v0
+        self.uu[0,:] = u0
         self.tt[0]   = 0.
-
+        self.solution[0,:] = u0
+       
     def setGroundTruth(self, t, x, uu):
         self.uu_truth = uu
-        self.f_truth = interpolate.interp2d(x, t, self.uu_truth, kind='cubic')
+        self.f_truth = interpolate.interp2d(x, t, self.uu_truth, kind='linear')
  
     def mapGroundTruth(self):
-        t = np.arange(0,self.uu.shape[0])*self.dt
-        return self.f_truth(self.x,t)
+        return self.f_truth(self.x,self.tt)
 
-    def getAnalyticalSolution(self, t):
-        delta = self.nu * t / self.dx
-        idx = (np.arange(0, self.N) - int(delta)) % self.N
-        return self.u0[idx]
-        
-    def step( self, actions=None ):
-
-        Fforcing = np.zeros(self.N)
-        if (actions is not None):
-            assert self.basis is not None, print("[Advection] Basis not set up (is None).")
-            assert len(actions) == self.M, print("[Advection] Wrong number of actions (provided {}/{}".format(len(actions), self.M))
-            forcing = np.matmul(actions, self.basis) #/ 10 #/ 100
-
-            Fforcing = fft( forcing )
-
-        self.v = (self.v + self.dt * Fforcing) / (1. + 1j*self.dt*self.nu*self.k) 
-        self.u = np.real(ifft(self.v))
-
+    def FDstep(self):
         """
-        #
-        # Computation is based on v = fft(u), so linear term is diagonal.
-        # The time-discretization is done via ETDRK4
-        # (exponential time differencing - 4th order Runge Kutta)
-        #
-        v = self.v;                           
-        Nv = self.g*fft(np.real(ifft(v))**2)
-        a = self.E2*v + self.Q*Nv;            
-        Na = self.g*fft(np.real(ifft(a))**2)
-        b = self.E2*v + self.Q*Na;            
-        Nb = self.g*fft(np.real(ifft(b))**2)
-        c = self.E2*a + self.Q*(2.*Nb - Nv);  
-        Nc = self.g*fft(np.real(ifft(c))**2)
+        Lax Method
+        """
+        ac = np.zeros(3)
+        ac[0] = 0.5+0.5*self.nu * self.dt / self.dx
+        ac[1] = 0.
+        ac[2] = 0.5-0.5*self.nu * self.dt / self.dx
+        M = diags(ac, [-1, 0, 1], shape=(self.N, self.N)).toarray()
+        M[0,-1] = ac[0]
+        M[-1,0] = ac[2]
+        print(M)
+
+
+        u = M @ self.u 
+
+        return u
+ 
+    def step( self, actions=None, numAgents=1):
         
-        if (action is not None):
-            self.v = self.E*v + (Nv + Fforcing)*self.f1 + 2.*(Na + Nb + 2*Fforcing)*self.f2 + (Nc + Fforcing)*self.f3
+        if (actions is None):
+            self.u = self.FDstep()
+
         else:
-            self.v = self.E*v + Nv*self.f1 + 2.*(Na + Nb)*self.f2 + Nc*self.f3
-        """
+            if numAgents == 1:
+                print("x")
+ 
+                assert len(actions) == 1, f"[Diffusion] action len not 1, it is {len(actions)}"
+                ac = np.zeros(3)
+                ac[0] = 0.5+actions[0]
+                ac[1] = 0.
+                ac[2] = 0.5-actions[0]
+                M = diags(ac, [-1, 0, 1], shape=(self.N, self.N)).toarray()
+                M[0,-1] = ac[0]
+                M[-1,0] = ac[2]
+                print(M)
+                self.actionHistory[self.ioutnum,:] = actions[0]
 
+            else:
+                assert len(actions) == numAgents, f"[Diffusion] actions not of len numAgents"
+                assert numAgents == self.N, f"[Diffusion] only works with {self.N} agents"
+                M = np.zeros((self.N, self.N))
+                for i in range(numAgents):
+                    assert len(actions[i]) == 1, f"[Diffusion] action len not 1, it is {len(actions)}"
+                    M[i,i] = 0
+                    
+                    if i == 0:
+                        M[i,i+1] = 0.5-actions[i][0]
+                        M[i,-1] = 0.5+actions[i][0]
+                    elif i == self.N-1:
+                        M[i,0] = 0.5-actions[i][0]
+                        M[i,i-1] = 0.5+actions[i][0]
+                    else:
+                        M[i,i+1] = 0.5-actions[i][0]
+                        M[i,i-1] = 0.5+actions[i][0]
+                    
+                    self.actionHistory[self.ioutnum,i] = actions[i][0]
+                
+
+            k = M @ self.u
+
+            self.gradientHistory[self.ioutnum,:] = k
+            self.u = k
+        
         self.stepnum += 1
         self.t       += self.dt
  
         self.ioutnum += 1
         self.uu[self.ioutnum,:] = self.u
-        self.vv[self.ioutnum,:] = self.v
         self.tt[self.ioutnum]   = self.t
         
+        if self.case == "sinus":
+            self.solution[self.ioutnum, :] = np.sin((self.x - self.nu*self.t - self.offset)*2*np.pi/self.L)
 
-    def simulate(self, nsteps=None, restart=False, correction=[]):
-        #
-        # If not provided explicitly, get internal values
-        if (nsteps is None):
+
+    def simulate( self, nsteps=None ):
+
+        if nsteps is None:
             nsteps = self.nsteps
-        else:
-            nsteps = int(nsteps)
-            self.nsteps = nsteps
-        
-        if restart:
-            # update nout in case nsteps or iout were changed
-            nout      = nsteps
-            self.nout = nout
-            # reset simulation arrays with possibly updated size
-            self.__setup_timeseries(nout=self.nout)
-        
+
         # advance in time for nsteps steps
         try:
-            if (correction==[]):
-                for n in range(1,self.nsteps+1):
-                    self.step()
-            else:
-                for n in range(1,self.nsteps+1):
-                    self.step()
-                    self.v += correction
+            for n in range(self.stepnum,self.nsteps):
+                self.step()
                 
         except FloatingPointError:
-            print("[Advection] Floating point exception occured", flush=True)
+            print("[Burger] Floating point exception occured in simulate", flush=True)
             # something exploded
             # cut time series to last saved solution and return
             self.nout = self.ioutnum
-            self.vv.resize((self.nout+1,self.N)) # nout+1 because the IC is in [0]
-            self.tt.resize(self.nout+1)          # nout+1 because the IC is in [0]
+            self.tt.resize(self.nout+1)           # nout+1 because the IC is in [0]
+            self.uu.resize((self.N, self.nout+1)) # nout+1 because the IC is in [0]
             return -1
 
-    def fou2real(self):
-        # Convert from spectral to physical space
-        #self.uut = self.stepnum
-        self.uu = np.real(ifft(self.vv))
+    def getMseReward(self, numAgents=1, offset=0.):
+        assert(self.N % numAgents == 0)
+         
+        if self.case == "sinus":
+            # analytical
+            sol = self.getAnalyticalSolution(self.t)
 
-    def compute_Ek(self):
-        #
-        # compute all forms of kinetic energy
-        #
-        # Kinetic energy as a function of wavenumber and time
-        self.__compute_Ek_kt()
-        
-        # Time-averaged energy spectrum as a function of wavenumber
-        self.Ek_k = np.sum(self.Ek_kt, 0)/(self.ioutnum+1) # not self.nout because we might not be at the end; ioutnum+1 because the IC is in [0]
-        
-        # Total kinetic energy as a function of time
-        self.Ek_t = np.sum(self.Ek_kt, 1)
-		
-        # Time-cumulative average as a function of wavenumber and time
-        self.Ek_ktt = np.cumsum(self.Ek_kt, 0)[:self.ioutnum+1,:] / np.arange(1,self.ioutnum+2)[:,None] # not self.nout because we might not be at the end; ioutnum+1 because the IC is in [0] +1 more because we divide starting from 1, not zero
-		
-        # Time-cumulative average as a function of time
-        self.Ek_tt = np.cumsum(self.Ek_t, 0)[:self.ioutnum+1] / np.arange(1,self.ioutnum+2) # not self.nout because we might not be at the end; ioutnum+1 because the IC is in [0] +1 more because we divide starting from 1, not zero
+            if (numAgents == 1):
+                uDiffMse = ((sol - self.uu[self.ioutnum,:])**2).mean()
+                return -uDiffMse
 
-    def __compute_Ek_kt(self):
-        try:
-            self.Ek_kt = 1./2.*np.real( self.vv.conj()*self.vv / self.N ) * self.dx
-        except FloatingPointError:
-            #
-            # probable overflow because the simulation exploded, try removing the last solution
-            problem=True
-            remove=1
-            self.Ek_kt = np.zeros([self.nout+1, self.N]) + 1e-313
-            while problem:
-                try:
-                    self.Ek_kt[0:self.nout+1-remove,:] = 1./2.*np.real( self.vv[0:self.nout+1-remove].conj()*self.vv[0:self.nout+1-remove] / self.N ) * self.dx
-                    problem=False
-                except FloatingPointError:
-                    remove+=1
-                    problem=True
-        return self.Ek_kt
+            else:
+                section = int(self.N / numAgents)
+                locDiffMse = [ -((sol[(i*section) : (i+1)*section] - self.uu[self.ioutnum,(i*section) : (i+1)*section])**2).mean() for i in range(numAgents) ]
+                return locDiffMse
+  
+        else:
+            # interpolation
+            newx = self.x - offset
+            newx[newx>self.L] = newx[newx>self.L] - self.L
+            newx[newx<0] = newx[newx<0] + self.L
+            midx = np.argmax(newx)
 
-    def space_filter(self, k_cut=2):
-        #
-        # spatially filter the time series
-        self.uu_filt  = np.zeros([self.nout+1, self.N])
-        for n in range(self.nout+1):
-            v_filt = np.copy(self.vv[n,:])    # copy vv[n,:] (otherwise python treats it as reference and overwrites vv on the next line)
-            v_filt[np.abs(self.k)>=k_cut] = 0 # set to zero wavenumbers > k_cut
-            self.uu_filt[n,:] = np.real(ifft(v_filt))
-        #
-        # compute u_resid
-        self.uu_resid = self.uu - self.uu_filt
+            if midx == len(newx)-1:
+                uTruthToCoarse = self.f_truth(newx, self.t)
+            else:
+                uTruthToCoarse = np.concatenate(((self.f_truth(newx[:midx+1], self.t)), self.f_truth(newx[midx+1:], self.t)))
 
-    def space_filter_int(self, k_cut=2, N_int=10):
-        #
-        # spatially filter the time series
-        self.N_int        = N_int
-        self.uu_filt      = np.zeros([self.nout+1, self.N])
-        self.uu_filt_int  = np.zeros([self.nout+1, self.N_int])
-        self.x_int        = 2*pi*self.L*np.r_[0:self.N_int]/self.N_int
-        for n in range(self.nout+1):
-            v_filt = np.copy(self.vv[n,:])   # copy vv[n,:] (otherwise python treats it as reference and overwrites vv on the next line)
-            v_filt[np.abs(self.k)>=k_cut] = 313e6
-            v_filt_int = v_filt[v_filt != 313e6] * self.N_int/self.N
-            self.uu_filt_int[n,:] = np.real(ifft(v_filt_int))
-            v_filt[np.abs(self.k)>=k_cut] = 0
-            self.uu_filt[n,:] = np.real(ifft(v_filt))
-        #
-        # compute u_resid
-        self.uu_resid = self.uu - self.uu_filt
+            if numAgents == 1:
+                uDiffMse = ((uTruthToCoarse - self.uu[self.ioutnum,:])**2).mean()
+                return -uDiffMse
 
-    def getReward(self):
-        # Convert from spectral to physical space
-        t = [self.t]
-        uMap = self.f_truth(self.x, t)
-        return -np.abs(self.u-uMap)
+            else:
+                section = int(self.N / numAgents)
+                locDiffMse = [ -((uTruthToCoarse[(i*section) : (i+1)*section] - self.uu[self.ioutnum,(i*section) : (i+1)*section])**2).mean() for i in range(numAgents) ]
+                return locDiffMse
+         
+    def getState(self, numAgents=1):
+        assert(self.N % numAgents == 0)
 
-    def getState(self, nAgents = None):
-        # Convert from spectral to physical space
-        self.fou2real()
+        if numAgents == 1:
+            state = self.uu[self.ioutnum,:].tolist()
+        else:
+            section = int(self.N / numAgents)
+            uextended = np.zeros(self.N+2)
+            uextended[1:self.N+1] = self.uu[self.ioutnum, :]
+            uextended[0] = self.uu[self.ioutnum, -1]
+            uextended[-1] = self.uu[self.ioutnum, 0]
 
-        # Extract state
-        u = self.uu[self.ioutnum,:]
-        #dudu = np.zeros(self.N)
-        #dudu[:-1] = (u[1:]-u[:-1])/self.dx
-        #dudu[-1] = dudu[-2]
-        dudt = (self.uu[self.ioutnum,:]-self.uu[self.ioutnum-1,:])/self.dt
-        #state = np.column_stack( (u, dudu, dudt) )
-        state = np.column_stack( (u, dudt) )
+            state = [ uextended[(i*section) : 2+(i+1)*section].tolist() for i in range(numAgents)]
+
         return state
+
+
+    def getAnalyticalSolution(self, t):
+        if self.case == "sinus":
+            return np.sin((self.x - self.nu*t - self.offset)*2*np.pi/self.L)
+
+        else:
+            print(f"[Diffusion] case {self.case} not available")
+
