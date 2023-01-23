@@ -152,16 +152,19 @@ def makePlot(dns, base, sgs, fileName, spectralReward=True):
         axs1[0,3].set_yscale('log')
 
 #------------------------------------------------------------------------------
+
+    f_dns = interpolate.interp2d(dns.x, dns.tt, dns.uu, kind='cubic')
+    udns_int = f_dns(base.x, base.tt)
+    errBaseU = np.abs(base.uu-udns_int)
+    mseBaseU_t = np.mean(errBaseU**2, axis=1)
+    mseBaseU = np.cumsum(mseBaseU_t)/np.arange(1, len(mseBaseU_t)+1)
+    
     try:
         if spectralReward:
             print(dns.Ek_ktt.shape)
             tidx = np.arange(start=0,stop=nt+1,step=dns.stepper)
 
-            f_dns = interpolate.interp2d(dns.x, dns.tt, dns.uu, kind='cubic')
-            udns_int = f_dns(base.x, base.tt)
-            errBaseU = np.abs(base.uu-udns_int)
-            mseBaseU_t = np.mean(errBaseU**2, axis=1)
-            mseBaseU = np.cumsum(mseBaseU_t)/np.arange(1, len(mseBaseU_t)+1)
+
 
             errBaseK_t = np.mean(((np.abs(dns.Ek_ktt[tidx,1:gridSize//2] - base.Ek_ktt[:,1:gridSize//2])/dns.Ek_ktt[tidx,1:gridSize//2]))**2, axis=1)
             errBaseK = np.cumsum(errBaseK_t)/np.arange(1, len(errBaseK_t)+1)
