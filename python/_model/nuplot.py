@@ -158,7 +158,16 @@ def makePlot(dns, base, sgs, fileName, spectralReward=True):
     errBaseU = np.abs(base.uu-udns_int)
     mseBaseU_t = np.mean(errBaseU**2, axis=1)
     mseBaseU = np.cumsum(mseBaseU_t)/np.arange(1, len(mseBaseU_t)+1)
-    
+
+    udns_int = f_dns(sgs.x, sgs.tt)
+    errU = np.abs(sgs.uu-udns_int)
+    mseU_t = np.mean(errU**2, axis=1)
+    mseU = np.cumsum(mseU_t)/np.arange(1, len(mseU_t)+1)
+
+    emax = max(errBaseU.max(), errU.max())
+    emin = min(errBaseU.min(), errU.min())
+    elevels = np.linspace(emin, emax, 50)
+
     try:
         if spectralReward:
             print(dns.Ek_ktt.shape)
@@ -169,19 +178,8 @@ def makePlot(dns, base, sgs, fileName, spectralReward=True):
             errBaseK_t = np.mean(((np.abs(dns.Ek_ktt[tidx,1:gridSize//2] - base.Ek_ktt[:,1:gridSize//2])/dns.Ek_ktt[tidx,1:gridSize//2]))**2, axis=1)
             errBaseK = np.cumsum(errBaseK_t)/np.arange(1, len(errBaseK_t)+1)
 
-            udns_int = f_dns(sgs.x, sgs.tt)
-            errU = np.abs(sgs.uu-udns_int)
-            mseU_t = np.mean(errU**2, axis=1)
-            mseU = np.cumsum(mseU_t)/np.arange(1, len(mseU_t)+1)
-
             errK_t = np.mean(((np.abs(dns.Ek_ktt[tidx,1:gridSize//2] - sgs.Ek_ktt[:,1:gridSize//2])/dns.Ek_ktt[tidx,1:gridSize//2]))**2, axis=1)
             errK = np.cumsum(errK_t)/np.arange(1, len(errK_t)+1)
-
-    #------------------------------------------------------------------------------
-
-            emax = max(errBaseU.max(), errU.max())
-            emin = min(errBaseU.min(), errU.min())
-            elevels = np.linspace(emin, emax, 50)
 
 #------------------------------------------------------------------------------
 
