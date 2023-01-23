@@ -143,7 +143,7 @@ def makePlot(dns, base, sgs, fileName, spectralReward=True):
 
     idx = 0
     axs1[0,0].contourf(dns.x, dns.tt, dns.uu, ulevels)
-    if SpectralReward:
+    if spectralReward:
         axs1[0,3].plot(k1, np.abs(dns.Ek_ktt[0,0:N//2]),':', color=colors[idx])
         axs1[0,3].plot(k1, np.abs(dns.Ek_ktt[nt//2,0:N//2]),'--', color=colors[idx])
         axs1[0,3].plot(k1, np.abs(dns.Ek_ktt[-1,0:N//2]),'-', color=colors[idx])
