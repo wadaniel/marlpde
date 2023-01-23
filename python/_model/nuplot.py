@@ -189,7 +189,8 @@ def makePlot(dns, base, sgs, fileName, spectralReward=True):
         axs1[idx,0].contourf(base.x, base.tt, base.uu, ulevels)
 
         # Plot difference to dns
-        axs1[idx,1].contourf(base.x, base.tt, errBaseU, elevels)
+        if spectralReward:
+            axs1[idx,1].contourf(base.x, base.tt, errBaseU, elevels)
 
         # Plot instanteneous spec err and cumulative spec err
         if spectralReward:
