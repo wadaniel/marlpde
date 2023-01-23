@@ -143,42 +143,42 @@ def makePlot(dns, base, sgs, fileName, spectralReward=True):
 
     idx = 0
     axs1[0,0].contourf(dns.x, dns.tt, dns.uu, ulevels)
-
-    axs1[0,3].plot(k1, np.abs(dns.Ek_ktt[0,0:N//2]),':', color=colors[idx])
-    axs1[0,3].plot(k1, np.abs(dns.Ek_ktt[nt//2,0:N//2]),'--', color=colors[idx])
-    axs1[0,3].plot(k1, np.abs(dns.Ek_ktt[-1,0:N//2]),'-', color=colors[idx])
-    axs1[0,3].plot(k1[2:-10], 1e-5*k1[2:-10]**(-2),'--', linewidth=0.5)
-    axs1[0,3].set_xscale('log')
-    axs1[0,3].set_yscale('log')
+    if SpectralReward:
+        axs1[0,3].plot(k1, np.abs(dns.Ek_ktt[0,0:N//2]),':', color=colors[idx])
+        axs1[0,3].plot(k1, np.abs(dns.Ek_ktt[nt//2,0:N//2]),'--', color=colors[idx])
+        axs1[0,3].plot(k1, np.abs(dns.Ek_ktt[-1,0:N//2]),'-', color=colors[idx])
+        axs1[0,3].plot(k1[2:-10], 1e-5*k1[2:-10]**(-2),'--', linewidth=0.5)
+        axs1[0,3].set_xscale('log')
+        axs1[0,3].set_yscale('log')
 
 #------------------------------------------------------------------------------
     try:
+        if spectralReward:
+            print(dns.Ek_ktt.shape)
+            tidx = np.arange(start=0,stop=nt+1,step=dns.stepper)
 
-        print(dns.Ek_ktt.shape)
-        tidx = np.arange(start=0,stop=nt+1,step=dns.stepper)
+            f_dns = interpolate.interp2d(dns.x, dns.tt, dns.uu, kind='cubic')
+            udns_int = f_dns(base.x, base.tt)
+            errBaseU = np.abs(base.uu-udns_int)
+            mseBaseU_t = np.mean(errBaseU**2, axis=1)
+            mseBaseU = np.cumsum(mseBaseU_t)/np.arange(1, len(mseBaseU_t)+1)
 
-        f_dns = interpolate.interp2d(dns.x, dns.tt, dns.uu, kind='cubic')
-        udns_int = f_dns(base.x, base.tt)
-        errBaseU = np.abs(base.uu-udns_int)
-        mseBaseU_t = np.mean(errBaseU**2, axis=1)
-        mseBaseU = np.cumsum(mseBaseU_t)/np.arange(1, len(mseBaseU_t)+1)
+            errBaseK_t = np.mean(((np.abs(dns.Ek_ktt[tidx,1:gridSize//2] - base.Ek_ktt[:,1:gridSize//2])/dns.Ek_ktt[tidx,1:gridSize//2]))**2, axis=1)
+            errBaseK = np.cumsum(errBaseK_t)/np.arange(1, len(errBaseK_t)+1)
 
-        errBaseK_t = np.mean(((np.abs(dns.Ek_ktt[tidx,1:gridSize//2] - base.Ek_ktt[:,1:gridSize//2])/dns.Ek_ktt[tidx,1:gridSize//2]))**2, axis=1)
-        errBaseK = np.cumsum(errBaseK_t)/np.arange(1, len(errBaseK_t)+1)
+            udns_int = f_dns(sgs.x, sgs.tt)
+            errU = np.abs(sgs.uu-udns_int)
+            mseU_t = np.mean(errU**2, axis=1)
+            mseU = np.cumsum(mseU_t)/np.arange(1, len(mseU_t)+1)
 
-        udns_int = f_dns(sgs.x, sgs.tt)
-        errU = np.abs(sgs.uu-udns_int)
-        mseU_t = np.mean(errU**2, axis=1)
-        mseU = np.cumsum(mseU_t)/np.arange(1, len(mseU_t)+1)
+            errK_t = np.mean(((np.abs(dns.Ek_ktt[tidx,1:gridSize//2] - sgs.Ek_ktt[:,1:gridSize//2])/dns.Ek_ktt[tidx,1:gridSize//2]))**2, axis=1)
+            errK = np.cumsum(errK_t)/np.arange(1, len(errK_t)+1)
 
-        errK_t = np.mean(((np.abs(dns.Ek_ktt[tidx,1:gridSize//2] - sgs.Ek_ktt[:,1:gridSize//2])/dns.Ek_ktt[tidx,1:gridSize//2]))**2, axis=1)
-        errK = np.cumsum(errK_t)/np.arange(1, len(errK_t)+1)
+    #------------------------------------------------------------------------------
 
-#------------------------------------------------------------------------------
-
-        emax = max(errBaseU.max(), errU.max())
-        emin = min(errBaseU.min(), errU.min())
-        elevels = np.linspace(emin, emax, 50)
+            emax = max(errBaseU.max(), errU.max())
+            emin = min(errBaseU.min(), errU.min())
+            elevels = np.linspace(emin, emax, 50)
 
 #------------------------------------------------------------------------------
 
