@@ -205,18 +205,19 @@ def makePlot(dns, base, sgs, fileName, spectralReward=True):
         axs1[idx,2].set_ylim([1e-4,1e1])
 
         # Plot energy spectrum at start, mid and end of simulation
-        axs1[idx,3].plot(k2, np.abs(base.Ek_ktt[0,1:gridSize//2]),':',color=colors[idx])
-        axs1[idx,3].plot(k2, np.abs(base.Ek_ktt[nt//(2*s),1:gridSize//2]),'--',color=colors[idx])
-        axs1[idx,3].plot(k2, np.abs(base.Ek_ktt[-1,1:gridSize//2]),'-',color=colors[idx])
-        axs1[idx,3].set_xscale('log')
-        axs1[idx,3].set_yscale('log')
-        axs1[idx,3].set_ylim([1e-4,None])
+        if spectralReward:
+            axs1[idx,3].plot(k2, np.abs(base.Ek_ktt[0,1:gridSize//2]),':',color=colors[idx])
+            axs1[idx,3].plot(k2, np.abs(base.Ek_ktt[nt//(2*s),1:gridSize//2]),'--',color=colors[idx])
+            axs1[idx,3].plot(k2, np.abs(base.Ek_ktt[-1,1:gridSize//2]),'-',color=colors[idx])
+            axs1[idx,3].set_xscale('log')
+            axs1[idx,3].set_yscale('log')
+            axs1[idx,3].set_ylim([1e-4,None])
 
         # Plot energy spectrum difference
-        axs1[idx,4].plot(k2, np.abs((dns.Ek_ktt[0,1:gridSize//2] - base.Ek_ktt[0,1:gridSize//2])/dns.Ek_ktt[0,1:gridSize//2]),'r:')
-        axs1[idx,4].plot(k2, np.abs((dns.Ek_ktt[nt//2,1:gridSize//2] - base.Ek_ktt[nt//(2*s),1:gridSize//2])/dns.Ek_ktt[nt//2,1:gridSize//2]),'r--')
-        axs1[idx,4].plot(k2, np.abs((dns.Ek_ktt[-1,1:gridSize//2] - base.Ek_ktt[-1,1:gridSize//2])/dns.Ek_ktt[-1,1:gridSize//2]),'r-')
-        print(np.mean(np.abs((dns.Ek_ktt[-1,1:gridSize//2] - base.Ek_ktt[-1,1:gridSize//2])/dns.Ek_ktt[-1,1:gridSize//2])**2))
+            axs1[idx,4].plot(k2, np.abs((dns.Ek_ktt[0,1:gridSize//2] - base.Ek_ktt[0,1:gridSize//2])/dns.Ek_ktt[0,1:gridSize//2]),'r:')
+            axs1[idx,4].plot(k2, np.abs((dns.Ek_ktt[nt//2,1:gridSize//2] - base.Ek_ktt[nt//(2*s),1:gridSize//2])/dns.Ek_ktt[nt//2,1:gridSize//2]),'r--')
+            axs1[idx,4].plot(k2, np.abs((dns.Ek_ktt[-1,1:gridSize//2] - base.Ek_ktt[-1,1:gridSize//2])/dns.Ek_ktt[-1,1:gridSize//2]),'r-')
+            print(np.mean(np.abs((dns.Ek_ktt[-1,1:gridSize//2] - base.Ek_ktt[-1,1:gridSize//2])/dns.Ek_ktt[-1,1:gridSize//2])**2))
 
         axs1[idx,4].set_xscale('log')
         axs1[idx,4].set_yscale('log')
@@ -244,15 +245,16 @@ def makePlot(dns, base, sgs, fileName, spectralReward=True):
             axs1[idx,2].plot(sgs.tt, mseU_t, 'r-')
 
         # Plot time averaged energy spectrum at start, mid and end of simulation
-        axs1[idx,3].plot(k2, np.abs(sgs.Ek_ktt[0,1:gridSize//2]),':',color=colors[idx])
-        axs1[idx,3].plot(k2, np.abs(sgs.Ek_ktt[nt//(2*s),1:gridSize//2]),'--',color=colors[idx])
-        axs1[idx,3].plot(k2, np.abs(sgs.Ek_ktt[-1,1:gridSize//2]),'-',color=colors[idx])
+        if spectralReward:
+            axs1[idx,3].plot(k2, np.abs(sgs.Ek_ktt[0,1:gridSize//2]),':',color=colors[idx])
+            axs1[idx,3].plot(k2, np.abs(sgs.Ek_ktt[nt//(2*s),1:gridSize//2]),'--',color=colors[idx])
+            axs1[idx,3].plot(k2, np.abs(sgs.Ek_ktt[-1,1:gridSize//2]),'-',color=colors[idx])
 
-        # Plot time averaged energy spectrum difference
-        axs1[idx,4].plot(k2, np.abs((dns.Ek_ktt[0,1:gridSize//2] - sgs.Ek_ktt[0,1:gridSize//2])/dns.Ek_ktt[0,1:gridSize//2]),'r:')
-        axs1[idx,4].plot(k2, np.abs((dns.Ek_ktt[nt//2,1:gridSize//2] - sgs.Ek_ktt[nt//(2*s),1:gridSize//2])/dns.Ek_ktt[nt//2,1:gridSize//2]),'r--')
-        axs1[idx,4].plot(k2, np.abs((dns.Ek_ktt[-1,1:gridSize//2] - sgs.Ek_ktt[-1,1:gridSize//2])/dns.Ek_ktt[-1,1:gridSize//2]),'r-')
-        print(np.mean(np.abs((dns.Ek_ktt[-1,1:gridSize//2] - sgs.Ek_ktt[-1,1:gridSize//2])/dns.Ek_ktt[-1,1:gridSize//2])**2))
+            # Plot time averaged energy spectrum difference
+            axs1[idx,4].plot(k2, np.abs((dns.Ek_ktt[0,1:gridSize//2] - sgs.Ek_ktt[0,1:gridSize//2])/dns.Ek_ktt[0,1:gridSize//2]),'r:')
+            axs1[idx,4].plot(k2, np.abs((dns.Ek_ktt[nt//2,1:gridSize//2] - sgs.Ek_ktt[nt//(2*s),1:gridSize//2])/dns.Ek_ktt[nt//2,1:gridSize//2]),'r--')
+            axs1[idx,4].plot(k2, np.abs((dns.Ek_ktt[-1,1:gridSize//2] - sgs.Ek_ktt[-1,1:gridSize//2])/dns.Ek_ktt[-1,1:gridSize//2]),'r-')
+            print(np.mean(np.abs((dns.Ek_ktt[-1,1:gridSize//2] - sgs.Ek_ktt[-1,1:gridSize//2])/dns.Ek_ktt[-1,1:gridSize//2])**2))
 
         actioncolors = plt.cm.coolwarm(np.linspace(0,1,numActions))
         for i in range(numActions):
