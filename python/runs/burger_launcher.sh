@@ -3,11 +3,12 @@
 # CONFIGS
 export OMP_NUM_THREADS=4
 
-#IC='sinus' (sth not working imo DW, probably params need to be changed 9.11)
-IC='turbulence'
+IC='sinus'
+#IC='turbulence'
 run=0
 #NEX=1000000
-NEX=200000
+#NEX=200000
+NEX=10000000
 N=32
 NA=32
 NDNS=1024
@@ -21,7 +22,7 @@ nt=100
 esteps=500
 version=0
 width=64
-stepper=20
+stepper=1
 ndns=20
 
 # check branch

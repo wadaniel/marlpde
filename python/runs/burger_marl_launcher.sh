@@ -1,7 +1,7 @@
 #!/bin/bash
 export OMP_NUM_THREADS=8
 
-run=0
+run=1
 nagents=2
 noise=0.001
 iex=0.1
@@ -11,7 +11,7 @@ mar="Cooperation"
 
 #IC='turbulence'
 IC='sinus'
-NEX=1000000
+NEX=10000000
 N=32
 NA=32
 width=64
