@@ -6,7 +6,7 @@ This scripts simulates the Advection equation on a grid (N) until t=tEnd.
 
 # Discretization grid
 N1 = 128
-N2 = 32
+N2 = 512
 
 import matplotlib
 matplotlib.use('Agg')
@@ -42,11 +42,6 @@ sgs.setGroundTruth(dns.tt, dns.x, dns.uu)
 
 #------------------------------------------------------------------------------
 print("Simulate..")
-## simulate
-#sgs.simulate()
-print(nu)
-print(dt)
-print(dx)
 
 step = 0
 a = 0.5 * nu * dt / dx

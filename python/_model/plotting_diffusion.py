@@ -75,7 +75,7 @@ def plotActionField(model):
     plt.close()
 
 def plotDiffusionField(model):
-    figName = "diffusionfield.pdf"
+    figName = "field.pdf"
     print(f"[plotting] Plotting {figName} ...")
     
     actions = model.actionHistory

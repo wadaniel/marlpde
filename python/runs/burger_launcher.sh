@@ -3,16 +3,16 @@
 # CONFIGS
 export OMP_NUM_THREADS=4
 
-#IC='sinus' (sth not working imo DW, probably params need to be changed 9.11)
-IC='turbulence'
+IC='sinus' #(sth not working imo DW, probably params need to be changed 9.11)
+#IC='turbulence'
 run=0
-#NEX=1000000
-NEX=200000
+NEX=1000000
+#NEX=200000
 N=32
 NA=32
 NDNS=1024
 dt=0.001
-noise=0.01
+noise=0.001
 nu=0.02
 iex=0.1
 seed=42
@@ -21,7 +21,7 @@ nt=100
 esteps=500
 version=0
 width=64
-stepper=20
+stepper=1
 ndns=20
 
 # check branch
@@ -58,14 +58,14 @@ python3 run-vracer-burger.py --ic $IC --run $run --NE $NEX \
     --iex $iex --noise $noise --seed $seed \
     --episodelength $esteps --NDNS $NDNS \
     --tf $tf --nt $nt --version $version --width $width  \
-    --dforce --specreward --ndns $ndns
+    --ndns $ndns
 
 python3 run-vracer-burger.py --ic $IC --run $run --NE $NEX \
     --N $N --NA $NA --dt $dt --nu $nu --stepper $stepper \
     --iex $iex --noise $noise --seed $seed \
     --episodelength $esteps --NDNS $NDNS \
     --tf $tf --nt $nt --version $version --width $width \
-    --dforce --specreward --ndns $ndns \
+    --ndns $ndns \
     --test
 
 python3 -m korali.rlview --dir "_result_${run}" --out "vracer${run}.png"

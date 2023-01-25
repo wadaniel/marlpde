@@ -28,11 +28,11 @@ def environment( s , N, tEnd, dtSgs, nu, episodeLength, ic, noise, seed, dnsDefa
     cumreward = 0.
 
     # allowing 10-20 steps
-    bonus = { 128: 1e-4,
-              64: 5e-5,
-              32: 5e-5, 
-              16: 5e-5,
-              8: 5e-5} 
+    bonus = { 128: 1e-3,
+              64: 1e-2,
+              32: 1e-2, 
+              16: 1e-1,
+              8: 1e-2} 
 
     state = les.getState(numAgents)
     s["State"] = state

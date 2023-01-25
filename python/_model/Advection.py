@@ -51,12 +51,12 @@ class Advection:
         self.nout   = nsteps
  
         if (self.nu > self.dx/self.dt):
-            print("[Diffusion] Warning: CFL condition violated", flush=True)
+            print("[Advection] Warning: CFL condition violated", flush=True)
 
         # Basis
         self.version = version
         if (self.version > 1):
-            print("[Diffusion] Version not recognized", flush=True)
+            print("[Advection] Version not recognized", flush=True)
             sys.exit()
 
         # time when field space transformed
@@ -77,7 +77,7 @@ class Advection:
         if (case is not None):
             self.IC(case=case)
         else:
-            print("[Diffusion] IC ambigous")
+            print("[Advection] IC ambigous")
             sys.exit()
         
     def __setup_timeseries(self, nout=None):
@@ -108,7 +108,7 @@ class Advection:
             u0 = np.exp(-0.5*(0.5*self.L + self.offset - self.x)**2)
 
         else:
-            print("[Diffusion] Error: IC case unknown")
+            print("[Advection] Error: IC case unknown")
             sys.exit()
 
         # and save to self
@@ -141,8 +141,6 @@ class Advection:
         M = diags(ac, [-1, 0, 1], shape=(self.N, self.N)).toarray()
         M[0,-1] = ac[0]
         M[-1,0] = ac[2]
-        print(M)
-
 
         u = M @ self.u 
 
@@ -155,7 +153,6 @@ class Advection:
 
         else:
             if numAgents == 1:
-                print("x")
  
                 assert len(actions) == 1, f"[Diffusion] action len not 1, it is {len(actions)}"
                 ac = np.zeros(3)
@@ -165,7 +162,6 @@ class Advection:
                 M = diags(ac, [-1, 0, 1], shape=(self.N, self.N)).toarray()
                 M[0,-1] = ac[0]
                 M[-1,0] = ac[2]
-                print(M)
                 self.actionHistory[self.ioutnum,:] = actions[0]
 
             else:
@@ -216,7 +212,7 @@ class Advection:
                 self.step()
                 
         except FloatingPointError:
-            print("[Burger] Floating point exception occured in simulate", flush=True)
+            print("[Advection] Floating point exception occured in simulate", flush=True)
             # something exploded
             # cut time series to last saved solution and return
             self.nout = self.ioutnum
@@ -283,5 +279,5 @@ class Advection:
             return np.sin((self.x - self.nu*t - self.offset)*2*np.pi/self.L)
 
         else:
-            print(f"[Diffusion] case {self.case} not available")
+            print(f"[Advection] case {self.case} not available")
 
