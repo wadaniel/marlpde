@@ -326,4 +326,4 @@ def environment( s ,
         print("[burger_environment] uncontrolled cumreward")
         print(cumreward)
         
-        makePlot(dns, base, sgs, fileName, spectralReward)
+        makePlot(dns, base, sgs, "burger", spectralReward)
