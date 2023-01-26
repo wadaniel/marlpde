@@ -272,20 +272,16 @@ def makePlot(dns, base, sgs, fileName, spectralReward=True):
         print("[plotting] Exception during plotting:")
         print(e)
 
-#------------------------------------------------------------------------------
-    plt.close('all')
+#-----------------------------------------------------------------------------
 
     print("[plotting] plot actions..")
     try:
-        figName3 = fileName + "_action.png"
+        figName3 = fileName + "_sgs.png"
 
         sgsHistory = sgs.sgsHistory.flatten()
         sgsHistory = sgsHistory[np.abs(sgsHistory)<10]
 
-        figName = "sgsHistory.pdf"
-        print(f"[plotting] Plotting {figName} ...")
-
-        fig3, axs3 = plt.subplots(1,1, sharex=True, sharey=True, figsize=(6,6))
+        fig3, axs3 = plt.subplots(1,3, figsize=(10,6))
 
         smax = sgsHistory.max()
         smin = sgsHistory.min()
@@ -296,192 +292,64 @@ def makePlot(dns, base, sgs, fileName, spectralReward=True):
         #sgsDensityVals = sgsDensity(svals)
         #ax.plot(svals, sgsDensityVals)
 
-        sfac = 3
-        sgsMean = np.mean(sgsHistory)
-        sgsSdev = np.std(sgsHistory)
-        print(smin,sgsMean,smax)
-        print(sgsSdev)
-        svals  = np.linspace(sgsMean-sfac*sgsSdev,sgsMean+sfac*sgsSdev,500)
-        axs3.plot(svals, sgsDensity(svals))
+        # sfac = 3
+        # sgsMean = np.mean(sgsHistory)
+        # sgsSdev = np.std(sgsHistory)
+        # print(smin,sgsMean,smax)
+        # print(sgsSdev)
+        # svals  = np.linspace(sgsMean-sfac*sgsSdev,sgsMean+sfac*sgsSdev,500)
+        axs3[1].set_yscale('log')
+        axs3[1].plot(svals, sgsDensity(svals))
 
-        plt.tight_layout()
-        fig3.savefig(figName)
-
-        print(f"[plotting] Plotting {figName3} ...")
-        fig3.tight_layout()
-        fig3.savefig(figName3)
+        # plt.tight_layout()
+        # fig3.savefig(figName)
+        #
+        # print(f"[plotting] Plotting {figName3} ...")
+        # fig3.tight_layout()
+        # fig3.savefig(figName3)
 
         ###############
 #------------------------------------------------------------------------------
 
-        figName4 = fileName + "_action_closeup.png"
+        print("test")
+        print(f"[plotting] Plotting {figName3} ...")
+        print(sgs.sgsHistory.shape)
+        print(np.max(sgs.sgsHistory))
+        print(np.min(sgs.sgsHistory))
+
+        #fig5, axs5 = plt.subplots(1,1, figsize=(6,6))
+        #X, Y = np.meshgrid(sgs.x, sgs.t[:-1])
+        #print(sgs.x)
+        #print(sgs.t)
+        axs3[0].contourf(sgs.x,sgs.tt, sgs.sgsHistory)
+        #plt.axis('equal')
+        #ax.set_aspect('equal')
+        #plt.tight_layout()
+        #fig5.savefig(figName5)
+
+        #figName4 = fileName + "_action_closeup.png"
+        ######## action_closeup #############
 
         sfac = 3
         sgsMean = np.mean(sgs.sgsHistory)
         sgsSdev = np.std(sgs.sgsHistory)
         svals2  = np.linspace(sgsMean-sfac*sgsSdev,sgsMean+sfac*sgsSdev,500)
         #fig4, axs4 = plt.subplots(1, 1, subplot_kw=dict(box_aspect=1), figsize=(10,10))
-        fig4, axs4 = plt.subplots(1, 1, figsize=(10,10))
+        #fig4, axs4 = plt.subplots(1, 1, figsize=(10,10))
         #axs4.plot(svals2, dnsDensity(svals2), color=colors[0], linestyle='--')
-        axs4.plot(svals2, sgsDensity(svals2), color=colors[2])
-        axs4.set_yscale('log')
-        print(f"[plotting] Plotting {figName4} ...")
-        fig4.tight_layout()
-        fig4.savefig(figName4)
+        axs3[2].plot(svals2, sgsDensity(svals2), color=colors[2])
+        axs3[2].set_yscale('log')
+        #print(f"[plotting] Plotting {figName4} ...")
+
+        #fig4.tight_layout()
+        fig3.savefig(figName3)
+
 
 #--------------------------------------------------------------------------------
 
-        figName5 = fileName + "sgsField.pdf"
-
-        print(f"[plotting] Plotting {figName} ...")
-        print(sgs.sgsHistory.shape)
-        print(np.max(sgs.sgsHistory))
-        print(np.min(sgs.sgsHistory))
-
-        fig5, axs5 = plt.subplots(1,1, figsize=(6,6))
-        #X, Y = np.meshgrid(sgs.x, sgs.t[:-1])
-        #print(sgs.x)
-        #print(sgs.t)
-        axs5.contourf(sgs.x,sgs.tt, sgs.sgsHistory)
-        #plt.axis('equal')
-        #ax.set_aspect('equal')
-        #plt.tight_layout()
-        fig5.savefig(figName5)
 
     except Exception as e:
         print("[plotting] Exception during plotting:")
         print(e)
 
-    plt.close('all')
-
-def makeDiffusionPlot(base, sgs, fileName):
-
-    N  = base.N
-    gridSize = base.N
-    dt = base.dt
-    tEnd = base.tend
-    numActions = base.M
-
-    nt = int(tEnd/dt)
-
-    #colors = plt.cm.jet(np.linspace(0,1,7))
-    colors = ['black','royalblue','seagreen']
-
-    time = np.arange(tEnd/dt+1)*dt
-
-    fig1, axs1 = plt.subplots(3, 4, sharex='col', sharey='col', subplot_kw=dict(box_aspect=1), figsize=(15,15))
-
-    umax = max(base.analytical.max(), base.uu.max(), sgs.uu.max())
-    umin = min(base.analytical.min(), base.uu.min(), sgs.uu.min())
-    ulevels = np.linspace(umin, umax, 50)
-
-#------------------------------------------------------------------------------
-    print("plot DNS")
-
-    idx = 0
-    axs1[0,0].contourf(base.x, base.tt, base.analytical, ulevels)
-
-#------------------------------------------------------------------------------
-
-    errBaseU = np.abs(base.uu-base.analytical)
-    mseBaseU_t = np.mean(errBaseU**2, axis=1)
-    mseBaseU = np.cumsum(mseBaseU_t)/np.arange(1, len(mseBaseU_t)+1)
-
-    errU = np.abs(sgs.uu-sgs.analytical)
-    mseU_t = np.mean(errU**2, axis=1)
-    mseU = np.cumsum(mseU_t)/np.arange(1, len(mseU_t)+1)
-
-#------------------------------------------------------------------------------
-
-    emax = max(errBaseU.max(), errU.max())
-    emin = min(errBaseU.min(), errU.min())
-    elevels = np.linspace(emin, emax, 50)
-
-#------------------------------------------------------------------------------
-    #print("plot baseline")
-    idx = idx + 1
-
-    # Plot solution
-    axs1[idx,0].contourf(base.x, base.tt, base.uu, ulevels)
-
-    # Plot difference to dns
-    axs1[idx,1].contourf(base.x, base.tt, errBaseU, elevels)
-
-    axs1[idx,2].plot(base.tt, mseBaseU, 'r:')
-    axs1[idx,2].plot(base.tt, mseBaseU_t, 'r-')
-
-    #axs1[idx,2].set_yscale('log')
-    #axs1[idx,2].set_ylim([1e-4,1e1])
-
-#------------------------------------------------------------------------------
-
-    print("plot sgs")
-    idx = idx + 1
-
-    # Plot solution
-    axs1[idx,0].contourf(sgs.x, sgs.tt, sgs.uu, ulevels)
-
-    # Plot difference to dns
-    axs1[idx,1].contourf(sgs.x, sgs.tt, errU, elevels)
-
-    # Plot instanteneous spec err and cumulative spec err
-    axs1[idx,2].plot(sgs.tt, mseU, 'r:')
-    axs1[idx,2].plot(sgs.tt, mseU_t, 'r-')
-
-    actioncolors = plt.cm.coolwarm(np.linspace(0,1,numActions))
-    for i in range(numActions):
-        axs1[idx,3].plot(sgs.tt[1:], sgs.actionHistory[1:,i], color=actioncolors[i])
-
-    plt.tight_layout()
-    figName = fileName + ".png"
-    print(f"Save {figName}")
-    fig1.savefig(figName)
-
-#------------------------------------------------------------------------------
-
-    figName2 = fileName + "_evolution.pdf"
-    print("Plotting {} ...".format(figName2))
-
-    fig2, axs2 = plt.subplots(4,4, sharex=True, sharey=True, figsize=(15,15))
-    for i in range(16):
-        t = i * tEnd / 16
-        tidx = int(t/dt)
-        k = int(i / 4)
-        l = i % 4
-
-        axs2[k,l].plot(base.x, base.uu[tidx,:], '-', color=colors[1])
-        axs2[k,l].plot(sgs.x, sgs.uu[tidx,:], '-', color=colors[2])
-        axs2[k,l].plot(sgs.x, sgs.analytical[tidx,:], '--', color=colors[0])
-
-    print(f"Save {figName2}")
-    fig2.savefig(figName2)
-
-#------------------------------------------------------------------------------
-
-    figName3 = fileName + "_action.png"
-    print("Plotting {} ...".format(figName3))
-
-    print(np.mean(sgs.sgsHistory.flatten()))
-    print(np.std(sgs.sgsHistory.flatten()))
-
-    smax = sgs.sgsHistory.max()
-    smin = sgs.sgsHistory.min()
-    slevels = np.linspace(smin, smax, 50)
-    svals = np.linspace(smin, smax, 500)
-
-    fig3, axs3 = plt.subplots(1, 3, sharex='col', sharey='col', subplot_kw=dict(box_aspect=1), figsize=(10,10))
-
-    axs3[0].contourf(sgs.x, sgs.tt, sgs.sgsHistory)
-
-    sgsDensity = gaussian_kde(sgs.sgsHistory.flatten())
-    sgsDensityVals = sgsDensity(svals)
-    axs3[1].plot(svals, sgsDensityVals, color=colors[2])
-
-    sfac = 3
-    sgsMean = np.mean(sgs.sgsHistory)
-    sgsSdev = np.std(sgs.sgsHistory)
-    svals2  = np.linspace(sgsMean-sfac*sgsSdev,sgsMean+sfac*sgsSdev,500)
-    axs3[2].plot(svals2, sgsDensity(svals2), color=colors[2])
-
-    fig3.savefig(figName3)
     plt.close('all')
