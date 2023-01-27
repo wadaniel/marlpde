@@ -1,13 +1,13 @@
 #!/bin/bash
 
 # CONFIGS
-export OMP_NUM_THREADS=4
+export OMP_NUM_THREADS=8
 
 IC='sinus' #(sth not working imo DW, probably params need to be changed 9.11)
 #IC='turbulence'
-run=0
+run=1
 NEX=1000000
-#NEX=200000
+#NEX=300000
 N=32
 NA=32
 NDNS=1024
@@ -17,12 +17,12 @@ nu=0.02
 iex=0.1
 seed=42
 tf=50
-nt=100
+nt=1
 esteps=500
 version=0
 width=64
 stepper=1
-ndns=20
+ndns=1
 
 # check branch
 pushd .
@@ -58,15 +58,17 @@ python3 run-vracer-burger.py --ic $IC --run $run --NE $NEX \
     --iex $iex --noise $noise --seed $seed \
     --episodelength $esteps --NDNS $NDNS \
     --tf $tf --nt $nt --version $version --width $width  \
+#    --dforce --ssmforce \
     --ndns $ndns
 
-python3 run-vracer-burger.py --ic $IC --run $run --NE $NEX \
-    --N $N --NA $NA --dt $dt --nu $nu --stepper $stepper \
-    --iex $iex --noise $noise --seed $seed \
-    --episodelength $esteps --NDNS $NDNS \
-    --tf $tf --nt $nt --version $version --width $width \
-    --ndns $ndns \
-    --test
+#python3 run-vracer-burger.py --ic $IC --run $run --NE $NEX \
+#    --N $N --NA $NA --dt $dt --nu $nu --stepper $stepper \
+#    --iex $iex --noise $noise --seed $seed \
+#    --episodelength $esteps --NDNS $NDNS \
+#    --tf $tf --nt $nt --version $version --width $width \
+#    --ndns $ndns \
+#    --dforce --ssmforce \
+#    --test
 
 python3 -m korali.rlview --dir "_result_${run}" --out "vracer${run}.png"
 

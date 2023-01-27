@@ -156,9 +156,9 @@ class Advection:
  
                 assert len(actions) == 1, f"[Diffusion] action len not 1, it is {len(actions)}"
                 ac = np.zeros(3)
-                ac[0] = 0.5+actions[0]
-                ac[1] = 0.
-                ac[2] = 0.5-actions[0]
+                ac[0] = actions[0] #0.5+actions[0]
+                ac[1] = 1-actions[0] #0.
+                ac[2] = 0. #0.5-actions[0]
                 M = diags(ac, [-1, 0, 1], shape=(self.N, self.N)).toarray()
                 M[0,-1] = ac[0]
                 M[-1,0] = ac[2]
@@ -170,17 +170,17 @@ class Advection:
                 M = np.zeros((self.N, self.N))
                 for i in range(numAgents):
                     assert len(actions[i]) == 1, f"[Diffusion] action len not 1, it is {len(actions)}"
-                    M[i,i] = 0
+                    M[i,i] = 1-actions[i][0] #0
                     
                     if i == 0:
-                        M[i,i+1] = 0.5-actions[i][0]
-                        M[i,-1] = 0.5+actions[i][0]
+                        M[i,i+1] = 0. #0.5-actions[i][0]
+                        M[i,-1] = actions[i][0] #0.5+actions[i][0]
                     elif i == self.N-1:
-                        M[i,0] = 0.5-actions[i][0]
-                        M[i,i-1] = 0.5+actions[i][0]
+                        M[i,0] = 0. #0.5-actions[i][0]
+                        M[i,i-1] = actions[i][0] #0.5+actions[i][0]
                     else:
-                        M[i,i+1] = 0.5-actions[i][0]
-                        M[i,i-1] = 0.5+actions[i][0]
+                        M[i,i+1] = 0. #0.5-actions[i][0]
+                        M[i,i-1] = actions[i][0] #0.5+actions[i][0]
                     
                     self.actionHistory[self.ioutnum,i] = actions[i][0]
                 

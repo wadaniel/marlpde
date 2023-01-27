@@ -139,7 +139,7 @@ else:
 
 # States 
 assert nState/args.nagents % 1 == 0., "Number of agents must be a divisor of num states"
-numEffectiveStates = nState // args.nagents + 2
+numEffectiveStates = nState // args.nagents + 2 if args.nagents > 1 else nState
 for i in range(numEffectiveStates):
 	e["Variables"][i]["Name"] = "Field Information " + str(i)
 	e["Variables"][i]["Type"] = "State"
