@@ -59,7 +59,7 @@ python3 run-vracer-burger.py --ic $IC --run $run --NE $NEX \
     --episodelength $esteps --NDNS $NDNS \
     --tf $tf --nt $nt --version $version --width $width  \
 #    --dforce --ssmforce \
-    --ndns $ndns
+#    --ndns $ndns
 
 #python3 run-vracer-burger.py --ic $IC --run $run --NE $NEX \
 #    --N $N --NA $NA --dt $dt --nu $nu --stepper $stepper \

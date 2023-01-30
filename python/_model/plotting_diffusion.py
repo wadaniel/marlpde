@@ -2,6 +2,7 @@ import matplotlib as mpl
 mpl.use('Agg')
 import matplotlib.pyplot as plt 
 import seaborn as sns
+import json
 
 import numpy as np
 from scipy import interpolate
@@ -32,6 +33,7 @@ def plotEvolution(model):
     plt.close()
 
 def plotError(model):
+    ####
     figName = "abserror.pdf"
     print(f"[plotting] Plotting {figName} ...")
     
@@ -44,20 +46,46 @@ def plotError(model):
     plt.tight_layout()
     plt.savefig(figName)
     plt.close()
-
+    
     ####
-    figName = "relerror.pdf"
+    figName = "mass.pdf"
     print(f"[plotting] Plotting {figName} ...")
     
-    relerror = np.abs(model.uu - model.solution)/np.max(np.abs(model.solution), axis=1)[:,np.newaxis]
+    mass = np.sum(model.uu, axis=1)
+    
+    fig, ax = plt.subplots(1,1, sharex=True, sharey=True, figsize=(6,6))
+    ax.plot(model.tt, mass)
+    plt.tight_layout()
+    plt.savefig(figName)
+    plt.close()
+ 
+    ####
+    figName = "convergence.pdf"
+    print(f"[plotting] Plotting {figName} ...")
+    
+    mse = np.mean((model.uu - model.solution)**2, axis=1)
+    linf = np.amax(np.abs(model.uu - model.solution), axis=1)
+
+    dump = {}
+    dump["t"] = model.tt.tolist()
+    dump["mse"] = mse.tolist()
+    dump["linf"] = linf.tolist()
+    dump["mass"] = mass.tolist()
+
+    json_object = json.dumps(dump, indent=4)
+    # Writing to sample.json
+    with open(f"error_{model.N}.json", "w") as outfile:
+        outfile.write(json_object)
 
     fig, ax = plt.subplots(1,1, sharex=True, sharey=True, figsize=(6,6))
-    contour = ax.contourf(model.x, model.tt, relerror) #, ulevels)
-    plt.colorbar(contour)
+    ax.plot(model.tt, mse)
+    ax.plot(model.tt, linf)
+    ax.set_yscale('log')
     
     plt.tight_layout()
     plt.savefig(figName)
     plt.close()
+
 
 
 def plotActionField(model):

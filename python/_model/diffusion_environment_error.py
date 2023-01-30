@@ -1,4 +1,4 @@
-from Advection import *
+from DiffusionError import *
 import plotting_diffusion as dplt
 
 import matplotlib.pyplot as plt 
@@ -12,7 +12,7 @@ basis = 'hat'
 
 def setup_dns_default(ic, NDNS, dt, nu, tend, seed):
     print("[diffusion_environment] Setting up default dns with args ({}, {}, {}, {} )".format(NDNS, dt, nu, seed))
-    dns = Advection(L=L, N=NDNS, dt=dt, nu=nu, tend=tend, case=ic, noise=0., implicit = True)
+    dns = DiffusionError(L=L, N=NDNS, dt=dt, nu=nu, tend=tend, case=ic, noise=0., implicit = True)
     dns.simulate()
     return dns
 
@@ -20,19 +20,19 @@ def environment( s , N, tEnd, dtSgs, nu, episodeLength, ic, noise, seed, dnsDefa
     
     testing = True if s["Custom Settings"]["Mode"] == "Testing" else False
 
-    les = Advection(L=L, N=N, dt=dtSgs, nu=nu, tend=tEnd, case=ic, noise=noise, seed=seed)
-    #les.setGroundTruth(dnsDefault.tt, dnsDefault.x, dnsDefault.uu)
+    les = DiffusionError(L=L, N=N, dt=dtSgs, nu=nu, tend=tEnd, case=ic, noise=noise, seed=seed)
+    les.setGroundTruth(dnsDefault.tt, dnsDefault.x, dnsDefault.uu)
 
     step = 0
     stop = False
     cumreward = 0.
 
     # allowing 10-20 steps
-    bonus = { 128: 1e-1,
-              64: 5e-3,
-              32: 5e-3, 
-              16: 1e-1,
-              8: 1e-1} 
+    bonus = { 128: 3e-9,
+              64: 5e-7,
+              32: 5e-7, 
+              16: 5e-7,
+              8: 5e-7} 
 
     state = les.getState(numAgents)
     s["State"] = state
