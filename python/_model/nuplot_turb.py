@@ -210,15 +210,15 @@ def makePlot(dns, base, sgs, fileName, spectralReward=True):
             axs1[idx,4].plot(k2, np.abs((dns.Ek_ktt[-1,1:gridSize//2] - base.Ek_ktt[-1,1:gridSize//2])/dns.Ek_ktt[-1,1:gridSize//2]),'r-')
             print(np.mean(np.abs((dns.Ek_ktt[-1,1:gridSize//2] - base.Ek_ktt[-1,1:gridSize//2])/dns.Ek_ktt[-1,1:gridSize//2])**2))
 
-            axs1[idx,4].set_xscale('log')
-            axs1[idx,4].set_yscale('log')
+            #axs1[idx,4].set_xscale('log')
+            #axs1[idx,4].set_yscale('log')
             #axs1[idx,4].set_ylim([1e-4,None])
         # Plot instanteneous mse and cumulative mse
         else:
             axs1[idx,2].plot(base.tt, mseBaseU_t, 'r:')
             axs1[idx,2].plot(base.tt, mseBaseU, 'r-')
 
-        axs1[idx,2].set_yscale('log')
+        #axs1[idx,2].set_yscale('log')
         axs1[idx,2].set_ylim([1e-4,1e1])
 
         # Plot energy spectrum at start, mid and end of simulation
