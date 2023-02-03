@@ -219,7 +219,7 @@ def makePlot(dns, base, sgs, fileName, spectralReward=True):
             axs1[idx,2].plot(base.tt, mseBaseU, 'r-')
 
         #axs1[idx,2].set_yscale('log')
-        axs1[idx,2].set_ylim([1e-4,1e1])
+        #axs1[idx,2].set_ylim([1e-4,1e1])
 
         # Plot energy spectrum at start, mid and end of simulation
 
