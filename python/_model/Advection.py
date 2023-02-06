@@ -27,7 +27,7 @@ class Advection:
         self.tend = float(tend)
         
         if (nsteps is None):
-            nsteps = int(tend/dt)
+            nsteps = int(tend/dt+0.5)
         else:
             nsteps = int(nsteps)
             # override tend

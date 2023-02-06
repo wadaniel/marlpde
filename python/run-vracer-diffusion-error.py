@@ -8,7 +8,7 @@ parser.add_argument('--numAgents', help='Number of agents', required=False, type
 parser.add_argument('--dt', help='Time discretization', required=False, type=float, default=0.01)
 parser.add_argument('--exp', help='Number of experiences', required=False, type=int, default=1e6)
 parser.add_argument('--width', help='Size of hidden layer', required=False, type=int, default=128)
-parser.add_argument('--iex', help='Initial exploration', required=False, type=float, default=3)
+parser.add_argument('--iex', help='Initial exploration', required=False, type=float, default=0.01)
 parser.add_argument('--episodelength', help='Actual length of episode / number of actions', required=False, type=int, default=100)
 parser.add_argument('--noise', help='Standard deviation of IC', required=False, type=float, default=0.)
 parser.add_argument('--ic', help='Initial condition', required=False, type=str, default='sinus')
@@ -37,7 +37,7 @@ dns_default = dee.setup_dns_default(args.ic, args.NDNS, args.dt, args.nu, T, arg
 
 ### Defining results folder and loading previous results, if any
 
-resultFolder = '_result_diffusion_simple_{}/'.format(args.run)
+resultFolder = '_result_diffusion_error_{}/'.format(args.run)
 if args.test:
     found = e.loadState(resultFolder + '/latest')
     if found == True:
