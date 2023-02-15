@@ -10,13 +10,14 @@ def plotField(models):
     figName = "evolution.pdf"
     print(f"[plotting] Plotting {figName} ...")
     
+    fig, axs = plt.subplots(4,4, sharex=True, sharey=True, figsize=(15,15))
     colors = ['royalblue','coral']
     alphas = [1., 0.8] 
     for idx, m in enumerate(models):
+        print(idx)
         tEnd = m.tend
         dt = m.dt
 
-        fig, axs = plt.subplots(4,4, sharex=True, sharey=True, figsize=(15,15))
         for i in range(16):
             t = i * tEnd / 16
             tidx = int(t/dt)
