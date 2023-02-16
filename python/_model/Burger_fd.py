@@ -430,7 +430,7 @@ class Burger_fd:
             
         if (actions is not None):
  
-            actions = actions if self.numAgents == 1 else [a for acs in actions for a in acs]
+            actions = np.array(actions).flatten()
             
             assert self.basis is not None, "[Burger_fd] Basis not set up (is None)."
             assert len(actions) == self.M, "[Burger_fd] Wrong number of actions (provided {}/{}".format(len(actions), self.M)

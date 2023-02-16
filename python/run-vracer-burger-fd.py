@@ -33,6 +33,11 @@ parser.add_argument('--expperu', help='Experiences per update', required=False, 
 parser.add_argument('--ndns', help='Number of dns', required=False, type=int, default=1)
 parser.add_argument('--test', action='store_true', help='Run test', required=False)
 
+# MARL configs
+parser.add_argument('--nagents', help='Number of agents', required=False, type=int, default=1)
+parser.add_argument('--mar', help='Multi Agent Relationship', required=False, type=str, default="Individual")
+parser.add_argument('--mac', help='Multi Agent Correlation', required=False, type=bool, default=False)
+
 args = parser.parse_args()
 print(args)
 
@@ -92,7 +97,8 @@ if args.test:
             version = args.version,
             ssm = args.ssm,
             dsm = args.dsm,
-            dns_default = dns_default )
+            dns_default = dns_default,
+            numAgents = args.nagents )
 else:
     e["Solver"]["Mode"] = "Training"
     e["Problem"]["Custom Settings"]["Mode"] = "Training" 
@@ -119,14 +125,21 @@ else:
             version = args.version,
             ssm = args.ssm,
             dsm = args.dsm,
-            dns_default = dns_default )
+            dns_default = dns_default,
+            numAgents = args.nagents )
 
 fileName = f'~/episodes_{args.run}.npz'
 e["Problem"]["Custom Settings"]["Filename"] = fileName
 e["Problem"]["Testing Frequency"] = args.tf
 e["Problem"]["Policy Testing Episodes"] = args.nt
 
+#Defining MARL setup
+e["Problem"]["Agents Per Environment"] = args.nagents
+e["Problem"]["Policies Per Environment"] = 1
+ 
 ### Defining Agent Configuration 
+e["Solver"]["Multi Agent Relationship"] = args.mar
+e["Solver"]["Multi Agent Correlation"] = args.mac
 
 e["Solver"]["Type"] = "Agent / Continuous / VRACER"
 e["Solver"]["Episodes Per Generation"] = 10
@@ -147,17 +160,22 @@ else:
     print("[run-vracer-burger] version not recognized")
     sys.exit()
 
-# States (flow at sensor locations)
-for i in range(nState):
+# States 
+assert nState/args.nagents % 1 == 0., "Number of agents must be a divisor of num states"
+numEffectiveStates = nState // args.nagents + 2 if args.nagents > 1 else nState
+for i in range(numEffectiveStates):
 	e["Variables"][i]["Name"] = "Field Information " + str(i)
 	e["Variables"][i]["Type"] = "State"
 
-for i in range(args.NA):
-    e["Variables"][nState+i]["Name"] = "Forcing " + str(i)
-    e["Variables"][nState+i]["Type"] = "Action"
-    e["Variables"][nState+i]["Lower Bound"] = -5.
-    e["Variables"][nState+i]["Upper Bound"] = +5.
-    e["Variables"][nState+i]["Initial Exploration Noise"] = args.iex
+# Actions 
+assert args.NA/args.nagents % 1 == 0., "Number of agents must be a divisor of num actions"
+numEffectiveActions = args.NA // args.nagents
+for i in range(numEffectiveActions):
+    e["Variables"][numEffectiveStates+i]["Name"] = "Forcing " + str(i)
+    e["Variables"][numEffectiveStates+i]["Type"] = "Action"
+    e["Variables"][numEffectiveStates+i]["Lower Bound"] = -5.
+    e["Variables"][numEffectiveStates+i]["Upper Bound"] = +5.
+    e["Variables"][numEffectiveStates+i]["Initial Exploration Noise"] = args.iex
 
 ### Setting Experience Replay and REFER settings
 
