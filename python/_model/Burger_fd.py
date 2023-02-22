@@ -86,7 +86,8 @@ class Burger_fd:
         self.x      = np.linspace(0, self.L, N, endpoint=False)
         self.nu     = nu
         if nunoise:
-            self.nu = 0.01+0.02*np.random.uniform()
+            self.nu = np.random.uniform(low=0.015, high=0.025)
+
         self.nsteps = nsteps
         self.nout   = nsteps
  
@@ -353,8 +354,6 @@ class Burger_fd:
 
         if self.dsm == True:
 
-            print("[Burger_fd_fd] TODO")
-            sys.exit()
             delta  = 2*np.pi/self.N
             deltah = 4*np.pi/self.N
             
@@ -401,8 +400,8 @@ class Burger_fd:
             #self.sgsHistory[self.ioutnum, :] = sgs
             self.sgsHistory[self.ioutnum, :] = sgsalt
             
-            #Fforcing += fft( sgs )
-            Fforcing += fft( sgsalt )
+            #forcing = sgs 
+            forcing = sgsalt
 
         if self.forcing:
         
@@ -450,11 +449,12 @@ class Burger_fd:
                 d2udx2 = (up - 2*self.u + um)/dx2
 
                 nuSSM = (aforcing*delta)**2*np.abs(dudx)
-                ssm = nuSSM*d2udx2 
+                aforcing = nuSSM*d2udx2 
+
             
             self.sgsHistory[self.ioutnum,:] = aforcing
-
             forcing += aforcing
+
 
         """
         Expl Euler in time, (centered) FD in space

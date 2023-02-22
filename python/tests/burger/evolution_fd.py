@@ -27,7 +27,7 @@ ic      = 'turbulence'
 forcing = False
 
 ssm = False
-dsm = False
+dsm = True
 
 #L       = 100
 #dt      = 0.01
@@ -75,6 +75,8 @@ sgs.simulate()
 sgs.compute_Ek()
 
 #------------------------------------------------------------------------------
+kRelErr = np.mean((np.abs(dns.Ek_ktt[dns.ioutnum,:N2//2] - sgs.Ek_ktt[dns.ioutnum,:N2//2])/sgs.Ek_ktt[dns.ioutnum,:N2//2])**2)
+print(f"Relative spectal reward {kRelErr}")
 ## plot
 plotField([dns, sgs])
 plotAvgSpectrum([dns, sgs])
