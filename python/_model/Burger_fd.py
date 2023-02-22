@@ -58,13 +58,6 @@ class Burger_fd:
 
         self.stepper = s
        
-        # seed of turbulent IC 
-        #self.tseed = seed+np.random.choice(5) #seed
-        self.tseed = seed
-        
-        # seed for forcing
-        np.random.seed(seed)
- 
         # Apply forcing term?
         self.forcing = forcing
 
@@ -87,7 +80,15 @@ class Burger_fd:
         self.nu     = nu
         if nunoise:
             self.nu = np.random.uniform(low=0.015, high=0.025)
+            print(f"nu {self.nu}")
 
+        # seed of turbulent IC 
+        #self.tseed = seed+np.random.choice(5) #seed
+        self.tseed = seed
+        
+        # seed for forcing
+        np.random.seed(seed)
+ 
         self.nsteps = nsteps
         self.nout   = nsteps
  

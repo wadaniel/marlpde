@@ -94,7 +94,8 @@ def environment( s ,
             seed=seed+sidx,
             s=stepper,
             version=version,
-            numAgents = numAgents)
+            numAgents = numAgents,
+            nunoise=nunoise )
    
     ## copy random numbers
     sgs.randfac1 = dns.randfac1
