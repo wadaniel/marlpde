@@ -1,6 +1,7 @@
 import matplotlib as mpl
 mpl.use('Agg')
 import matplotlib.pyplot as plt 
+import imageio
 
 import numpy as np
 from scipy import interpolate
@@ -29,6 +30,40 @@ def plotField(models):
     fig.tight_layout()
     fig.savefig(figName)
     plt.close()
+
+
+def makeMovieField(models):
+    print(f"[plotting] Make movie...")
+    
+    colors = ['royalblue','coral']
+    alphas = [1., 0.8]
+    numFigure = 500
+    frames = []
+
+    tEnd = models[0].tend
+    dt = models[0].dt
+
+    for i in range(numFigure):
+        print(f"{i}/{numFigure}")
+        t = i * tEnd / numFigure
+        tidx = int(t/dt)
+        
+        for idx, m in enumerate(models):
+            plt.plot(m.x, m.uu[tidx,:], '-', color=colors[idx], alpha=alphas[idx])
+            plt.tight_layout()
+
+        plt.ylim([-1.,2.75])
+        figName = f"_movie/evolution_{i}.png"
+        plt.savefig(figName)
+        plt.close()
+
+        image = imageio.imread(figName)
+        frames.append(image)
+
+    print("save evolution.gif")
+    imageio.mimsave('./evolution.gif', 
+            frames,             # array of input frames        
+            fps = 10)           # optional: frames per second  
 
 
 def plotAvgSpectrum(models):

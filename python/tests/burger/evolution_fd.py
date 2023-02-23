@@ -29,21 +29,9 @@ forcing = False
 ssm = False
 dsm = True
 
-#L       = 100
-#dt      = 0.01
-#s       = 20
-#tEnd    = 5000
-#ic      = 'sinus'
-#forcing = True
-
 nu      = 0.02
-#ic      = 'zero'
-#ic      = 'turbulence'
-#ic      = 'forced'
 noise   = 0.
-seed    = 42
-#forcing = False
-
+seed    = 42+ssm*100+dsm*1000
 
 numruns = 100
 errors = np.zeros((numruns,N2//2))
@@ -58,7 +46,7 @@ while(i < numruns):
     u_restart = dns.uu[0,:].copy()
     f_restart = interpolate.interp1d(dns.x, u_restart)
 
-    sgs = Burger_fd(L=L, N=N2, dt=dt, nu=nu, tend=tEnd, case=ic, noise=noise, seed=seed+i, forcing=forcing, s=s, ssm=ssm, dsm=dsm)
+    sgs = Burger_fd(L=L, N=N2, dt=dt, nu=nu, tend=tEnd, case=ic, noise=noise, seed=seed, forcing=forcing, s=s, ssm=ssm, dsm=dsm)
 
     u0 = f_restart(sgs.x)
     sgs.IC( u0 = u0)
@@ -76,8 +64,8 @@ while(i < numruns):
 
     #------------------------------------------------------------------------------
     try:
-        err = (np.abs(dns.Ek_ktt[dns.ioutnum,:N2//2] - sgs.Ek_ktt[dns.ioutnum,:N2//2])/dns.Ek_ktt[dns.ioutnum,:N2//2])**2
-        kRelErr = np.mean(err)
+        errT = (np.abs(dns.Ek_ktt[dns.ioutnum,:N2//2] - sgs.Ek_ktt[dns.ioutnum,:N2//2])/dns.Ek_ktt[dns.ioutnum,:N2//2])**2
+        kRelErr = np.mean(errT)
         print(f"Relative spectal reward {kRelErr}")
 
         ## plot
@@ -85,7 +73,7 @@ while(i < numruns):
         #plotAvgSpectrum([dns, sgs])
         #plotError(dns, sgs)
         #makePlot(dns, sgs, sgs, "evolution_fd", True)
-        errors[i,:] = err
+        errors[i,:] = errT
         i += 1
     except:
         print(f"excpetion thrown")
@@ -97,15 +85,11 @@ me = np.quantile(errors, axis=0, q=0.5)
 
 plt.plot(me, color='coral')
 plt.fill_between(np.arange(0,N2//2), uq, lq, color='coral', alpha=0.2)
+plt.ylim(1e-4, 1e2)
+
 plt.xscale('log')
 plt.yscale('log')
 plt.tight_layout()
-plt.savefig("quantiles_dsm.pdf")
+plt.savefig(f"quantiles_ssm_{ssm}_dsm_{dsm}_1.pdf")
 plt.close()
-
-
-
-
-
-
 

@@ -45,7 +45,7 @@ def environment( s ,
  
     #saveEpisode = True if episodeCount >= 1950 else False
     #saveEpisode = True if s["Custom Settings"]["Save Episode"] == "True" else False
-    saveEpisode = False
+    saveEpisode = True
     testing = True if s["Custom Settings"]["Mode"] == "Testing" else False
     #noise = 0. if testing else noise
  
@@ -113,6 +113,7 @@ def environment( s ,
         ic = sgs.f_truth(newx, 0)
     else:
         ic = np.concatenate(((sgs.f_truth(newx[:midx+1], 0.)), sgs.f_truth(newx[midx+1:], 0.)))
+
     sgs.IC( u0 = ic )
  
     ## get initial state
@@ -171,7 +172,8 @@ def environment( s ,
         # calculate spectral reward
         if spectralReward:
             sgs.compute_Ek()
-            kRelErr = np.mean((np.abs(dns.Ek_ktt[sgs.ioutnum,1:gridSize//2] - sgs.Ek_ktt[sgs.ioutnum,1:gridSize//2])/dns.Ek_ktt[sgs.ioutnum,1:gridSize//2])**2)
+            errT = (np.abs(dns.Ek_ktt[sgs.ioutnum,:gridSize//2] - sgs.Ek_ktt[sgs.ioutnum,:gridSize//2])/dns.Ek_ktt[sgs.ioutnum,:gridSize//2])**2
+            kRelErr = np.mean(errT)
             reward = np.full(numAgents, [rewardFactor*(kPrevRelErr-kRelErr)])
             kPrevRelErr = kRelErr
         
@@ -215,6 +217,7 @@ def environment( s ,
             sgs_actions = np.vstack((npzfile['sgs_actions'], sgs.actionHistory))
             sgs_u = np.vstack((npzfile['sgs_u'], sgs.uu))
             dns_u = np.vstack((npzfile['dns_u'], dns.uu))
+            err_t = np.vstack((npzfile['err_t'], errT))
             indeces = np.concatenate((npzfile['indeces'], np.array([sidx])))
         else:
             dns_Ektt = dns.Ek_ktt
@@ -222,6 +225,7 @@ def environment( s ,
             sgs_actions = sgs.actionHistory
             sgs_u = sgs.uu
             dns_u = dns.uu
+            err_t = errT
             indeces = np.array([sidx])
 
         print(dns_Ektt.shape)
@@ -231,19 +235,19 @@ def environment( s ,
         print(dns_u.shape)
         print(indeces)
 
-        np.savez(fname, dns_Ektt=dns_Ektt, sgs_Ektt=sgs_Ektt, sgs_actions=sgs_actions, sgs_u=sgs_u, dns_u=dns_u, indeces=indeces)
+        np.savez(fname, dns_Ektt=dns_Ektt, sgs_Ektt=sgs_Ektt, sgs_actions=sgs_actions, sgs_u=sgs_u, dns_u=dns_u, err_t=err_t, indeces=indeces)
         print("[burger_fd_environment] saved!")
-        if len(indeces) > 20:
+        if len(indeces) > 100:
             print("[burger_environment] terminated!")
             sys.exit()
 
 #------------------------------------------------------------------------------
     if testing:
         
-        print("[burger_env] Calculating SGS terms from DNS..")
+        print("[burger_fd_environment] Calculating SGS terms from DNS..")
         dns.compute_Sgs(gridSize)
 
-        print("[burger_env] Running URS..")
+        print("[burger_fd_environment] Running URS..")
         base = Burger(L=L, 
                 N=gridSize, 
                 dt=dt, 
@@ -262,13 +266,13 @@ def environment( s ,
         base.setGroundTruth(dns.x, dns.tt, dns.uu)
  
         if spectralReward:
-            print("[burger_env] Init spectrum.")
+            print("[burger_fd_environment] Init spectrum.")
             v0off = dns.v0*np.exp(1j*2*np.pi*sgs.offset*dns.k)
             v0 = np.concatenate((v0off[:((gridSize+1)//2)], v0off[-(gridSize-1)//2:])) * gridSize / dns.N
             base.IC( v0 = v0 )
 
         else:
-            print("[burger_env] Init interpolation.")
+            print("[burger_fd_environment] Init interpolation.")
             midx = np.argmax(newx)
             if midx == len(newx)-1:
                 ic = base.f_truth(newx, 0)
@@ -299,7 +303,7 @@ def environment( s ,
                         reward += rewardFactor*sgs.getMseReward(sgs.offset) / nIntermediate
 
             except Exception as e:
-                print("[burger_environment] Exception occured during stepping:")
+                print("[burger_fd_environment] Exception occured during stepping:")
                 print(str(e))
                 error = 1
                 break
@@ -317,13 +321,13 @@ def environment( s ,
             cumreward += reward
 
             if (np.isfinite(reward).all() == False):
-                print("[burger_environment] Nan reward detected")
+                print("[burger_fd_environment] Nan reward detected")
                 error = 1
                 break
      
             step += 1
 
-        print("[burger_environment] uncontrolled cumreward")
+        print("[burger_fd_environment] uncontrolled cumreward")
         print(cumreward)
         
         makePlot(dns, base, sgs, "burger", spectralReward)

@@ -128,7 +128,7 @@ else:
             dns_default = dns_default,
             numAgents = args.nagents )
 
-fileName = f'~/episodes_{args.run}.npz'
+fileName = f'/home/wadaniel/projects/marlpde/python/episodes_{args.run}.npz'
 e["Problem"]["Custom Settings"]["Filename"] = fileName
 e["Problem"]["Testing Frequency"] = args.tf
 e["Problem"]["Policy Testing Episodes"] = args.nt
