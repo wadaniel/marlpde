@@ -57,3 +57,4 @@ sgs.simulate()
 sgs.compute_Ek()
 #------------------------------------------------------------------------------
 makeMovieField([dns, sgs])
+makeMovieSpectrum([dns, sgs])

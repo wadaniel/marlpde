@@ -54,6 +54,7 @@ def makeMovieField(models):
 
         plt.ylim([-1.,2.75])
         figName = f"_movie/evolution_{i}.png"
+        plt.text(5, 2.25, f"t={t:.2f}", fontsize=12)
         plt.savefig(figName)
         plt.close()
 
@@ -65,6 +66,43 @@ def makeMovieField(models):
             frames,             # array of input frames        
             fps = 10)           # optional: frames per second  
 
+def makeMovieSpectrum(models):
+    print(f"[plotting] Make movie...")
+    
+    colors = ['royalblue','coral']
+    alphas = [1., 0.8]
+    numFigure = 500
+    frames = []
+
+    tEnd = models[0].tend
+    dt = models[0].dt
+
+    N2 = models[1].N
+
+    for i in range(numFigure):
+        print(f"{i}/{numFigure}")
+        t = i * tEnd / numFigure
+        tidx = int(t/dt)
+        
+        for idx, m in enumerate(models):
+            plt.plot(m.k[:N2//2], m.Ek_ktt[tidx,:N2//2], '-', color=colors[idx], alpha=alphas[idx])
+            plt.tight_layout()
+
+        plt.yscale('log')
+        plt.xscale('log')
+        plt.text(60, 1e-1, f"t={t:.2f}", fontsize=12)
+        plt.ylim([1e-7,1.])
+        figName = f"_movie/evolution_spectrum_{i}.png"
+        plt.savefig(figName)
+        plt.close()
+
+        image = imageio.imread(figName)
+        frames.append(image)
+
+    print("save evolution_spectrum.gif")
+    imageio.mimsave('./evolution_spectrum.gif', 
+            frames,             # array of input frames        
+            fps = 10)           # optional: frames per second  
 
 def plotAvgSpectrum(models):
     figName = "spectrum.pdf"

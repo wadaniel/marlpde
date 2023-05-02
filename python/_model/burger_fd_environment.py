@@ -53,9 +53,10 @@ def environment( s ,
         nu = s["Custom Settings"]["Viscosity"]
 
     ndns = len(dns_default)
-    sidx = episodeCount % ndns
+    #sidx = episodeCount % ndns
+    sidx = episodeCount
     
-    if nunoise:
+    if nunoise or saveEpisode:
         dns = Burger(L=L, 
                 N=N, 
                 dt=dt, 
@@ -75,7 +76,7 @@ def environment( s ,
 
         nu = dns.nu
     else:
-        dns = dns_default[sidx]
+        dns = dns_default[sidx % ndns]
     
     # reward defaults
     rewardFactor = 1. if spectralReward else 1.
@@ -206,7 +207,8 @@ def environment( s ,
         s["Termination"] = "Terminal"
 
 
-    if saveEpisode:
+    #if saveEpisode:
+    if cumreward[0] > -1.0:
         print("[burger_fd_environment] saving episode..")
         fname = s["Custom Settings"]["Filename"]
         if os.path.isfile(fname):
@@ -228,16 +230,9 @@ def environment( s ,
             err_t = errT
             indeces = np.array([sidx])
 
-        print(dns_Ektt.shape)
-        print(sgs_Ektt.shape)
-        print(sgs_actions.shape)
-        print(sgs_u.shape)
-        print(dns_u.shape)
-        print(indeces)
-
         np.savez(fname, dns_Ektt=dns_Ektt, sgs_Ektt=sgs_Ektt, sgs_actions=sgs_actions, sgs_u=sgs_u, dns_u=dns_u, err_t=err_t, indeces=indeces)
         print("[burger_fd_environment] saved!")
-        if len(indeces) > 100:
+        if len(indeces) > 25:
             print("[burger_environment] terminated!")
             sys.exit()
 
