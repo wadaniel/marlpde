@@ -7,7 +7,7 @@ import numpy as np
 
 class Advection:  
     #
-    # Solution to the Diffusion equation
+    # Solution to the Advection equation
     #
     # u_t + nu*u_x = 0
     # with periodic BCs on x \in [0, L]: u(0,t) = u(L,t).
@@ -38,6 +38,9 @@ class Advection:
         self.dx = L/N
         self.x  = np.linspace(0, self.L, N, endpoint=False)
         self.nu = nu
+
+        # Courant Number
+        self.alpha = self.nu*self.dt/self.dx
 
         if nunoise:
             self.nu = 0.01+0.02*np.random.uniform()
@@ -98,6 +101,7 @@ class Advection:
         if case == 'box':
             u0 = np.zeros(self.N)
             u0[np.abs(self.x-self.L/2-self.offset)<self.L/8] = 1.
+            assert False, "Not yet implemented"
         
         # Sinus
         elif case == 'sinus':
@@ -106,6 +110,7 @@ class Advection:
         # Gaussian
         elif case == 'gaussian':
             u0 = np.exp(-0.5*(0.5*self.L + self.offset - self.x)**2)
+            assert False, "Not yet implemented"
 
         else:
             print("[Advection] Error: IC case unknown")
@@ -135,9 +140,9 @@ class Advection:
         Lax Method
         """
         ac = np.zeros(3)
-        ac[0] = 0.5+0.5*self.nu * self.dt / self.dx
+        ac[0] = 0.5+0.5*self.alpha
         ac[1] = 0.
-        ac[2] = 0.5-0.5*self.nu * self.dt / self.dx
+        ac[2] = 0.5-0.5*self.alpha
         M = diags(ac, [-1, 0, 1], shape=(self.N, self.N)).toarray()
         M[0,-1] = ac[0]
         M[-1,0] = ac[2]
@@ -152,41 +157,44 @@ class Advection:
             self.u = self.FDstep()
 
         else:
-            if numAgents == 1:
+            if numAgents == 1 and len(actions) != self.N:
  
-                assert len(actions) == 1, f"[Diffusion] action len not 1, it is {len(actions)}"
+                assert len(actions) == 1, f"[Advection] action len not 1, it is {len(actions)}"
                 ac = np.zeros(3)
-                ac[0] = actions[0] #0.5+actions[0]
-                ac[1] = 1-actions[0] #0.
-                ac[2] = 0. #0.5-actions[0]
+                ac[0] = 0.5+actions[0] #0.5+alpha
+                ac[1] = 0.
+                ac[2] = 0.5-actions[0] #0.5-alpha
                 M = diags(ac, [-1, 0, 1], shape=(self.N, self.N)).toarray()
                 M[0,-1] = ac[0]
                 M[-1,0] = ac[2]
-                self.actionHistory[self.ioutnum,:] = actions[0]
 
             else:
-                assert len(actions) == numAgents, f"[Diffusion] actions not of len numAgents"
-                assert numAgents == self.N, f"[Diffusion] only works with {self.N} agents"
+                if numAgents == 1:
+                    actions = [actions]
+                assert self.N % numAgents == 0, f"[Advection] only works with N%numAgents==0 agents"
+                P = self.N // numAgents
                 M = np.zeros((self.N, self.N))
                 for i in range(numAgents):
-                    assert len(actions[i]) == 1, f"[Diffusion] action len not 1, it is {len(actions)}"
-                    M[i,i] = 1-actions[i][0] #0
-                    
-                    if i == 0:
-                        M[i,i+1] = 0. #0.5-actions[i][0]
-                        M[i,-1] = actions[i][0] #0.5+actions[i][0]
-                    elif i == self.N-1:
-                        M[i,0] = 0. #0.5-actions[i][0]
-                        M[i,i-1] = actions[i][0] #0.5+actions[i][0]
-                    else:
-                        M[i,i+1] = 0. #0.5-actions[i][0]
-                        M[i,i-1] = actions[i][0] #0.5+actions[i][0]
-                    
-                    self.actionHistory[self.ioutnum,i] = actions[i][0]
-                
+                    assert len(actions[i]) == P, f"[Advection] action len not 1, it is {len(actions)}"
+                    for j in range(P):
+                        k = i*P+j
+                        M[k,k] = 0.
+                        
+                        if k == 0:
+                            M[k,k+1] = 0.5-actions[i][j]
+                            M[k,-1] = 0.5+actions[i][j]
 
+                        elif k == self.N-1:
+                            M[k,0] = 0.5-actions[i][j]
+                            M[k,k-1] = 0.5+actions[i][j] 
+
+                        else:
+                            M[k,k+1] = 0.5-actions[i][j]
+                            M[k,k-1] = 0.5+actions[i][j] 
+                        
             k = M @ self.u
 
+            self.actionHistory[self.ioutnum,:] = np.diag(M)
             self.gradientHistory[self.ioutnum,:] = k
             self.u = k
         
@@ -199,6 +207,9 @@ class Advection:
         
         if self.case == "sinus":
             self.solution[self.ioutnum, :] = np.sin((self.x - self.nu*self.t - self.offset)*2*np.pi/self.L)
+        else:
+            assert False, "Not yet implemented"
+
 
 
     def simulate( self, nsteps=None ):

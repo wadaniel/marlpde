@@ -3,14 +3,14 @@ import numpy as np
 ### Parsing arguments
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--N', help='Discretization / number of grid points', required=False, type=int, default=32)
+parser.add_argument('--N', help='Discretization / number of grid points', required=False, type=int, default=128)
 parser.add_argument('--NDNS', help='Discretization / number of grid points', required=False, type=int, default=512)
-parser.add_argument('--numAgents', help='Number of agents', required=False, type=int, default=32)
+parser.add_argument('--numAgents', help='Number of agents', required=False, type=int, default=1)
 #parser.add_argument('--dt', help='Time discretization', required=False, type=float, default=0.01)
 parser.add_argument('--exp', help='Number of experiences', required=False, type=int, default=1e6)
 parser.add_argument('--width', help='Size of hidden layer', required=False, type=int, default=128)
-parser.add_argument('--iex', help='Initial exploration', required=False, type=float, default=0.5)
-parser.add_argument('--episodelength', help='Actual length of episode / number of actions', required=False, type=int, default=100)
+parser.add_argument('--iex', help='Initial exploration', required=False, type=float, default=0.05)
+parser.add_argument('--episodelength', help='Actual length of episode / number of actions', required=False, type=int, default=500)
 parser.add_argument('--noise', help='Standard deviation of IC', required=False, type=float, default=0.)
 parser.add_argument('--ic', help='Initial condition', required=False, type=str, default='sinus')
 parser.add_argument('--seed', help='Random seed', required=False, type=int, default=42)
@@ -100,8 +100,9 @@ e["Solver"]["Experience Replay"]["Off Policy"]["Annealing Rate"] = 5.0e-8
 e["Solver"]["Experience Replay"]["Off Policy"]["Cutoff Scale"] = 4.0
 e["Solver"]["Experience Replay"]["Off Policy"]["REFER Beta"] = 0.3
 e["Solver"]["Experience Replay"]["Off Policy"]["Target"] = 0.1
-e["Solver"]["Experience Replay"]["Start Size"] = 16384
-e["Solver"]["Experience Replay"]["Maximum Size"] = 524288
+e["Solver"]["Experience Replay"]["Start Size"] = 32768
+e["Solver"]["Experience Replay"]["Maximum Size"] = 1048576
+
 
 e["Solver"]["Policy"]["Distribution"] = "Clipped Normal"
 e["Solver"]["State Rescaling"]["Enabled"] = True
