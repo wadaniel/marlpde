@@ -28,11 +28,15 @@ def environment( s , N, tEnd, dtSgs, nu, episodeLength, ic, noise, seed, dnsDefa
     cumreward = 0.
 
     # allowing initial 10-20 steps
-    bonus = { 128: 1e-4,
+    bonus = {
+              128: 5e-4,
               64: 5e-5,
               32: 5e-5, 
               16: 5e-5,
-              8: 5e-5} 
+              8: 5e-5,
+              4: 5e-5,
+              2: 5e-5,
+              1: 5e-5} 
 
     state = les.getState(numAgents)
     s["State"] = state
@@ -49,7 +53,12 @@ def environment( s , N, tEnd, dtSgs, nu, episodeLength, ic, noise, seed, dnsDefa
         #les.step(None)
         
         reward = les.getMseReward(numAgents)
-        reward = [r + bonus[numAgents] for r in reward]
+
+        # grant 'survival bonus'
+        if numAgents > 1:
+            reward = [r + bonus[N] for r in reward]
+        else:
+            reward += bonus[N]
         state = les.getState(numAgents)
 
         s["State"] = state
@@ -60,8 +69,6 @@ def environment( s , N, tEnd, dtSgs, nu, episodeLength, ic, noise, seed, dnsDefa
         if cumreward < 0.:
             stop = True
 
-
-   
     print(f"steps: {step}, cumreward {cumreward}")
     s["Termination"] = "Terminal" 
     

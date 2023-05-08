@@ -51,7 +51,11 @@ class Diffusion:
         self.nout   = nsteps
  
         if (implicit == False and 2.*self.nu*self.dt >= self.dx**2):
-            print("[Diffusion] Warning: CFL condition violated", flush=True)
+            print(f"[Diffusion] Warning: CFL condition violated {2.*self.nu*self.dt}>{self.dx**2}", flush=True)
+            print(f"[Diffusion] N={self.N}")
+            print(f"[Diffusion] L={self.L}")
+            print(f"[Diffusion] dt={self.dt}")
+            print(f"[Diffusion] nu={self.nu}")
 
         # Basis
         self.version = version
@@ -163,7 +167,7 @@ class Diffusion:
             self.u = self.FDstep()
 
         else:
-            if numAgents == 1:
+            if numAgents == 1 and len(actions) != self.N:
                 assert len(actions) == 1, f"[Diffusion] action len not 1, it is {len(actions)}"
                 ac = np.zeros(3)
                 ac[0] = -actions[0]/2
@@ -174,22 +178,26 @@ class Diffusion:
                 M[-1,0] = ac[2]
 
             else:
-                assert len(actions) == numAgents, f"[Diffusion] actions not of len numAgents"
-                assert numAgents == self.N, f"[Diffusion] only works with {self.N} agents"
+                if numAgents == 1:
+                    actions = [actions]
+                assert self.N % numAgents == 0, f"[Diffusion] only works with N%numAgents==0 agents"
+                P = self.N // numAgents
                 M = np.zeros((self.N, self.N))
                 for i in range(numAgents):
-                    assert len(actions[i]) == 1, f"[Diffusion] action len not 1, it is {len(actions)}"
-                    M[i,i] = actions[i][0]
-                    
-                    if i == 0:
-                        M[i,-1] = -actions[i][0]/2
-                        M[i,i+1] = -actions[i][0]/2
-                    elif i == self.N-1:
-                        M[i,i-1] = -actions[i][0]/2
-                        M[i,0] = -actions[i][0]/2
-                    else:
-                        M[i,i+1] = -actions[i][0]/2
-                        M[i,i-1] = -actions[i][0]/2
+                    assert len(actions[i]) == P, f"[Diffusion] action len not 1, it is {len(actions)}"
+                    for j in range(P):
+                        k = i*P+j
+                        M[k,k] = actions[i][j]
+                        
+                        if k == 0:
+                            M[k,-1] = -actions[i][j]/2
+                            M[k,k+1] = -actions[i][j]/2
+                        elif k == self.N-1:
+                            M[k,k-1] = -actions[i][j]/2
+                            M[k,0] = -actions[i][j]/2
+                        else:
+                            M[k,k+1] = -actions[i][j]/2
+                            M[k,k-1] = -actions[i][j]/2
 
             d2udx2 = M @ self.u
 

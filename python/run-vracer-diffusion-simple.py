@@ -21,6 +21,7 @@ parser.add_argument('--version', help='Version tag', required=False, type=int, d
 parser.add_argument('--test', action='store_true', help='Run tag', required=False)
 
 args = parser.parse_args()
+print(args)
 T = args.dt*args.episodelength
 
 ### Import modules
@@ -38,10 +39,9 @@ dns_default = de.setup_dns_default(args.ic, args.NDNS, args.dt, args.nu, T, args
 ### Defining results folder and loading previous results, if any
 
 resultFolder = '_result_diffusion_simple_{}/'.format(args.run)
-if args.test:
-    found = e.loadState(resultFolder + '/latest')
-    if found == True:
-	    print("[Korali] Continuing execution from previous run...\n")
+found = e.loadState(resultFolder + '/latest')
+if found == True:
+	print("[Korali] Continuing execution from previous run...\n")
 
 ### Defining Problem Configuration
 e["Problem"]["Type"] = "Reinforcement Learning / Continuous"
@@ -81,12 +81,14 @@ e["Solver"]["Mini Batch"]["Size"] = 256
 ### Defining Variables
 
 nState = args.N if args.numAgents == 1 else int(args.N/args.numAgents)+2
+assert args.N % args.numAgents == 0, f"[Diffusion] only works with N%numAgents==0 agents"
+nAct = args.N // args.numAgents
 # States (flow at sensor locations)
 for i in range(nState):
 	e["Variables"][i]["Name"] = "Field Information " + str(i)
 	e["Variables"][i]["Type"] = "State"
 
-for i in range(1):
+for i in range(nAct):
     e["Variables"][nState+i]["Name"] = "Forcing " + str(i)
     e["Variables"][nState+i]["Type"] = "Action"
     e["Variables"][nState+i]["Lower Bound"] = -5.
