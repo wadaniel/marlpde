@@ -175,7 +175,7 @@ class Advection:
                 P = self.N // numAgents
                 M = np.zeros((self.N, self.N))
                 for i in range(numAgents):
-                    assert len(actions[i]) == P, f"[Advection] action len not 1, it is {len(actions)}"
+                    assert len(actions[i]) == P, f"[Advection] action len not P, it is {len(actions)}"
                     for j in range(P):
                         k = i*P+j
                         M[k,k] = 0.
