@@ -157,13 +157,13 @@ class Advection:
             self.u = self.FDstep()
 
         else:
-            if numAgents == 1 and len(actions) != self.N:
+            if numAgents == 1 and len(actions) != 2*self.N:
  
-                assert len(actions) == 1, f"[Advection] action len not 1, it is {len(actions)}"
+                assert len(actions) == 2, f"[Advection] action len not 1, it is {len(actions)}"
                 ac = np.zeros(3)
-                ac[0] = 0.5+actions[0] #0.5+alpha
-                ac[1] = 0.
-                ac[2] = 0.5-actions[0] #0.5-alpha
+                ac[0] = actions[0] #0.5+alpha
+                ac[1] = 1 - sum(actions)
+                ac[2] = actions[1] #0.5-alpha
                 M = diags(ac, [-1, 0, 1], shape=(self.N, self.N)).toarray()
                 M[0,-1] = ac[0]
                 M[-1,0] = ac[2]
@@ -171,27 +171,28 @@ class Advection:
             else:
                 if numAgents == 1:
                     actions = [actions]
+
                 assert self.N % numAgents == 0, f"[Advection] only works with N%numAgents==0 agents"
                 P = self.N // numAgents
                 M = np.zeros((self.N, self.N))
                 for i in range(numAgents):
-                    assert len(actions[i]) == P, f"[Advection] action len not P, it is {len(actions)}"
-                    for j in range(P):
-                        k = i*P+j
-                        M[k,k] = 0.
+                    assert len(actions[i]) == 2*P, f"[Advection] action len not P ({P}), it is {len(actions[i])}"
+                    for j in range(0, 2*P, 2):
+                        k = i*P+j//2
+                        M[k,k] = 1. - actions[i][j] - actions[i][j+1]
                         
                         if k == 0:
-                            M[k,k+1] = 0.5-actions[i][j]
-                            M[k,-1] = 0.5+actions[i][j]
+                            M[k,k+1] = actions[i][j]
+                            M[k,-1] = actions[i][j+1]
 
                         elif k == self.N-1:
-                            M[k,0] = 0.5-actions[i][j]
-                            M[k,k-1] = 0.5+actions[i][j] 
+                            M[k,k-1] = actions[i][j] 
+                            M[k,0] = actions[i][j+1]
 
                         else:
-                            M[k,k+1] = 0.5-actions[i][j]
-                            M[k,k-1] = 0.5+actions[i][j] 
-                        
+                            M[k,k+1] = actions[i][j]
+                            M[k,k-1] = actions[i][j+1] 
+
             k = M @ self.u
 
             self.actionHistory[self.ioutnum,:] = np.diag(M)

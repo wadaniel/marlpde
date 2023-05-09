@@ -1,13 +1,13 @@
 #!/bin/bash
 ic="sinus"
-run=12816
+run=1281
 version=0
 N=128
-numAgents=16
+numAgents=1
 nu=0.1
 noise=0.5
 episodelength=500
-exp=2000000
+exp=1000000
 
 dir=/scratch/wadaniel/diffusion_simple/run${run}/
 mkdir ${dir} -p

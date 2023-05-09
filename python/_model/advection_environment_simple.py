@@ -28,7 +28,7 @@ def environment( s , N, tEnd, dtSgs, nu, episodeLength, ic, noise, seed, dnsDefa
     cumreward = 0.
 
     # allowing 10-20 steps
-    bonus = { 128: 1e-2,
+    bonus = { 128: 5e-2,
               64: 5e-2,
               32: 5e-2, 
               16: 1e-1,

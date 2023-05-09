@@ -83,7 +83,7 @@ e["Solver"]["Mini Batch"]["Size"] = 256
 
 nState = args.N if args.numAgents == 1 else int(args.N/args.numAgents)+2
 assert args.N % args.numAgents == 0, f"[Advection] only works with N%numAgents==0 agents"
-nAct = args.N // args.numAgents
+nAct = 2 * args.N // args.numAgents
 # States (flow at sensor locations)
 for i in range(nState):
 	e["Variables"][i]["Name"] = "Field Information " + str(i)
