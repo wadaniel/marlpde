@@ -11,13 +11,14 @@ L = 2*np.pi
 basis = 'hat'
 
 def setup_dns_default(ic, NDNS, dt, nu, tend, seed):
-    print("[diffusion_environment] Setting up default dns with args ({}, {}, {}, {} )".format(NDNS, dt, nu, seed))
+    print("[diffusion_environment_simple] Setting up default dns with args ({}, {}, {}, {} )".format(NDNS, dt, nu, seed))
     dns = Diffusion(L=L, N=NDNS, dt=dt, nu=nu, tend=tend, case=ic, noise=0., implicit = True)
     dns.simulate()
+    print("[diffusion_environment_simple] Done!")
     return dns
 
 def environment( s , N, tEnd, dtSgs, nu, episodeLength, ic, noise, seed, dnsDefault, nunoise=False, numAgents=1, version=0):
-    
+
     testing = True if s["Custom Settings"]["Mode"] == "Testing" else False
 
     les = Diffusion(L=L, N=N, dt=dtSgs, nu=nu, tend=tEnd, case=ic, noise=noise, seed=seed)
@@ -69,7 +70,7 @@ def environment( s , N, tEnd, dtSgs, nu, episodeLength, ic, noise, seed, dnsDefa
         if cumreward < 0.:
             stop = True
 
-    print(f"steps: {step}, cumreward {cumreward}")
+    print(f"[diffusion_environment_simple] steps: {step}, cumreward {cumreward}")
     s["Termination"] = "Terminal" 
     
     if testing:

@@ -4,25 +4,24 @@ run=12816
 version=0
 N=128
 numAgents=16
-nu=0.1
 noise=0.5
 episodelength=500
 exp=1000000
 
-RUNPATH=${SCRATCH}/diffusion_simple/${run}/
+RUNPATH=${SCRATCH}/advection_simple/${run}/
 mkdir -p ${RUNPATH}
 
 cd ..
 pushd .
 
-cp run-vracer-diffusion-simple.py ${RUNPATH}
+cp run-vracer-advection-simple.py ${RUNPATH}
 cp -r _model/ ${RUNPATH}
 
 cd ${RUNPATH}
 
 cat > run.sbatch <<EOF
 #!/bin/bash -l
-#SBATCH --job-name=diffusion_simple
+#SBATCH --job-name=advection_simple
 #SBATCH --output=diffusion_simple_${run}_%j.out
 #SBATCH --error=diffusion_simple_${run}_err_%j.out
 #SBATCH --time=24:00:00
@@ -38,20 +37,20 @@ cat > run.sbatch <<EOF
 #SBATCH --mail-type=FAIL 
 
 export OMP_NUM_THREADS=12
-python3 run-vracer-diffusion-simple.py --ic ${ic} --version ${version} \
+python3 run-vracer-advection-simple.py --ic ${ic} --version ${version} \
     --N ${N} --numAgents ${numAgents} \
-    --nu ${nu} --noise ${noise} \
+    --noise ${noise} \
     --episodelength ${episodelength} \
     --exp ${exp} --run ${run}
 
-python3 run-vracer-diffusion-simple.py --ic ${ic} --version ${version} \
+python3 run-vracer-advection-simple.py --ic ${ic} --version ${version} \
     --N ${N} --numAgents ${numAgents} \
-    --nu ${nu} --noise ${noise} \
+    --noise ${noise} \
     --episodelength ${episodelength} \
     --exp ${exp} --run ${run} \
     --test
 
-python3 -m korali.rlview --dir "${RUNPATH}/_result_diffusion_simple_${run}" --out "vracer_diffusion_simple_${run}.png" \
+python3 -m korali.rlview --dir "${RUNPATH}/_result_advection_simple_${run}" --out "vracer_advection_simple_${run}.png" \
     --showCI 0.8 --showObservations
 
 popd
