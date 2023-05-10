@@ -14,8 +14,8 @@ parser.add_argument('--noise', help='Standard deviation of IC', required=False, 
 parser.add_argument('--ic', help='Initial condition', required=False, type=str, default='sinus')
 parser.add_argument('--seed', help='Random seed', required=False, type=int, default=42)
 parser.add_argument('--nu', help='Viscosity', required=False, type=float, default=1.)
-parser.add_argument('--tf', help='Testing frequency in episodes', required=False, type=int, default=1000)
-parser.add_argument('--nt', help='Number of testing runs', required=False, type=int, default=20)
+parser.add_argument('--tf', help='Testing frequency in episodes', required=False, type=int, default=200)
+parser.add_argument('--nt', help='Number of testing runs', required=False, type=int, default=10)
 parser.add_argument('--run', help='Run tag', required=False, type=int, default=0)
 parser.add_argument('--version', help='Version tag', required=False, type=int, default=0)
 parser.add_argument('--test', action='store_true', help='Run tag', required=False)
@@ -130,6 +130,7 @@ e["Solver"]["Neural Network"]["Hidden Layers"][3]["Function"] = "Elementwise/Tan
 ### Setting file output configuration
 
 e["Solver"]["Termination Criteria"]["Max Experiences"] = args.exp
+e["Solver"]["Termination Criteria"]["Max Generations"] = 1000000
 e["Solver"]["Experience Replay"]["Serialize"] = False
 e["Console Output"]["Verbosity"] = "Detailed"
 e["File Output"]["Use Multiple Files"] = False

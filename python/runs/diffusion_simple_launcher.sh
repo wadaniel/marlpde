@@ -1,9 +1,9 @@
 #!/bin/bash
 ic="sinus"
-run=1281
+run=1288
 version=0
 N=128
-numAgents=1
+numAgents=8
 nu=0.1
 noise=0.5
 episodelength=500
