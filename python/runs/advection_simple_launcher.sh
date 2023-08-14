@@ -1,8 +1,8 @@
 #!/bin/bash
 
-run=12864
+run=1281
 N=128
-numAgents=128
+numAgents=1
 noise=0.5
 episodelength=500
 iex=0.5
@@ -23,7 +23,7 @@ cp -r _model/ ${dir}
 
 cd ${dir}
 
-export OMP_NUM_THREADS=8
+export OMP_NUM_THREADS=4
 python run-vracer-advection-simple.py --N ${N} --episodelen ${episodelength} \
     --numAgents ${numAgents} --noise ${noise} --exp ${exp} --run ${run} --iex ${iex} \
 

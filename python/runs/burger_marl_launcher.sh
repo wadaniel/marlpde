@@ -2,7 +2,7 @@
 export OMP_NUM_THREADS=8
 
 run=1
-nagents=1
+nagents=4
 noise=0.001
 iex=0.1
 version=0

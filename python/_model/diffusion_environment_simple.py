@@ -76,7 +76,6 @@ def environment( s , N, tEnd, dtSgs, nu, episodeLength, ic, noise, seed, dnsDefa
     if testing:
 
         dplt.plotEvolution(les)
-        dplt.plotError(les)
         dplt.plotActionField(les)
         dplt.plotActionDistribution(les)
         dplt.plotDiffusionField(les)

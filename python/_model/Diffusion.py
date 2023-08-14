@@ -272,6 +272,15 @@ class Diffusion:
                 locDiffMse = [ -((uTruthToCoarse[(i*section) : (i+1)*section] - self.uu[self.ioutnum,(i*section) : (i+1)*section])**2).mean() for i in range(numAgents) ]
                 return locDiffMse
          
+    def getDirectReward(self, numAgents=1):
+
+        assert numAgents == self.N, f"[Diffusion] direct reward neeeds N agents (using {numAgents})"
+        um = np.roll(self.u, 1)
+        up = np.roll(self.u, -1)
+        d2udx2 = (-2.*self.u + um + up)/(self.dx**2)
+        return (-np.power(d2udx2,2)/numAgents).tolist()
+
+ 
     def getState(self, numAgents=1):
         assert(self.N % numAgents == 0)
 
