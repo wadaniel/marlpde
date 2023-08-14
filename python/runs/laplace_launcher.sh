@@ -1,5 +1,4 @@
 #!/bin/bash
-
 run=2
 N=32
 numAgents=32

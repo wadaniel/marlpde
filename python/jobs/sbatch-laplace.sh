@@ -1,29 +1,30 @@
 #!/bin/bash
-ic="sinus"
-run=1281
-version=0
-N=128
-numAgents=1
-noise=0.5
-episodelength=500
+run=3
+N=32
+numAgents=32
+noise=0.1
+episodelength=100
+iex=0.5
 exp=1000000
+IC="cos"
+force="sin"
 
-RUNPATH=${SCRATCH}/advection_simple/${run}/
+RUNPATH=${SCRATCH}/laplace/${run}/
 mkdir -p ${RUNPATH}
 
 cd ..
 pushd .
 
-cp run-vracer-advection-simple.py ${RUNPATH}
+cp run-vracer-laplace.py ${RUNPATH}
 cp -r _model/ ${RUNPATH}
 
 cd ${RUNPATH}
 
 cat > run.sbatch <<EOF
 #!/bin/bash -l
-#SBATCH --job-name=advection_simple
-#SBATCH --output=diffusion_simple_${run}_%j.out
-#SBATCH --error=diffusion_simple_${run}_err_%j.out
+#SBATCH --job-name=laplace_simple
+#SBATCH --output=laplace_${run}_%j.out
+#SBATCH --error=laplace_${run}_err_%j.out
 #SBATCH --time=24:00:00
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
@@ -37,20 +38,16 @@ cat > run.sbatch <<EOF
 #SBATCH --mail-type=FAIL 
 
 export OMP_NUM_THREADS=12
-python3 run-vracer-advection-simple.py --ic ${ic} --version ${version} \
-    --N ${N} --numAgents ${numAgents} \
-    --noise ${noise} \
-    --episodelength ${episodelength} \
-    --exp ${exp} --run ${run}
+python run-vracer-laplace.py --N ${N} --episodelen ${episodelength} \
+    --numAgents ${numAgents} --noise ${noise} --exp ${exp} --run ${run} --iex ${iex} \
+    --ic ${IC} --force ${force}
 
-python3 run-vracer-advection-simple.py --ic ${ic} --version ${version} \
-    --N ${N} --numAgents ${numAgents} \
-    --noise ${noise} \
-    --episodelength ${episodelength} \
-    --exp ${exp} --run ${run} \
+python run-vracer-laplace.py --N ${N} --episodelen ${episodelength} \
+    --numAgents ${numAgents} --noise ${noise} --exp ${exp} --run ${run} --iex ${iex} \
+    --ic ${IC} --force ${force} \
     --test
 
-python3 -m korali.rlview --dir "${RUNPATH}/_result_advection_simple_${run}" --out "vracer_advection_simple_${run}.png" \
+python3 -m korali.rlview --dir "${dir}/_result_laplace_${run}" --out "vracer_laplace_${run}.png" \
     --showCI 0.8 --showObservations
 
 popd
