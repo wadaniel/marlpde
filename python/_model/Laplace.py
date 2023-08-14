@@ -73,6 +73,17 @@ class Laplace:
                 force = np.sin((self.x - self.offset)*2*np.pi/self.L)
             else:
                 force = np.cos((self.x - self.offset)*2*np.pi/self.L)
+
+        elif sforce == 'fourier':
+            rand = np.random.rand()
+            if rand > 0.75:
+                force = np.sin((self.x - self.offset)*2*np.pi/self.L)
+            elif rand > 0.5:
+                force = np.cos((self.x - self.offset)*2*np.pi/self.L)
+            elif rand > 0.25:
+                force = np.sin((self.x - self.offset)*4*np.pi/self.L)
+            else:
+                force = np.cos((self.x - self.offset)*4*np.pi/self.L)
         
         # Gaussian
         elif sforce == 'gaussian':
