@@ -24,8 +24,8 @@ def plotEvolution(model):
         l = i % 3
         
         axs[k,l].plot(model.x, model.uu[tidx,:], '-', color='royalblue', alpha=1.)
-        axs[k,l].plot(model.x, model.gradientHistory[tidx,:], '-', color='coral', alpha=1.)
-        axs[k,l].set_xticks([0, np.pi, 2*np.pi])
+        axs[k,l].plot(model.x, model.gradientHistory[tidx,:], '--', color='royalblue', alpha=0.8)
+        axs[k,l].set_xticks([model.x[0], np.pi, model.x[-1]])
 
     fig.tight_layout()
     fig.savefig(figName)
@@ -41,12 +41,13 @@ def plotActionField(model):
 
     fig, axs = plt.subplots(1,3, sharex=True, sharey=True, figsize=(6,6))
     axs[0].contourf(model.x, model.tt, actions0) #, ulevels)
-    axs[0].set_xticks([0, np.pi, 2*np.pi])
+    axs[0].set_xticks([model.x[0], np.pi, model.x[-1]])
+
     axs[1].contourf(model.x, model.tt, actions1) #, ulevels)
-    axs[1].set_xticks([0, np.pi, 2*np.pi])
+    axs[1].set_xticks([model.x[0], np.pi, model.x[-1]])
     contour = axs[2].contourf(model.x, model.tt, actions2) #, ulevels)
     plt.colorbar(contour)
-    axs[2].set_xticks([0, np.pi, 2*np.pi])
+    axs[2].set_xticks([model.x[0], np.pi, model.x[-1]])
     
     plt.tight_layout()
 
@@ -61,7 +62,7 @@ def plotGradientField(model):
 
     fig, ax = plt.subplots(1,1, sharex=True, sharey=True, figsize=(10,10))
     contour = ax.contourf(model.x, model.tt, grad, levels=50)
-    ax.set_xticks([0, np.pi, 2*np.pi])
+    ax.set_xticks([model.x[0], np.pi, model.x[-1]])
     plt.colorbar(contour)
     
     plt.tight_layout()

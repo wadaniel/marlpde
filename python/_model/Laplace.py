@@ -11,10 +11,10 @@ class Laplace:
     #
     # u_xx = f(x)
 
-    def __init__(self, L=2.*np.pi, N=512, dt=0.001, ic='one', sforce='zero', episodeLength=500, noise=0., version=0):
+    def __init__(self, L=2.*np.pi, N=512, dt=0.01, ic='one', sforce='zero', episodeLength=100, noise=0., version=0):
         
         # Initialize
-        self.N  = int(N+2)
+        self.N  = int(N)
         self.L  = float(L); 
         self.dt = float(dt); 
         self.nsteps = int(episodeLength)
@@ -23,8 +23,8 @@ class Laplace:
         self.version = version 
         
         # save to self
-        self.dx = L/(N+1)
-        self.x  = np.linspace(0, self.L, self.N, endpoint=True)
+        self.dx = L/N
+        self.x  = np.linspace(0, self.L, self.N, endpoint=False)
         assert self.x[1]-self.x[0] == self.dx, print(self.x, self.dx)
 
         self.__setup_timeseries()
@@ -76,14 +76,12 @@ class Laplace:
 
         elif sforce == 'fourier':
             rand = np.random.rand()
-            if rand > 0.75:
+            if rand > 0.66:
                 force = np.sin((self.x - self.offset)*2*np.pi/self.L)
-            elif rand > 0.5:
-                force = np.cos((self.x - self.offset)*2*np.pi/self.L)
-            elif rand > 0.25:
-                force = np.sin((self.x - self.offset)*4*np.pi/self.L)
+            elif rand > 0.33:
+                force = np.sin((self.x - self.offset)*3*np.pi/self.L)
             else:
-                force = np.cos((self.x - self.offset)*4*np.pi/self.L)
+                force = np.sin((self.x - self.offset)*4*np.pi/self.L)
         
         # Gaussian
         elif sforce == 'gaussian':
@@ -108,29 +106,23 @@ class Laplace:
         um = np.roll(self.u, 1)
         up = np.roll(self.u, -1)
         grad = (-2.*self.u + um + up)/(self.dx**2)
-        grad[0] = (-2.*self.u[0] + self.u[1] + self.u[-2])/(self.dx**2)
-        grad[-1] = (-2.*self.u[-1] + self.u[1] + self.u[-2])/(self.dx**2)
  
         self.gradientHistory[0, :] = grad
       
     def step( self, actions, numAgents):
         
-        assert(numAgents == self.N-2)
+        assert(numAgents == self.N)
+        N = self.N
         M = np.zeros((self.N, self.N))
-        M[0,0] = 1
-        M[-1,-1] = 1
         for i in range(numAgents):
             assert len(actions[i]) == 3, f"[Laplace] action len not 3, it is {len(actions)}"
-            M[i+1,i] = actions[i][0]
-            M[i+1,i+1] = actions[i][1]
-            M[i+1,i+2] = actions[i][2]
+            M[i,(i-1)%N] = actions[i][0]
+            M[i,i] = actions[i][1]
+            M[i,(i+1)%N] = actions[i][2]
 
-        d2udx2 = M @ self.u
+        d2udx2 = self.u @ M
         #self.u = self.u + self.dt * d2udx2 / self.dx**2
         self.u = self.u + self.dt * d2udx2
-
-        self.u[0] = 1.
-        self.u[-1] = 1.
 
         self.stepnum += 1
         self.t       += self.dt
@@ -152,14 +144,15 @@ class Laplace:
 
         
     def getDirectReward(self, numAgents=1):
-        assert numAgents == self.N-2, f"[Laplace] direct reward neeeds N-2 agents (using {numAgents})"
+        assert numAgents == self.N, f"[Laplace] direct reward neeeds N agents (using {numAgents})"
         um = np.roll(self.u, 1)
         up = np.roll(self.u, -1)
         d2udx2 = (-2.*self.u + um + up)/(self.dx**2)
-        return (-np.power(d2udx2-self.force,2))[1:-1].tolist()
+        return (-np.power(d2udx2-self.force,2)).tolist()
 
     def getState(self, numAgents=1):
-        assert(self.N-2 == numAgents)
-        state = [ self.u[i:i+3].tolist() + [self.force[i+1]] for i in range(numAgents)]
+        assert(self.N == numAgents)
+        N = self.N
+        state = [ [self.u[(i-1)%N], self.u[i], self.u[(i+1)%N], self.force[i]] for i in range(numAgents) ]
 
         return state

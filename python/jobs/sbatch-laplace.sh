@@ -1,13 +1,13 @@
 #!/bin/bash
-run=3
-N=32
-numAgents=32
+run=8
+N=64
+numAgents=64
 noise=0.1
 episodelength=100
 iex=0.5
 exp=1000000
-IC="cos"
-force="sin"
+IC="one"
+force="fourier"
 
 RUNPATH=${SCRATCH}/laplace/${run}/
 mkdir -p ${RUNPATH}
@@ -37,24 +37,24 @@ cat > run.sbatch <<EOF
 #SBATCH --mail-type=END                                                         
 #SBATCH --mail-type=FAIL 
 
+module purge
+module load daint-gpu gcc GSL/2.7-CrayGNU-21.09 cray-hdf5-parallel cray-python cdt-cuda craype-accel-nvidia60
+
 export OMP_NUM_THREADS=12
-python run-vracer-laplace.py --N ${N} --episodelen ${episodelength} \
+srun python run-vracer-laplace.py --N ${N} --episodelen ${episodelength} \
     --numAgents ${numAgents} --noise ${noise} --exp ${exp} --run ${run} --iex ${iex} \
     --ic ${IC} --force ${force}
 
-python run-vracer-laplace.py --N ${N} --episodelen ${episodelength} \
+srun python run-vracer-laplace.py --N ${N} --episodelen ${episodelength} \
     --numAgents ${numAgents} --noise ${noise} --exp ${exp} --run ${run} --iex ${iex} \
     --ic ${IC} --force ${force} \
     --test
 
-python3 -m korali.rlview --dir "${dir}/_result_laplace_${run}" --out "vracer_laplace_${run}.png" \
+python -m korali.rlview --dir "${RUNPATH}/_result_laplace_${run}" --out "vracer_laplace_${run}.png" \
     --showCI 0.8 --showObservations
 
 popd
 EOF
-
-module purge
-module load daint-gpu gcc GSL/2.7-CrayGNU-21.09 cray-hdf5-parallel cray-python cdt-cuda craype-accel-nvidia60
 
 chmod 755 run.sbatch
 sbatch run.sbatch
