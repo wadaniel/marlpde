@@ -1,10 +1,11 @@
 #!/bin/bash
-run=8
-N=64
-numAgents=64
-noise=0.1
+run=39
+N=32
+numAgents=${N}
+noise=0.
 episodelength=100
 iex=0.5
+dt=0.01
 exp=1000000
 IC="one"
 force="fourier"
@@ -13,7 +14,6 @@ RUNPATH=${SCRATCH}/laplace/${run}/
 mkdir -p ${RUNPATH}
 
 cd ..
-pushd .
 
 cp run-vracer-laplace.py ${RUNPATH}
 cp -r _model/ ${RUNPATH}
@@ -43,17 +43,14 @@ module load daint-gpu gcc GSL/2.7-CrayGNU-21.09 cray-hdf5-parallel cray-python c
 export OMP_NUM_THREADS=12
 srun python run-vracer-laplace.py --N ${N} --episodelen ${episodelength} \
     --numAgents ${numAgents} --noise ${noise} --exp ${exp} --run ${run} --iex ${iex} \
-    --ic ${IC} --force ${force}
+    --ic ${IC} --force ${force} --dt ${dt}
 
 srun python run-vracer-laplace.py --N ${N} --episodelen ${episodelength} \
     --numAgents ${numAgents} --noise ${noise} --exp ${exp} --run ${run} --iex ${iex} \
-    --ic ${IC} --force ${force} \
-    --test
+    --ic ${IC} --force ${force} --dt ${dt} --test
 
 python -m korali.rlview --dir "${RUNPATH}/_result_laplace_${run}" --out "vracer_laplace_${run}.png" \
     --showCI 0.8 --showObservations
-
-popd
 EOF
 
 chmod 755 run.sbatch

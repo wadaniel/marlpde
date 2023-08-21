@@ -55,7 +55,7 @@ def plotActionField(model):
     plt.close()
 
 def plotGradientField(model):
-    figName = "grad.pdf"
+    figName = "hessian.pdf"
     print(f"[plotting] Plotting {figName} ...")
     
     grad = model.gradientHistory
